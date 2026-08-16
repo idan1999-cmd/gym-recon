@@ -15,6 +15,7 @@ from core.inputs import preflight
 def main():
     parser = argparse.ArgumentParser(description="Preflight: check input readiness")
     parser.add_argument("--input", default="./input", help="Input directory")
+    parser.add_argument("--month", type=int, default=0, help="Target month (1-12)")
     args = parser.parse_args()
 
     input_dir = os.path.abspath(args.input)
@@ -23,7 +24,7 @@ def main():
         print(json.dumps(result, ensure_ascii=False))
         sys.exit(1)
 
-    ok, lines, roles = preflight(input_dir)
+    ok, lines, roles = preflight(input_dir, target_month=args.month if args.month > 0 else None)
 
     print("=== PREFLIGHT ===")
     print("\n".join(lines))

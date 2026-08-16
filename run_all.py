@@ -289,7 +289,7 @@ def run_pipeline(input_dir, output_dir, month=0, branch="all"):
 
     try:
         # 1. PREFLIGHT
-        ok, lines, roles = preflight(input_dir)
+        ok, lines, roles = preflight(input_dir, target_month=month)
         ctx.log("=== PREFLIGHT ===")
         for line in lines:
             ctx.log(line)

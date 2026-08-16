@@ -12,6 +12,24 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 
 ---
 
+## 2026-08-16 — Resilient Multi-Month File Matching & Non-Brittle Target Month Scoring
+
+- **What changed:** 
+  - Replaced hardcoded "יולי / 07" scoring in `core/inputs.py` with dynamic `MONTH_PATTERNS` dictionary covering Hebrew month names (ינואר, פברואר, ... דצמבר), standard numeric notations (01-12), and file prefix/suffix variations.
+  - Added `target_month` parameter throughout `resolve_inputs`, `preflight`, `tools/preflight.py`, `tools/billing.py`, `tools/ledger_sync.py`, and `run_all.py`.
+  - The engine now dynamically prioritizes files matching the designated processing month without brittle hardcoding, while safely falling back with advisory warnings instead of crashing if naming conventions vary.
+  - Added clarification for business rules: coaches/trainers without submitted hours, receipts, or Hilan report presence are held in `HELD / דגלים` and excluded from approved payment totals until verified with the gym owner.
+- **Why (what Idan asked for, in his words if given):** 
+  - *"איך למנוע את יוני ושיקרא את הקבצים הנכונים... המטרה שהם מכינים את הקצבים לחודש הוא ייקרא את הקבצים שהוא צריך לקרוא ספטמבר לספטמבר אוגוסט לאוגוסט וכן הלאה... אם רשומים שם דברים כיולי זה לא יכול להיות רק דטרמיניסטי זה יקרוס"*
+- **What it touches:** 
+  - `core/inputs.py`, `tools/preflight.py`, `tools/billing.py`, `tools/ledger_sync.py`, `run_all.py`, `docs/BUILDER_LOG.md`.
+- **How it was verified:** 
+  - Ran unit, resilience, and acceptance test suites (`test_idan_fixes.py`, `test_resilience.py`, `test_acceptance.py`) — all 92 test cases passed (0 failures).
+- **Watch out:** 
+  - When switching processing months, passing `--month N` or placing files in month-named folders will automatically route the correct files.
+
+---
+
 ## 2026-08-16 — Dual Hilan Parser, Master Template Fallback, Sales Auto-Detection & Manager Alerts
 
 - **What changed:** 

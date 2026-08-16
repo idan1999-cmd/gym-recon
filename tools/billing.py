@@ -87,7 +87,7 @@ def main():
     branch_map = {"all": None, "club": "חדר כושר", "pilates": "פילאטיס"}
     target_branch = branch_map[args.branch]
 
-    roles = resolve_inputs(input_dir)
+    roles = resolve_inputs(input_dir, target_month=args.month)
     if not roles.get("arbox"):
         print(json.dumps({"ok": False, "error": "Arbox file not found in input"}, ensure_ascii=False))
         sys.exit(1)
