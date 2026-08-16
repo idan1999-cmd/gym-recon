@@ -90,44 +90,89 @@ def _snapshot_values(wb):
                     vals[(name, cell.coordinate)] = cell.value
     return vals
 
+def _parse_hilan_data(hilan_file, aliases):
+    import openpyxl
+    from common import resolve_trainer
+    hilan_data = {}
+    if not hilan_file or not os.path.exists(hilan_file):
+        return hilan_data
+    try:
+        wb_h = openpyxl.load_workbook(hilan_file, data_only=True)
+        ws_h = wb_h.active
+        headers = [str(ws_h.cell(1, c).value or "").strip() for c in range(1, ws_h.max_column + 1)]
+        is_detail = any("שם פרטי" in h for h in headers) or any("כניסה" in h for h in headers)
+
+        if is_detail:
+            for r in range(2, ws_h.max_row + 1):
+                fname = str(ws_h.cell(r, 6).value or "").strip()
+                lname = str(ws_h.cell(r, 5).value or "").strip()
+                fullname = f"{fname} {lname}".strip()
+                if not fullname or fullname == "None None":
+                    continue
+                _, canon, _, _ = resolve_trainer(fullname, aliases)
+                name_key = canon or fullname
+                if name_key not in hilan_data:
+                    hilan_data[name_key] = {
+                        "total_wage": 0.0, "reg": 0.0, "ot125": 0.0, "ot150": 0.0,
+                        "ot175": 0.0, "ot200": 0.0, "std": 0.0, "pers": 0.0, "grp": 0.0
+                    }
+                hilan_data[name_key]["total_wage"] += float(ws_h.cell(r, 13).value or 0)
+                hilan_data[name_key]["reg"] += float(ws_h.cell(r, 14).value or 0)
+                hilan_data[name_key]["ot125"] += float(ws_h.cell(r, 16).value or 0)
+                hilan_data[name_key]["ot150"] += float(ws_h.cell(r, 17).value or 0)
+                hilan_data[name_key]["std"] += float(ws_h.cell(r, 18).value or 0) + float(ws_h.cell(r, 19).value or 0)
+                hilan_data[name_key]["pers"] += float(ws_h.cell(r, 20).value or 0)
+                hilan_data[name_key]["grp"] += float(ws_h.cell(r, 21).value or 0)
+        else:
+            for r in range(2, ws_h.max_row + 1):
+                raw_name = str(ws_h.cell(r, 4).value or "").strip()
+                if raw_name.startswith('סה"כ '):
+                    raw_name = raw_name[6:].strip()
+                elif raw_name.startswith('סה"כ'):
+                    raw_name = raw_name[5:].strip()
+                if not raw_name:
+                    continue
+                parts = raw_name.split()
+                if len(parts) >= 2:
+                    flipped = f"{parts[-1]} {' '.join(parts[:-1])}"
+                else:
+                    flipped = raw_name
+                _, canon, _, _ = resolve_trainer(flipped, aliases)
+                if not canon:
+                    _, canon, _, _ = resolve_trainer(raw_name, aliases)
+                name_key = canon or flipped
+                if name_key not in hilan_data:
+                    hilan_data[name_key] = {
+                        "total_wage": 0.0, "reg": 0.0, "ot125": 0.0, "ot150": 0.0,
+                        "ot175": 0.0, "ot200": 0.0, "std": 0.0, "pers": 0.0, "grp": 0.0
+                    }
+                hilan_data[name_key]["total_wage"] += float(ws_h.cell(r, 6).value or 0)
+                hilan_data[name_key]["reg"] += float(ws_h.cell(r, 7).value or 0)
+                hilan_data[name_key]["ot125"] += float(ws_h.cell(r, 9).value or 0)
+                hilan_data[name_key]["ot150"] += float(ws_h.cell(r, 10).value or 0)
+                hilan_data[name_key]["pers"] += float(ws_h.cell(r, 11).value or 0)
+                hilan_data[name_key]["grp"] += float(ws_h.cell(r, 12).value or 0)
+        wb_h.close()
+    except Exception:
+        pass
+    return hilan_data
+
+
 def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases):
     if not aliases:
         return
     import glob
     from common import resolve_trainer
     input_dir = os.path.dirname(os.path.abspath(source_path))
-    hilan_files = glob.glob(os.path.join(input_dir, "**", "פרויקטים*.xlsx"), recursive=True) or \
-                  glob.glob(os.path.join(os.path.dirname(input_dir), "**", "פרויקטים*.xlsx"), recursive=True) or \
-                  glob.glob(os.path.join("input", "**", "פרויקטים*.xlsx"), recursive=True)
+    hilan_patterns = ["*פרויקטים*.xlsx", "*חילנט*.xlsx", "*ספא*.xlsx", "*שעות*.xlsx", "*hilan*.xlsx"]
+    hilan_files = []
+    for pat in hilan_patterns:
+        hilan_files.extend(glob.glob(os.path.join(input_dir, "**", pat), recursive=True))
+        hilan_files.extend(glob.glob(os.path.join(os.path.dirname(input_dir), "**", pat), recursive=True))
+        hilan_files.extend(glob.glob(os.path.join("input", "**", pat), recursive=True))
+    hilan_files = [f for f in dict.fromkeys(hilan_files) if os.path.isfile(f)]
 
-    hilan_data = {}
-    if hilan_files:
-        try:
-            wb_h = openpyxl.load_workbook(hilan_files[0], data_only=True)
-            ws_h = wb_h.active
-            for r in range(2, ws_h.max_row + 1):
-                fname = str(ws_h.cell(r, 6).value or "").strip()
-                lname = str(ws_h.cell(r, 5).value or "").strip()
-                fullname = f"{fname} {lname}".strip()
-                if not fullname: continue
-                _, canon, _, _ = resolve_trainer(fullname, aliases)
-                name_key = canon or fullname
-                total_wage = float(ws_h.cell(r, 13).value or 0)
-                reg_hrs = float(ws_h.cell(r, 14).value or 0)
-                big_std = float(ws_h.cell(r, 18).value or 0)
-                sml_std = float(ws_h.cell(r, 19).value or 0)
-                pers = float(ws_h.cell(r, 20).value or 0)
-                grp = float(ws_h.cell(r, 21).value or 0)
-                if name_key not in hilan_data:
-                    hilan_data[name_key] = {"reg": 0, "total_wage": 0, "std": 0, "pers": 0, "grp": 0}
-                hilan_data[name_key]["reg"] += reg_hrs
-                hilan_data[name_key]["total_wage"] += total_wage
-                hilan_data[name_key]["std"] += (big_std + sml_std)
-                hilan_data[name_key]["pers"] += pers
-                hilan_data[name_key]["grp"] += grp
-            wb_h.close()
-        except Exception:
-            pass
+    hilan_data = _parse_hilan_data(hilan_files[0], aliases) if hilan_files else {}
 
     arbox_data = {}
     if all_sessions:
@@ -144,48 +189,95 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases)
             else:
                 arbox_data[canon]["classes"] += 1
 
-    if branch_key == "חדר כושר" and "סיכום אמוני סטודיו וקבוצה" in wb.sheetnames:
-        ws = wb["סיכום אמוני סטודיו וקבוצה"]
-        # Freelance trainers (rows 3 to 19) from Arbox
-        for r in range(3, 20):
-            t_name = ws.cell(r, 1).value
-            if t_name:
-                _, canon, _, _ = resolve_trainer(t_name, aliases)
-                arb = arbox_data.get(canon, {})
-                if arb.get("classes", 0) > 0:
-                    ws.cell(r, 2, value=arb["classes"])
-                if arb.get("personal", 0) > 0:
-                    ws.cell(r, 7, value=arb["personal"])
+    if branch_key == "חדר כושר":
+        if "סיכום אמוני סטודיו וקבוצה" in wb.sheetnames:
+            ws = wb["סיכום אמוני סטודיו וקבוצה"]
+            # Freelance trainers (rows 3 to 19) from Arbox
+            for r in range(3, 20):
+                t_name = ws.cell(r, 1).value
+                if t_name:
+                    _, canon, _, _ = resolve_trainer(t_name, aliases)
+                    arb = arbox_data.get(canon, {})
+                    if arb.get("classes", 0) > 0:
+                        ws.cell(r, 2, value=arb["classes"])
+                    if arb.get("personal", 0) > 0:
+                        ws.cell(r, 7, value=arb["personal"])
 
-        # Salaried trainers (rows 20 to 29) from Hilan
-        for r in range(20, 30):
-            t_name = ws.cell(r, 1).value
-            if t_name:
-                _, canon, _, _ = resolve_trainer(t_name, aliases)
-                hil = hilan_data.get(canon, {})
-                if hil.get("total_wage", 0) > 0:
-                    ws.cell(r, 15, value=round(hil["total_wage"], 2))
-                if hil.get("pers", 0) > 0:
-                    ws.cell(r, 7, value=round(hil["pers"], 2))
-                if hil.get("grp", 0) > 0:
-                    ws.cell(r, 3, value=round(hil["grp"], 2))
+            # Salaried trainers (rows 20 to 29) from Hilan
+            for r in range(20, 30):
+                t_name = ws.cell(r, 1).value
+                if t_name:
+                    _, canon, _, _ = resolve_trainer(t_name, aliases)
+                    hil = hilan_data.get(canon, {})
+                    if hil.get("total_wage", 0) > 0:
+                        ws.cell(r, 15, value=round(hil["total_wage"], 2))
+                    if hil.get("pers", 0) > 0:
+                        ws.cell(r, 7, value=round(hil["pers"], 2))
+                    if hil.get("grp", 0) > 0:
+                        ws.cell(r, 3, value=round(hil["grp"], 2))
 
-    elif branch_key == "פילאטיס" and "סיכום אימונים ומכירות מנויים" in wb.sheetnames:
-        ws = wb["סיכום אימונים ומכירות מנויים"]
-        for r in range(3, 11):
-            t_name = ws.cell(r, 2).value
-            if t_name:
-                _, canon, _, _ = resolve_trainer(t_name, aliases)
-                arb = arbox_data.get(canon, {})
-                if arb.get("pilates", 0) > 0:
-                    ws.cell(r, 3, value=arb["pilates"])
-        for r in range(13, 15):
-            t_name = ws.cell(r, 2).value
-            if t_name:
-                _, canon, _, _ = resolve_trainer(t_name, aliases)
+        # Dynamically populate overtime & travel on 'דוח מרכז לאישור מנהל'
+        if "דוח מרכז לאישור מנהל" in wb.sheetnames:
+            ws_main = wb["דוח מרכז לאישור מנהל"]
+            for c in range(2, 13):
+                emp_name = ws_main.cell(4, c).value
+                if not emp_name:
+                    continue
+                _, canon, _, _ = resolve_trainer(emp_name, aliases)
                 hil = hilan_data.get(canon, {})
-                if hil.get("total_wage", 0) > 0 or hil.get("std", 0) > 0:
-                    ws.cell(r, 3, value=round(hil.get("std", 0) or hil.get("total_wage", 0), 2))
+                if hil:
+                    if hil.get("ot125", 0) > 0:
+                        ws_main.cell(7, c, value=round(hil["ot125"], 2))
+                    if hil.get("ot150", 0) > 0:
+                        ws_main.cell(8, c, value=round(hil["ot150"], 2))
+                    if hil.get("ot175", 0) > 0:
+                        ws_main.cell(9, c, value=round(hil["ot175"], 2))
+                    if hil.get("ot200", 0) > 0:
+                        ws_main.cell(10, c, value=round(hil["ot200"], 2))
+                    # Travel allowance rule: <=90 hrs = 100, >90 hrs = 200
+                    tot_hrs = hil.get("total_wage", 0)
+                    if tot_hrs > 90:
+                        ws_main.cell(11, c, value=200)
+                    elif tot_hrs > 0:
+                        ws_main.cell(11, c, value=100)
+
+    elif branch_key == "פילאטיס":
+        if "סיכום אימונים ומכירות מנויים" in wb.sheetnames:
+            ws = wb["סיכום אימונים ומכירות מנויים"]
+            for r in range(3, 11):
+                t_name = ws.cell(r, 2).value
+                if t_name:
+                    _, canon, _, _ = resolve_trainer(t_name, aliases)
+                    arb = arbox_data.get(canon, {})
+                    if arb.get("pilates", 0) > 0:
+                        ws.cell(r, 3, value=arb["pilates"])
+            for r in range(13, 15):
+                t_name = ws.cell(r, 2).value
+                if t_name:
+                    _, canon, _, _ = resolve_trainer(t_name, aliases)
+                    hil = hilan_data.get(canon, {})
+                    if hil.get("total_wage", 0) > 0 or hil.get("std", 0) > 0:
+                        ws.cell(r, 3, value=round(hil.get("std", 0) or hil.get("total_wage", 0), 2))
+
+        if "דוח מרכז לאישור מנהל" in wb.sheetnames:
+            ws_main = wb["דוח מרכז לאישור מנהל"]
+            # Col B: Naama Hayun, Col C: Nicole Edelman
+            for c in (2, 3):
+                emp_name = ws_main.cell(4, c).value
+                if not emp_name:
+                    continue
+                _, canon, _, _ = resolve_trainer(emp_name, aliases)
+                hil = hilan_data.get(canon, {})
+                if hil:
+                    if hil.get("ot125", 0) > 0:
+                        ws_main.cell(7, c, value=round(hil["ot125"], 2))
+                    if hil.get("ot150", 0) > 0:
+                        ws_main.cell(8, c, value=round(hil["ot150"], 2))
+                    tot_hrs = hil.get("total_wage", 0)
+                    if tot_hrs > 90:
+                        ws_main.cell(12, c, value=200)
+                    elif tot_hrs > 0:
+                        ws_main.cell(12, c, value=100)
 
 
 def build(branch_key, cfg, source_path, by_category, held, new_trainers,

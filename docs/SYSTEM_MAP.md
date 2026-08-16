@@ -73,8 +73,9 @@ MONTHLY INPUTS DROP (input/)
 - **What it reads:** 
   - OCR invoices: `config/invoices_ocr.json`
   - Arbox sessions: `./input/arbox.csv` (or `.xlsx`)
-  - Hilan payroll: `./input/**/פרויקטים*.xlsx`
-  - Monthly template/source workbook: `./input/דוח_מרכז_*.xlsx` (or `./files/`)
+  - Hilan payroll: `./input/**/פרויקטים*.xlsx` (supports both detailed shift punches format and summarized employee table format)
+  - Sales report: `./input/*מכירות*` (auto-detected `.xlsx` or `.csv`)
+  - Monthly template/source workbook: `./input/דוח_מרכז_*.xlsx` (with automatic fallback to master templates under `./files/`, so the main coach never needs to manually create a new file every month)
   - Config tables: `config/pay_matrix.json`, `config/branches.json`, `config/trainer_aliases.json`
 - **What it writes:** 
   - `output/חיוב_חדר_כושר_<month>.xlsx`

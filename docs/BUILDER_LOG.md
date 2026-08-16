@@ -12,7 +12,28 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 
 ---
 
+## 2026-08-16 — Dual Hilan Parser, Master Template Fallback, Sales Auto-Detection & Manager Alerts
+
+- **What changed:** 
+  - Added robust dual-format Hilan parser supporting both summary employee tables (Format A) and detailed clock shift punches (Format B).
+  - Added dynamic population of salaried instructor and reception overtime (125%, 150%, 175%, 200%) and travel allowance (₪100 / ₪200 based on 90 hr threshold) in `דוח מרכז לאישור מנהל` and summary sheets.
+  - Added master template fallback in `core/inputs.py` so the main coach no longer needs to manually upload a blank workbook every month.
+  - Added sales file auto-detection for `.xlsx` and `.csv` sales exports.
+  - Added prominent console and log manager alerts for held invoices, new unmapped trainers, and missing receipts.
+- **Why (what Idan asked for, in his words if given):** 
+  - *"when we tried to take the data from the Hilan hours files, it didn't put them in the main report. Can you please understand why? ... And also, I don't want the main coach to need to always upload his new בדוח מרכז קובץ המערכת צריכה להכיר את הקובץ הקיים. ולבנות על בסיסו"*
+- **What it touches:** 
+  - `core/inputs.py`, `jobs/billing_output.py`, `run_all.py`, `docs/SYSTEM_MAP.md`, `docs/BUILDER_LOG.md`.
+- **How it was verified:** 
+  - Executed tests on real files in `input/` (`input/דו״ח פרויקטים ספא.xlsx` and `input/ניסיון יולי 2026/פרויקטים _ דוח פרויקטים ספא לתקופה 07_2026 - 07_2026.xlsx`).
+  - Full test suites passed: 44 pytest, 27 idan_fixes, 11 resilience, 54 acceptance (136 tests total passed).
+- **Watch out:** 
+  - When raw sales files are exported, dropping them into `input/` with "מכירות" in the filename will automatically be detected.
+
+---
+
 ## 2026-08-16 — Operator Confirmation of Travel Allowance, Commissions & Overtime
+
 
 - **What changed:** 
   - Updated `docs/SYSTEM_MAP.md` with final confirmed business parameters from Idan and the gym operator:

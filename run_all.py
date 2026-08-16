@@ -348,6 +348,10 @@ def run_pipeline(input_dir, output_dir, month=0, branch="all"):
                 if bres.get("status") in ("REVIEW", "REVIEW_REQUIRED"):
                     ctx.review_required = True
                     ctx.log(f"[billing] branch {br}: {bres.get('status')} — human review needed")
+                if bres.get("n_held", 0) > 0 or bres.get("n_new_trainers", 0) > 0:
+                    ctx.log(f"  ⚠ [MANAGER ALERT] {br}: {bres.get('n_held', 0)} invoices held out, {bres.get('n_new_trainers', 0)} new/unmapped trainers found! See 'דגלים' sheet.")
+                if bres.get("n_missing_receipts", 0) > 0:
+                    ctx.log(f"  ℹ [MANAGER NOTE] {br}: {bres.get('n_missing_receipts', 0)} trainers have held sessions but missing receipts.")
         else:
             ctx.log("[Billing] Missing Arbox or approval workbooks — skipping")
 

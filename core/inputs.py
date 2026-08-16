@@ -110,12 +110,29 @@ def resolve_inputs(input_dir):
                 roles["arbox"] = p
             continue
         # 5) spa/hilanet project report
-        if "פרויקטים" in base or "ספא" in base or "חילנט" in base:
+        if "פרויקטים" in base or "ספא" in base or "חילנט" in base or "שעות" in base:
             if not roles["hilanet"]:
                 roles["hilanet"] = p
             continue
+        # 6) sales report
+        if ("מכירות" in base or "sales" in base.lower()) and not ("דוח מרכז" in base):
+            roles.setdefault("sales", p)
+            continue
         roles["notes"].append(f"unrecognized file ignored: {base}")
 
+    # Template fallback: if approval sheet for a branch is not in input/, fallback to master templates in files/
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    files_dir = os.path.join(project_root, "files")
+    for br in ("חדר כושר", "פילאטיס"):
+        if br not in roles["approval"] and os.path.exists(files_dir):
+            matches = [
+                os.path.join(files_dir, f) for f in os.listdir(files_dir)
+                if f.endswith(".xlsx") and "דוח_מרכז" in f and _branch_of(f) == br
+            ]
+            if matches:
+                matches.sort(reverse=True)
+                roles["approval"][br] = matches[0]
+                roles["notes"].append(f"using master template for {br}: {os.path.basename(matches[0])}")
 
     # Fallback: if no dedicated ledger file is supplied, budget workbook acts as ledger source
     if not roles["ledger"] and roles["budget"]:
@@ -141,6 +158,8 @@ def preflight(input_dir, need=("budget", "arbox")):
         lines.append(f"  {mark} דוח מרכז {br:10} {os.path.basename(p) if p else '(none — salaried-only branch or skip)'}")
     inv = roles["invoices_dir"] or roles["invoices_ocr"]
     lines.append(f"  {'✓' if inv else '·'} invoices{'':20} {os.path.basename(inv) if inv else '(none)'}")
+    if roles.get("sales"):
+        lines.append(f"  ✓ דוח מכירות{'':17} {os.path.basename(roles['sales'])}")
     for n in roles["notes"]:
         lines.append(f"  … {n}")
     return ok, lines, roles
