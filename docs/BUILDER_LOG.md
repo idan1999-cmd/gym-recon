@@ -12,6 +12,22 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 
 ---
 
+## 2026-08-16 — Sales Commissions Parser, Leonid Travel Allowance & Clean Directory Layout
+
+- **What changed:** 
+  - Added dedicated Sales Commissions parser (`_parse_sales_data`) in `jobs/billing_output.py` and `core/inputs.py` to automatically detect `ריכוז עמלות מכירה 2026.xlsx`, match the monthly tab (`7/26`, `Jul-26`, `יולי`), and extract both Gym (₪4,001.40) and Pilates (₪3,061.80) totals including 8% National Insurance.
+  - Updated travel allowance rule in `jobs/billing_output.py`: Leonid (לאון ורחובסקי) explicitly receives ₪208.50.
+  - Re-organized all monthly directories under `input/` (`input/2026-06_JUNE/`, `input/2026-07_JULY/`, `input/2026-08_AUGUST/`, `input/2026-09_SEPTEMBER/`, `input/TEMPLATE_MONTHLY_INPUT/`).
+  - Disambiguated file discovery in `core/inputs.py` so Arbox, Sales, Hilan, and Budget files never conflict.
+- **Why (what Idan asked for, in his words if given):** 
+  - *"לגבי הנסיעות, אתה צודק - החיוב צריך להיות 208.5 ולא 200 כפי שהיה אצל לאון. תתקן בהתאם להמשך. לגבי המכירות, בכל פעם אני אוסיף לך קובץ בשם ריכוז עמלות 2026, בו אתה תאתר את החודש הנכון... בנוסף: אני רוצה שתסדר לי את הכל התיקיות ב Gym recon בצורה מסודרת ותסביר לי גם איך המנגנון עובד איפה אני אמור לשמור כל קובץ"*
+- **What it touches:** 
+  - `jobs/billing_output.py`, `core/inputs.py`, `input/TEMPLATE_MONTHLY_INPUT/HOW_TO_USE.md`, `input/README.md`, `docs/BUILDER_LOG.md`.
+- **How it was verified:** 
+  - Verified preflight and ran full month pipeline on `input/2026-07_JULY` — Leonid travel is ₪208.50, sales commissions extracted properly, all 92 tests passed.
+
+---
+
 ## 2026-08-16 — Full July Receipts OCR Integration & 100% Exact Billing Math
 
 - **What changed:** 

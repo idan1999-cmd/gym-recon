@@ -120,19 +120,20 @@ def resolve_inputs(input_dir, target_month=None):
             if not roles["ledger"]:
                 roles["ledger"] = p
             continue
-        # 4) arbox (דו"ח שיעורים) — works with .xlsx or .csv
-        if "שיעור" in base or _has_sheet_signature(p, need_headers=["מאמנים", "סטטוס", "שעת התחלה"]):
+        # 4) sales report / commissions (ריכוז עמלות / מכירות)
+        if ("עמלות" in base or "מכירות" in base or "sales" in base.lower()) and not ("דוח מרכז" in base or "תקציב" in base):
+            if not roles.get("sales"):
+                roles["sales"] = p
+            continue
+        # 5) arbox (דו"ח שיעורים) — works with .xlsx or .csv (has lesson/status/date info)
+        if ("שיעור" in base or "שיעורים" in base or _has_sheet_signature(p, need_headers=["סטטוס", "שעת התחלה"])) and not ("עמלות" in base or "דוח מרכז" in base):
             if not roles["arbox"]:
                 roles["arbox"] = p
             continue
-        # 5) spa/hilanet project report
+        # 6) spa/hilanet project report
         if "פרויקטים" in base or "ספא" in base or "חילנט" in base or "שעות" in base:
             if not roles["hilanet"]:
                 roles["hilanet"] = p
-            continue
-        # 6) sales report
-        if ("מכירות" in base or "sales" in base.lower()) and not ("דוח מרכז" in base):
-            roles.setdefault("sales", p)
             continue
         roles["notes"].append(f"unrecognized file ignored: {base}")
 

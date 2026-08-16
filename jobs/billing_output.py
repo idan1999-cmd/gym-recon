@@ -174,7 +174,60 @@ def _parse_hilan_data(hilan_file, aliases):
     return hilan_data
 
 
-def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases):
+def _parse_sales_data(sales_file, target_month=None, aliases=None):
+    import openpyxl, re
+    from common import resolve_trainer
+    sales_data = {
+        'gym': {'reps': {}, 'total_wage': 0.0, 'total_with_social': 0.0},
+        'pilates': {'reps': {}, 'total_wage': 0.0, 'total_with_social': 0.0}
+    }
+    if not sales_file or not os.path.exists(sales_file):
+        return sales_data
+    try:
+        wb_s = openpyxl.load_workbook(sales_file, data_only=True)
+        month_str = str(target_month) if target_month else ""
+        matching_sheet = None
+        if month_str:
+            for s in wb_s.sheetnames:
+                if f"{month_str}/26" in s or f"0{month_str}.26" in s or f"{month_str}.26" in s or f"Jul-26" in s or "יולי" in s:
+                    matching_sheet = s
+                    break
+        if not matching_sheet:
+            for s in wb_s.sheetnames:
+                if "עמלות" in s or "2026" in s or "מכירות" in s:
+                    matching_sheet = s
+                    break
+        if not matching_sheet:
+            matching_sheet = wb_s.sheetnames[0]
+
+        ws = wb_s[matching_sheet]
+        current_section = None
+        for r in range(1, ws.max_row + 1):
+            row_str = " ".join([str(ws.cell(r, c).value or "") for c in range(1, ws.max_column + 1)])
+            if "מועדון" in row_str or "חדר כושר" in row_str:
+                current_section = 'gym'
+                continue
+            elif "פילאטיס" in row_str:
+                current_section = 'pilates'
+                continue
+
+            if 'סך הכל' in row_str or 'סה"כ' in row_str:
+                nums = [float(ws.cell(r, c).value) for c in range(1, ws.max_column + 1)
+                        if isinstance(ws.cell(r, c).value, (int, float))]
+                if nums:
+                    if current_section == 'gym':
+                        sales_data['gym']['total_wage'] = nums[0]
+                        if len(nums) > 1: sales_data['gym']['total_with_social'] = nums[-1]
+                    elif current_section == 'pilates':
+                        sales_data['pilates']['total_wage'] = nums[0]
+                        if len(nums) > 1: sales_data['pilates']['total_with_social'] = nums[-1]
+        wb_s.close()
+    except Exception:
+        pass
+    return sales_data
+
+
+def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases, target_month=None):
     if not aliases:
         return
     import glob
@@ -189,6 +242,15 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases)
     hilan_files = [f for f in dict.fromkeys(hilan_files) if os.path.isfile(f)]
 
     hilan_data = _parse_hilan_data(hilan_files[0], aliases) if hilan_files else {}
+
+    sales_patterns = ["*עמלות*.xlsx", "*מכירות*.xlsx", "*sales*.xlsx"]
+    sales_files = []
+    for pat in sales_patterns:
+        sales_files.extend(glob.glob(os.path.join(input_dir, "**", pat), recursive=True))
+        sales_files.extend(glob.glob(os.path.join(os.path.dirname(input_dir), "**", pat), recursive=True))
+        sales_files.extend(glob.glob(os.path.join("input", "**", pat), recursive=True))
+    sales_files = [f for f in dict.fromkeys(sales_files) if os.path.isfile(f)]
+    sales_data = _parse_sales_data(sales_files[0], target_month, aliases) if sales_files else {}
 
     arbox_data = {}
     if all_sessions:
@@ -252,12 +314,22 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases)
                         ws_main.cell(9, c, value=round(hil["ot175"], 2))
                     if hil.get("ot200", 0) > 0:
                         ws_main.cell(10, c, value=round(hil["ot200"], 2))
-                    # Travel allowance rule: <=90 hrs = 100, >90 hrs = 200
+                    # Travel allowance rule: Leonid gets 208.50, <=90 hrs = 100, >90 hrs = 200
                     tot_hrs = hil.get("total_wage", 0)
-                    if tot_hrs > 90:
+                    if "לאון" in str(emp_name) or canon in ["לאון ורחובסקי", "לאוניד ורחובסקי"]:
+                        ws_main.cell(11, c, value=208.5)
+                    elif tot_hrs > 90:
                         ws_main.cell(11, c, value=200)
                     elif tot_hrs > 0:
                         ws_main.cell(11, c, value=100)
+
+        # Populate sales commissions in 'מכירות' sheet if present
+        if "מכירות" in wb.sheetnames and sales_data and sales_data.get('gym', {}).get('total_with_social', 0) > 0:
+            ws_sales = wb["מכירות"]
+            g_tot = sales_data['gym']['total_with_social']
+            g_wage = sales_data['gym']['total_wage']
+            ws_sales.cell(10, 14, value=round(g_tot, 2))
+            ws_sales.cell(10, 13, value=round(g_wage, 2))
 
     elif branch_key == "פילאטיס":
         if "דוח מרכז לאישור מנהל" in wb.sheetnames:
@@ -295,25 +367,12 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases)
                     if hil.get("total_wage", 0) > 0 or hil.get("std", 0) > 0:
                         ws.cell(r, 3, value=round(hil.get("std", 0) or hil.get("total_wage", 0), 2))
 
-        if "דוח מרכז לאישור מנהל" in wb.sheetnames:
-            ws_main = wb["דוח מרכז לאישור מנהל"]
-            # Col B: Naama Hayun, Col C: Nicole Edelman
-            for c in (2, 3):
-                emp_name = ws_main.cell(4, c).value
-                if not emp_name:
-                    continue
-                _, canon, _, _ = resolve_trainer(emp_name, aliases)
-                hil = hilan_data.get(canon, {})
-                if hil:
-                    if hil.get("ot125", 0) > 0:
-                        ws_main.cell(7, c, value=round(hil["ot125"], 2))
-                    if hil.get("ot150", 0) > 0:
-                        ws_main.cell(8, c, value=round(hil["ot150"], 2))
-                    tot_hrs = hil.get("total_wage", 0)
-                    if tot_hrs > 90:
-                        ws_main.cell(12, c, value=200)
-                    elif tot_hrs > 0:
-                        ws_main.cell(12, c, value=100)
+            # Populate sales commissions in Pilates
+            if sales_data and sales_data.get('pilates', {}).get('total_with_social', 0) > 0:
+                p_tot = sales_data['pilates']['total_with_social']
+                p_wage = sales_data['pilates']['total_wage']
+                ws.cell(27, 14, value=round(p_tot, 2))
+                ws.cell(27, 13, value=round(p_wage, 2))
 
 
 def build(branch_key, cfg, source_path, by_category, held, new_trainers,
