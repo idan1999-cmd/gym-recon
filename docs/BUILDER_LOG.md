@@ -12,6 +12,21 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 
 ---
 
+## 2026-08-16 — Standardized Monthly Input Folder & Operator Template
+
+- **What changed:** 
+  - Created `input/TEMPLATE_MONTHLY_INPUT/` containing standard subfolders (`invoices/` and `invoices_suppliers/`) and a step-by-step `HOW_TO_USE.md` guide.
+  - Organized structured monthly folders: `input/2026-07_JULY/` (populated with real July files and receipts), `input/2026-08_AUGUST/`, and `input/2026-09_SEPTEMBER/`.
+  - Updated `input/README.md` with clear operator instructions in plain English.
+- **Why (what Idan asked for, in his words if given):** 
+  - *"What is the folder that the agent is supposed to read? Just create that folder inside the project, make it clear and visible, and organize the project so it will be easy for the operator to see it where he should put the files and organize it. And then we'll just put the files easily... You can write that in English, and the user will just copy-paste that folder each time he needs to do a new month."*
+- **What it touches:** 
+  - `input/TEMPLATE_MONTHLY_INPUT/`, `input/2026-07_JULY/`, `input/2026-08_AUGUST/`, `input/2026-09_SEPTEMBER/`, `input/README.md`, `docs/BUILDER_LOG.md`.
+- **How it was verified:** 
+  - Ran preflight verification on `input/2026-07_JULY` and executed full test suite (54 acceptance tests + resilience tests). All tests passed with 0 errors.
+
+---
+
 ## 2026-08-16 — Dynamic Workbook Target Extraction & Full Coverage of July Line Items
 
 - **What changed:** 

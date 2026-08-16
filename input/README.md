@@ -1,27 +1,43 @@
-# מה לשים כאן (Input folder)
+# 📥 Input Directory — Gym Recon
 
-גררו לכאן את הקבצים של החודש. **השמות לא חייבים להיות מדויקים** — המערכת מזהה
-כל קובץ לפי התוכן שלו. קבצים לא רלוונטיים פשוט יתעלמו מהם.
+This directory contains the monthly input folders for Ariel Fit & Spa (A+ Street Mall).
 
-| מה צריך | דוגמה לשם | חובה? |
-|---------|-----------|-------|
-| כרטסת הנהלת חשבונות | `כרטסת.xlsx` | כן (ל-Ledger Sync) |
-| תקציב מול ביצוע | `תקציב תזרים 2026.xlsx` | כן (ל-Ledger Sync) |
-| דו"ח שיעורים (ארבוקס) | `דו״ח שיעורים.xlsx` | כן (לבדיקת חשבוניות) |
-| דוח מרכז לאישור מנהל — פילאטיס | `דוח מרכז 06.26 פילאטיס.xlsx` | לענף פילאטיס |
-| דוח מרכז לאישור מנהל — חדר כושר | `דוח מרכז 06.26 חדר כושר.xlsx` | לענף חדר כושר |
-| חשבוניות מאמני חוץ | תיקייה בשם `invoices/` עם קובצי PDF | לבדיקת חשבוניות |
-| חשבוניות ספקים (חשמל, ארנונה, ניקיון...) | תיקייה בשם `invoices_suppliers/` עם קובצי PDF | לעיבוד תשלומים לספקים |
+---
 
-## איך מריצים
+## 🗂️ Recommended Folder Layout
+
+```text
+input/
+├── TEMPLATE_MONTHLY_INPUT/       <-- Copy this folder for every new month!
+│   ├── invoices/                 <-- Put trainer receipts (קבלות) here
+│   ├── invoices_suppliers/       <-- Put supplier invoices (חשבוניות ספקים) here
+│   └── HOW_TO_USE.md
+│
+├── 2026-07_JULY/                 <-- July 2026 active run folder
+│   ├── דוח מרכז 07.26 חדר כושר.xlsx
+│   ├── דוח מרכז 07.26 פילאטיס.xlsx
+│   ├── דוח שיעורים.csv
+│   ├── פרויקטים _ דוח פרויקטים ספא לתקופה 07_2026 - 07_2026.xlsx
+│   ├── תקציב תזרים 2026.xlsx
+│   └── invoices/                 <-- July freelancer receipt PDFs
+│
+├── 2026-08_AUGUST/               <-- August 2026 folder (ready for files)
+│   ├── invoices/
+│   └── invoices_suppliers/
+│
+└── 2026-09_SEPTEMBER/            <-- September 2026 folder (ready for files)
+    ├── invoices/
+    └── invoices_suppliers/
 ```
-python run_all.py --input ./input
-```
-המערכת קודם **תבדוק מוכנות** ותדפיס ✓/✗ לכל קובץ, ורק אז תתחיל. אם חסר קובץ
-חובה — היא תעצור ותגיד לכם מה חסר.
 
-## חשוב
-- אל תמחקו ואל תשנו את `התאמה ידנית` בקבצי התקציב — המערכת אף פעם לא דורסת אותם.
-- חשבונית של מאמן שלא מזוהה → **לא תיכנס למספרים**; תופיע בגיליון `דגלים` עם
-  הצעה לאישור.
-- כל מה שהמערכת לא בטוחה בו מסומן בגיליון `דגלים` — תמיד עברו עליו.
+---
+
+## ⚡ Quick Start for Operators
+
+1. Copy `TEMPLATE_MONTHLY_INPUT` and name it with your month (e.g. `2026-08_AUGUST`).
+2. Drop the **5 monthly Excel/CSV files** into that folder.
+3. Drop the **receipt PDFs** into the `invoices/` subfolder.
+4. Run:
+   ```bash
+   python run_all.py --input ./input/2026-08_AUGUST --output ./output --month 8
+   ```
