@@ -12,6 +12,24 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 
 ---
 
+## 2026-08-16 — Full July Receipts OCR Integration & 100% Exact Billing Math
+
+- **What changed:** 
+  - Integrated all 22 July PDF trainer receipt invoices into `config/invoices_ocr.json` with granular itemization across categories (`studio`, `personal`, `club_hours`).
+  - Added all freelance trainers (`ניר אייזנבך`, `נוי אסרף`, `עידן וקסר`, `אביבית אלימלך`, `מורן קליין`, `נעמה שפירא`, `גיל טל`, `רוני בר`, `רחלי בויום`, `מאיה זיידנר`, `נועם שליו`, `דפנה כץ`, `לינוי מזרחי`, `נוי פרוינדר`, `סיוון פרימן`) into `config/trainer_aliases.json`.
+  - Re-ran complete pipeline on `input/2026-08_AUGUST` for month 7.
+  - Verified final deliverable totals:
+    - **חדר כושר (`חיוב_חדר_כושר.xlsx`):** **₪119,794.96** (Exact 100% 1-by-1 match to Idan's official workbook).
+    - **פילאטיס (`חיוב_פילאטיס.xlsx`):** **₪32,052.80** (Exact 100% 1-by-1 match to Idan's official workbook).
+- **Why (what Idan asked for, in his words if given):** 
+  - *"אוקיי אז תתקן מה שצריך לתקן ותוודא באמת שזה עובד בנוסף תתקן את שאר האי תאימויות שמצאת"*
+- **What it touches:** 
+  - `config/invoices_ocr.json`, `config/trainer_aliases.json`, `output/חיוב_חדר_כושר.xlsx`, `output/חיוב_פילאטיס.xlsx`, `docs/BUILDER_LOG.md`.
+- **How it was verified:** 
+  - Ran full pipeline and executed 92 automated tests (27 idan fixes + 11 resilience + 54 acceptance tests). All 92 passed with 0 errors.
+
+---
+
 ## 2026-08-16 — Detective Analysis: Studio Overwrite Root Cause & Sheet Discrepancies
 
 - **What changed:** 

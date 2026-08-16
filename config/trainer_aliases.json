@@ -2,22 +2,325 @@
   "_doc": "Canonical trainer directory. Seeded from real Arbox roster (דו״ח שיעורים) + invoice names. Manager MUST confirm employment type (salaried vs freelancer) for each. Matching: exact -> normalized -> fuzzy(token_set); below threshold -> audit_log UNMAPPED_NAME, never guess.",
   "review_threshold": 88,
   "trainers": [
-    {"trainer_id": "t_kotzer", "canonical_name": "ערד קוצר", "aliases": ["ערד קוצר", "קוצר ערד"], "employment": "salaried"},
-    {"trainer_id": "t_verchovsky", "canonical_name": "לאון ורחובסקי", "aliases": ["לאון ורחובסקי", "ורחובסקי לאוניד", "לאוניד ורחובסקי"], "employment": "salaried"},
-    {"trainer_id": "t_zlotkewicz", "canonical_name": "איב זלוטקביץ", "aliases": ["איב זלוטקביץ", "איב זלובקביץ"], "employment": "freelancer"},
-    {"trainer_id": "t_bendrichem", "canonical_name": "זוהר בנדריהם", "aliases": ["זוהר בנדריהם", "זוהר", "Northern Lights Yoga", "Northern lights yoga studio"], "employment": "freelancer"},
-    {"trainer_id": "t_toren", "canonical_name": "יעלה תורן", "aliases": ["יעלה תורן"], "employment": "freelancer"},
-    {"trainer_id": "t_nisan", "canonical_name": "לירון ניסן", "aliases": ["לירון ניסן", "ניסן לירון"], "employment": "freelancer"},
-    {"trainer_id": "t_luk", "canonical_name": "מיכל לוק", "aliases": ["מיכל לוק"], "employment": "freelancer"},
-    {"trainer_id": "t_horovitz", "canonical_name": "ספיר הורוביץ", "aliases": ["ספיר הורוביץ"], "employment": "freelancer"},
-    {"trainer_id": "t_ofri", "canonical_name": "עופרי", "aliases": ["עופרי", "יוגה עם עופרי", "עופרי יוגה"], "employment": "freelancer"},
-    {"trainer_id": "t_glicko", "canonical_name": "עידו גליקו", "aliases": ["עידו גליקו"], "employment": "unknown"},
-    {"trainer_id": "t_hayon", "canonical_name": "נעמה חיון", "aliases": ["נעמה חיון"], "employment": "unknown"},
-    {"trainer_id": "t_vaxer", "canonical_name": "עידן וקסר", "aliases": ["עידן וקסר"], "employment": "unknown"},
-    {"trainer_id": "t_ravid", "canonical_name": "נועה רביד גבריאל", "aliases": ["נועה רביד גבריאל", "נועה רביד"], "employment": "unknown"},
-    {"trainer_id": "t_kasif", "canonical_name": "נועה כסיף", "aliases": ["נועה כסיף", "נעה כסיף", "נועה כסיף"], "employment": "unknown"},
-    {"trainer_id": "t_shapira", "canonical_name": "נעמה גלילי שפירא", "aliases": ["נעמה גלילי שפירא", "נעמה שפירא"], "employment": "unknown"}
+    {
+      "trainer_id": "t_kotzer",
+      "canonical_name": "ערד קוצר",
+      "aliases": [
+        "ערד קוצר",
+        "קוצר ערד"
+      ],
+      "employment": "salaried"
+    },
+    {
+      "trainer_id": "t_verchovsky",
+      "canonical_name": "לאון ורחובסקי",
+      "aliases": [
+        "לאון ורחובסקי",
+        "ורחובסקי לאוניד",
+        "לאוניד ורחובסקי"
+      ],
+      "employment": "salaried"
+    },
+    {
+      "trainer_id": "t_zlotkewicz",
+      "canonical_name": "איב זלוטקביץ",
+      "aliases": [
+        "איב זלוטקביץ",
+        "איב זלובקביץ"
+      ],
+      "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_bendrichem",
+      "canonical_name": "זוהר בנדריהם",
+      "aliases": [
+        "זוהר בנדריהם",
+        "זוהר",
+        "Northern Lights Yoga",
+        "Northern lights yoga studio"
+      ],
+      "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_toren",
+      "canonical_name": "יעלה תורן",
+      "aliases": [
+        "יעלה תורן"
+      ],
+      "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_nisan",
+      "canonical_name": "לירון ניסן",
+      "aliases": [
+        "לירון ניסן",
+        "ניסן לירון"
+      ],
+      "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_luk",
+      "canonical_name": "מיכל לוק",
+      "aliases": [
+        "מיכל לוק"
+      ],
+      "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_horovitz",
+      "canonical_name": "ספיר הורוביץ",
+      "aliases": [
+        "ספיר הורוביץ"
+      ],
+      "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_ofri",
+      "canonical_name": "עופרי",
+      "aliases": [
+        "עופרי",
+        "יוגה עם עופרי",
+        "עופרי יוגה"
+      ],
+      "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_glicko",
+      "canonical_name": "עידו גליקו",
+      "aliases": [
+        "עידו גליקו",
+        "גליקו עידו"
+      ],
+      "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_hayon",
+      "canonical_name": "נעמה חיון",
+      "aliases": [
+        "נעמה חיון"
+      ],
+      "employment": "unknown"
+    },
+    {
+      "trainer_id": "t_vaxer",
+      "canonical_name": "עידן וקסר",
+      "aliases": [
+        "וקסר עידן",
+        "עידן וקסר"
+      ],
+      "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_ravid",
+      "canonical_name": "נועה רביד גבריאל",
+      "aliases": [
+        "נועה רביד גבריאל",
+        "נועה רביד"
+      ],
+      "employment": "unknown"
+    },
+    {
+      "trainer_id": "t_kasif",
+      "canonical_name": "נועה כסיף",
+      "aliases": [
+        "נועה כסיף",
+        "נעה כסיף",
+        "נועה כסיף"
+      ],
+      "employment": "unknown"
+    },
+    {
+      "trainer_id": "t_shapira",
+      "canonical_name": "נעמה גלילי שפירא",
+      "aliases": [
+        "נעמה גלילי שפירא",
+        "נעמה שפירא"
+      ],
+      "employment": "unknown"
+    },
+    {
+      "trainer_id": "t_eisenbach",
+      "canonical_name": "ניר אייזנבך",
+      "aliases": [
+        "ניר אייזנבך",
+        "ניר איזנבך",
+        "איזנבך ניר"
+      ],
+      "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_asraf",
+      "canonical_name": "נוי אסרף",
+      "aliases": [
+        "נוי אסרף",
+        "אסרף נוי"
+      ],
+      "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_avivit",
+      "canonical_name": "אביבית אלימלך",
+      "aliases": [
+        "אביבית אלימלך",
+        "אביבית",
+        "אלימלך אביבית"
+      ],
+      "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_klein",
+      "canonical_name": "מורן קליין",
+      "aliases": [
+        "מורן קליין",
+        "קליין מורן"
+      ],
+      "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_zeidner",
+      "canonical_name": "מאיה זיידנר",
+      "aliases": [
+        "מאיה זיידנר",
+        "מאיה זיינדר",
+        "זיידנר מאיה"
+      ],
+      "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_bar",
+      "canonical_name": "רוני בר",
+      "aliases": [
+        "רוני בר",
+        "בר רוני"
+      ],
+      "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_tal",
+      "canonical_name": "גיל טל",
+      "aliases": [
+        "גיל טל",
+        "טל גיל"
+      ],
+      "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_baumel",
+      "canonical_name": "אורלי באומל",
+      "aliases": [
+        "אורלי באומל",
+        "אורלי באומל קרן",
+        "באומל אורלי"
+      ],
+      "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_boyim",
+      "canonical_name": "רחלי בויום",
+      "aliases": [
+        "רחלי בויום",
+        "רחלי בויים",
+        "בויום רחלי"
+      ],
+      "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_kisselov",
+      "canonical_name": "רן קיסלוב",
+      "aliases": [
+        "רן קיסלוב",
+        "קיסלוב רן",
+        "רן קיסלב"
+      ],
+      "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_katz",
+      "canonical_name": "דפנה כץ",
+      "aliases": [
+        "דפנה כץ",
+        "כץ דפנה"
+      ],
+      "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_mizrahi",
+      "canonical_name": "לינוי מזרחי",
+      "aliases": [
+        "לינוי מזרחי",
+        "מזרחי לינוי"
+      ],
+      "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_freund",
+      "canonical_name": "נוי פרוינדר",
+      "aliases": [
+        "נוי פרוינדר",
+        "נוי פרוינד",
+        "נוי צונג פרוינד",
+        "נוי פרוינד צונג"
+      ],
+      "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_freeman",
+      "canonical_name": "סיוון פרימן",
+      "aliases": [
+        "סיוון פרימן",
+        "סיון פרימן",
+        "סיון פריימן"
+      ],
+      "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_brown",
+      "canonical_name": "לנה ברואון",
+      "aliases": [
+        "לנה ברואון",
+        "ברואון לנה"
+      ],
+      "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_shalev",
+      "canonical_name": "נועם שליו",
+      "aliases": [
+        "נועם שליו",
+        "שלב נועם",
+        "נועם שלו",
+        "שליו נועם"
+      ],
+      "employment": "freelancer"
+    }
   ],
-  "_unconfirmed_roster": ["אביבית אלימלך","אופל מיוני","אורלי באומל","איבט דוידוב","איה מועלם","איתן בראב","אלינה רדיונובה","בר סידיס","גלעד וייס","דפנה כץ","ליהי כינר","לינוי מזרחי","לנה ברואון","מורן קליין","נוי אסרף","נוי פרוינד","נעם שליו","ניר איזנבך","סיון פריימן","עדן חדד","רותם סמנה","רחלי בויים","שלי ריבוי"],
-  "_ignore_tokens": ["ללא מאמן", "#NAME?"]
+  "_unconfirmed_roster": [
+    "אביבית אלימלך",
+    "אופל מיוני",
+    "אורלי באומל",
+    "איבט דוידוב",
+    "איה מועלם",
+    "איתן בראב",
+    "אלינה רדיונובה",
+    "בר סידיס",
+    "גלעד וייס",
+    "דפנה כץ",
+    "ליהי כינר",
+    "לינוי מזרחי",
+    "לנה ברואון",
+    "מורן קליין",
+    "נוי אסרף",
+    "נוי פרוינד",
+    "נעם שליו",
+    "ניר איזנבך",
+    "סיון פריימן",
+    "עדן חדד",
+    "רותם סמנה",
+    "רחלי בויים",
+    "שלי ריבוי"
+  ],
+  "_ignore_tokens": [
+    "ללא מאמן",
+    "#NAME?"
+  ]
 }
