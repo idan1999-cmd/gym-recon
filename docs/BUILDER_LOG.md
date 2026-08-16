@@ -12,6 +12,21 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 
 ---
 
+## 2026-08-16 — Dedicated Test Run & Custom Output Directory Support
+
+- **What changed:** 
+  - Executed full pipeline run into dedicated output directories `ניסוי עמית ועידן` and `output/ניסוי עמית ועידן`.
+  - Fixed OCR cache path resolution in `tools/billing.py` to point to project root config directory regardless of custom nested output paths.
+  - Verified 100% test passing (54 acceptance tests + 9 output validations).
+- **Why (what Idan asked for, in his words if given):** 
+  - *"יאללה בוא נריץ עוד פעם את הכל תוציא לי כל קבצי הפלט חד פעמי תיצור תיקייה שנקראת ניסוי עמית ועדין ותשים את קבצי הפלט"*
+- **What it touches:** 
+  - `tools/billing.py`, `docs/BUILDER_LOG.md`.
+- **How it was verified:** 
+  - Verified generated Excel workbooks and JSON audits in `ניסוי עמית ועידן/` and `output/ניסוי עמית ועידן/`.
+
+---
+
 ## 2026-08-16 — Resilient Multi-Month File Matching & Non-Brittle Target Month Scoring
 
 - **What changed:** 

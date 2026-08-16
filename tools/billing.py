@@ -96,7 +96,8 @@ def main():
     aliases = load_aliases()
     pay = load_pay_matrix()
 
-    ocr_path = roles.get("invoices_ocr") or os.path.join(os.path.dirname(output_dir), "config", "invoices_ocr.json")
+    config_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "config"))
+    ocr_path = roles.get("invoices_ocr") or os.path.join(config_dir, "invoices_ocr.json")
     invoices = load_or_ocr(roles.get("invoices_dir"), ocr_path)
     if not invoices:
         print(json.dumps({"ok": False, "error": "No invoices found or OCR cache empty"}, ensure_ascii=False))
