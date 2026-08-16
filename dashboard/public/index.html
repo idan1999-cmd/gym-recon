@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>אריאל פיט & ספא | דשבורד מנהלים חודשי</title>
+  
+  <!-- Google Fonts: Heebo -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Heebo', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+            },
+            accent: {
+              500: '#3b82f6',
+              600: '#2563eb',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- ApexCharts CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    body {
+      font-family: 'Heebo', sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card-subtle {
+      background: rgba(30, 41, 59, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  </style>
+</head>
+<body class="min-h-screen antialiased custom-scrollbar">
+
+  <!-- Top Navigation Bar -->
+  <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 lg:px-8 py-3.5">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      
+      <!-- Brand & Title -->
+      <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/20 text-white font-black text-xl">
+            A+
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-lg font-bold tracking-tight text-white">אריאל פיט & ספא</h1>
+              <span class="px-2 py-0.5 text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full">מחובר לקבצים</span>
+            </div>
+            <p class="text-xs text-slate-400">דשבורד מנהלים חי • תקציב, יעדים ובקרת שכר</p>
+          </div>
+        </div>
+
+        <!-- Sync button for mobile -->
+        <button onclick="syncData()" class="md:hidden p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+          <i data-lucide="refresh-cw" class="w-4 h-4 sync-icon"></i>
+        </button>
+      </div>
+
+      <!-- Center: Quick Club Toggle Switcher -->
+      <div class="flex items-center bg-slate-950/70 p-1 rounded-xl border border-slate-800 text-xs font-medium w-full md:w-auto justify-center">
+        <button id="club-all" onclick="setClub('all')" class="club-toggle-btn px-4 py-1.5 rounded-lg transition-all flex items-center gap-1.5 bg-emerald-600 text-white shadow-sm font-semibold">
+          <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+          <span>כל המועדון (מאוחד)</span>
+        </button>
+        <button id="club-gym" onclick="setClub('gym')" class="club-toggle-btn px-4 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-slate-400 hover:text-white">
+          <i data-lucide="dumbbell" class="w-3.5 h-3.5"></i>
+          <span>חדר כושר</span>
+        </button>
+        <button id="club-pilates" onclick="setClub('pilates')" class="club-toggle-btn px-4 py-1.5 rounded-lg transition-all flex items-center gap-1.5 text-slate-400 hover:text-white">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+          <span>פילאטיס מכשירים</span>
+        </button>
+      </div>
+
+      <!-- Left / Controls: Month Selector & Sync Button -->
+      <div class="flex items-center gap-3 w-full md:w-auto justify-end">
+        <!-- Month Dropdown -->
+        <div class="relative">
+          <select id="month-select" onchange="changeMonth(this.value)" class="bg-slate-800 border border-slate-700 text-slate-200 text-xs font-medium rounded-lg px-3 py-2 pl-8 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer appearance-none">
+            <option value="1">ינואר 2026</option>
+            <option value="2">פברואר 2026</option>
+            <option value="3">מרץ 2026</option>
+            <option value="4">אפריל 2026</option>
+            <option value="5">מאי 2026</option>
+            <option value="6" selected>יוני 2026 (חודש פעיל)</option>
+            <option value="7">יולי 2026</option>
+            <option value="8">אוגוסט 2026</option>
+          </select>
+          <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+        </div>
+
+        <!-- Sync Button -->
+        <button onclick="syncData()" id="sync-btn" class="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white text-xs font-medium transition shadow-sm">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5 sync-icon"></i>
+          <span>סנכרן נתונים</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 lg:px-8 py-6 space-y-6">
+
+    <!-- Smart Alerts Banner -->
+    <div id="alerts-container" class="space-y-2"></div>
+
+    <!-- Section 1: Executive KPI Cards Row -->
+    <section>
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+          <i data-lucide="gauge" class="w-4 h-4 text-emerald-400"></i>
+          תמונת מצב מנהלים (MTD)
+        </h2>
+        <span id="sync-timestamp" class="text-xs text-slate-500">עודכן לאחרונה: היום</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        
+        <!-- Card 1: Total Revenue vs Target with Cash/Credit Split -->
+        <div class="glass-card rounded-2xl p-4 flex flex-col justify-between hover:border-slate-700 transition relative overflow-hidden group">
+          <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl group-hover:bg-emerald-500/20 transition"></div>
+          <div>
+            <div class="flex items-center justify-between text-slate-400 text-xs mb-1.5">
+              <span class="font-medium">סה״כ הכנסות</span>
+              <span id="kpi-rev-pct" class="text-emerald-400 font-bold px-1.5 py-0.5 bg-emerald-500/10 rounded text-[11px]">88.6%</span>
+            </div>
+            <div class="text-2xl font-black text-white" id="kpi-rev-actual">₪241,460</div>
+            <div class="text-xs text-slate-400 mt-0.5">יעד: <span id="kpi-rev-budget" class="text-slate-300 font-semibold">₪272,493</span></div>
+            
+            <!-- Progress Bar -->
+            <div class="w-full bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
+              <div id="kpi-rev-bar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500" style="width: 88.6%"></div>
+            </div>
+          </div>
+
+          <!-- Split Sub-cards -->
+          <div class="mt-4 pt-3 border-t border-slate-800/80 grid grid-cols-2 gap-2 text-[11px]">
+            <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+              <div class="text-slate-400">נפרע בפועל</div>
+              <div class="font-bold text-emerald-400 mt-0.5" id="kpi-cash-collected">₪173,852</div>
+            </div>
+            <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+              <div class="text-slate-400">אשראי דחוי לח״ב</div>
+              <div class="font-bold text-blue-400 mt-0.5" id="kpi-credit-next-month">₪67,609</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Total Expenses vs Budget -->
+        <div class="glass-card rounded-2xl p-4 flex flex-col justify-between hover:border-slate-700 transition relative overflow-hidden group">
+          <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-amber-500/10 rounded-full blur-xl group-hover:bg-amber-500/20 transition"></div>
+          <div>
+            <div class="flex items-center justify-between text-slate-400 text-xs mb-1.5">
+              <span class="font-medium">סה״כ הוצאות</span>
+              <span id="kpi-exp-pct" class="text-amber-400 font-bold px-1.5 py-0.5 bg-amber-500/10 rounded text-[11px]">90.6%</span>
+            </div>
+            <div class="text-2xl font-black text-white" id="kpi-exp-actual">₪254,835</div>
+            <div class="text-xs text-slate-400 mt-0.5">תקציב: <span id="kpi-exp-budget" class="text-slate-300 font-semibold">₪281,183</span></div>
+
+            <!-- Progress Bar -->
+            <div class="w-full bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
+              <div id="kpi-exp-bar" class="bg-gradient-to-r from-amber-500 to-orange-400 h-full rounded-full transition-all duration-500" style="width: 90.6%"></div>
+            </div>
+          </div>
+
+          <!-- Run-rate projection -->
+          <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
+            <span class="text-slate-400">תחזית לסוף חודש:</span>
+            <span class="font-bold text-slate-200" id="kpi-exp-projected">₪347,502</span>
+          </div>
+        </div>
+
+        <!-- Card 3: Trainers & Instructors Variable Labor -->
+        <div class="glass-card rounded-2xl p-4 flex flex-col justify-between hover:border-slate-700 transition relative overflow-hidden group">
+          <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-purple-500/10 rounded-full blur-xl group-hover:bg-purple-500/20 transition"></div>
+          <div>
+            <div class="flex items-center justify-between text-slate-400 text-xs mb-1.5">
+              <span class="font-medium">שכר מאמנים ומדריכים</span>
+              <span id="kpi-trainers-status" class="text-emerald-400 font-bold px-1.5 py-0.5 bg-emerald-500/10 rounded text-[11px]">בתקציב</span>
+            </div>
+            <div class="text-2xl font-black text-white" id="kpi-trainers-actual">₪78,231</div>
+            <div class="text-xs text-slate-400 mt-0.5">תקציב שכר: <span id="kpi-trainers-budget" class="text-slate-300 font-semibold">₪81,583</span></div>
+
+            <div class="w-full bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
+              <div id="kpi-trainers-bar" class="bg-gradient-to-r from-purple-500 to-indigo-400 h-full rounded-full transition-all duration-500" style="width: 95.9%"></div>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
+            <span class="text-slate-400">נתח מההכנסות:</span>
+            <span class="font-bold text-purple-400" id="kpi-trainers-pct-rev">32.4%</span>
+          </div>
+        </div>
+
+        <!-- Card 4: Personal Training (PT) Profitability -->
+        <div class="glass-card rounded-2xl p-4 flex flex-col justify-between hover:border-slate-700 transition relative overflow-hidden group">
+          <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-cyan-500/10 rounded-full blur-xl group-hover:bg-cyan-500/20 transition"></div>
+          <div>
+            <div class="flex items-center justify-between text-slate-400 text-xs mb-1.5">
+              <span class="font-medium">אימונים אישיים (PT)</span>
+              <span id="kpi-pt-margin" class="text-cyan-400 font-bold px-1.5 py-0.5 bg-cyan-500/10 rounded text-[11px]">29.5% מתח</span>
+            </div>
+            <div class="text-2xl font-black text-white" id="kpi-pt-revenue">₪40,435</div>
+            <div class="text-xs text-slate-400 mt-0.5">עלות מאמנים: <span id="kpi-pt-cost" class="text-rose-300 font-semibold">₪28,520</span></div>
+
+            <div class="w-full bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
+              <div id="kpi-pt-bar" class="bg-gradient-to-r from-cyan-500 to-blue-400 h-full rounded-full transition-all duration-500" style="width: 70%"></div>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
+            <span class="text-slate-400">רווח נקי מ-PT:</span>
+            <span class="font-bold text-emerald-400" id="kpi-pt-profit">+₪11,915</span>
+          </div>
+        </div>
+
+        <!-- Card 5: Net Profit / Operational Result -->
+        <div class="glass-card rounded-2xl p-4 flex flex-col justify-between hover:border-slate-700 transition relative overflow-hidden group">
+          <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-blue-500/10 rounded-full blur-xl group-hover:bg-blue-500/20 transition"></div>
+          <div>
+            <div class="flex items-center justify-between text-slate-400 text-xs mb-1.5">
+              <span class="font-medium">תוצאה תפעולית</span>
+              <span class="text-slate-400 text-[11px]">הכנסות פחות הוצאות</span>
+            </div>
+            <div class="text-2xl font-black text-slate-100" id="kpi-net-actual">-₪13,374</div>
+            <div class="text-xs text-slate-400 mt-0.5">תקציב יעד: <span id="kpi-net-budget" class="text-slate-300 font-semibold">-₪8,689</span></div>
+
+            <div class="w-full bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
+              <div class="bg-slate-600 h-full rounded-full" style="width: 100%"></div>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
+            <span class="text-slate-400">פער מתקציב:</span>
+            <span class="font-bold text-amber-400" id="kpi-net-variance">-₪4,685</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Section 2: Revenues vs Targets Grid -->
+    <section class="space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+          <i data-lucide="trending-up" class="w-4 h-4 text-emerald-400"></i>
+          מנועי הכנסה מול יעדי תקציב
+        </h2>
+        <span class="text-xs text-slate-400">מעקב עמידה ביעדי חודש פעיל</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="revenue-categories-grid">
+        <!-- Injected dynamically via JS -->
+      </div>
+    </section>
+
+    <!-- Section 3: Two Columns - Chart & Trainer Breakdown -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Chart Column (2/3 width) -->
+      <div class="lg:col-span-2 glass-card rounded-2xl p-5 flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i data-lucide="bar-chart-3" class="w-4 h-4 text-emerald-400"></i>
+              השוואת ביצוע מול יעד תקציבי לפי סעיפים
+            </h3>
+            <p class="text-xs text-slate-400">פילוח מדויק של הכנסות בפועל אל מול תכנון התקציב</p>
+          </div>
+        </div>
+        <div id="revenue-chart" class="w-full min-h-[300px]"></div>
+      </div>
+
+      <!-- Trainer Labor Breakdown (1/3 width) -->
+      <div class="glass-card rounded-2xl p-5 flex flex-col">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i data-lucide="users" class="w-4 h-4 text-purple-400"></i>
+              בקרת שכר וריכוז מאמנים
+            </h3>
+            <p class="text-xs text-slate-400">שעות והדרכה לפי דוחות חיוב</p>
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto max-h-[300px] custom-scrollbar space-y-2 pr-1" id="trainers-list">
+          <!-- Injected dynamically -->
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-800 text-xs flex items-center justify-between text-slate-400">
+          <span>תקציב שכר כולל:</span>
+          <span class="font-bold text-white" id="trainers-total-footer">₪81,583</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Section 4: Expense Breakdown (Prioritized: Variable on Top, Fixed Collapsible Below) -->
+    <section class="space-y-4">
+      
+      <!-- Variable Critical Expenses (Trainers, Marketing, Maintenance) -->
+      <div class="glass-card rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+              <h3 class="text-base font-bold text-white">הוצאות משתנות וקריטיות לבקרה שוטפת</h3>
+            </div>
+            <p class="text-xs text-slate-400">סעיפי החלטה ניהולית (שכר מאמנים, שיווק, תחזוקה, עמלות) לפני סוף החודש</p>
+          </div>
+          <span class="px-2.5 py-1 text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-lg">דגש מנהלים</span>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-right text-xs">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400 font-semibold">
+                <th class="pb-2.5 pr-2">סעיף הוצאה</th>
+                <th class="pb-2.5">קטגוריה</th>
+                <th class="pb-2.5">תקציב יעד</th>
+                <th class="pb-2.5">ביצוע בפועל</th>
+                <th class="pb-2.5">פער (סטייה)</th>
+                <th class="pb-2.5 pl-2">אחוז ניצול</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60" id="variable-expenses-tbody">
+              <!-- Injected dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Fixed Overhead Expenses (Collapsible: Rent, Electricity, Water, Tax, etc.) -->
+      <div class="glass-card-subtle rounded-2xl border border-slate-800/80 overflow-hidden">
+        <button onclick="toggleFixedExpenses()" class="w-full p-4 flex items-center justify-between hover:bg-slate-800/40 transition text-right">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400">
+              <i data-lucide="building-2" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h4 class="text-sm font-bold text-slate-200">הוצאות קבועות ומבנה (שכירות, חשמל, מים, ארנונה, תוכנות)</h4>
+              <p class="text-xs text-slate-500">הוצאות רקע קבועות — לחץ להצגה או הסתרה של הפירוט המלא</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-slate-400 font-medium" id="fixed-exp-summary-total">סה״כ: ₪145,200</span>
+            <i data-lucide="chevron-down" id="fixed-chevron" class="w-4 h-4 text-slate-400 transition-transform duration-300"></i>
+          </div>
+        </button>
+
+        <div id="fixed-expenses-drawer" class="hidden border-t border-slate-800/80 p-5 bg-slate-900/40">
+          <div class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-right text-xs">
+              <thead>
+                <tr class="border-b border-slate-800 text-slate-400 font-semibold">
+                  <th class="pb-2.5 pr-2">סעיף קבוע</th>
+                  <th class="pb-2.5">תקציב יעד</th>
+                  <th class="pb-2.5">ביצוע בפועל</th>
+                  <th class="pb-2.5">פער</th>
+                  <th class="pb-2.5 pl-2">סטטוס</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800/60" id="fixed-expenses-tbody">
+                <!-- Injected dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed bottom-5 left-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 text-xs font-semibold">
+    <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+    <span id="toast-message">הנתונים סונכרנו בהצלחה!</span>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -41,6 +41,12 @@ MONTHLY INPUTS DROP (input/)
 [3. AUDIT, FLAGS & VALIDATION]
    ├── tools/validate.py (checks output deliverables integrity)
    └── output/runs/<run_id>/ (stores manifest, SHA256 hashes, and execution logs)
+         │
+         ▼
+[4. INTERACTIVE EXECUTIVE DASHBOARD]
+   ├── dashboard/backend/data_service.py (aggregates budget vs actual, billing, and trainer stats)
+   ├── dashboard/backend/server.py (local HTTP REST API server on port 3000)
+   └── dashboard/public/ (modern Hebrew RTL executive web UI with live sync)
 ```
 
 ---
