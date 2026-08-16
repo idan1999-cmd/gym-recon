@@ -411,8 +411,9 @@ def run_pipeline(input_dir, output_dir, month=0, branch="all"):
         ]
         _write_manifest(ctx, roles, input_entries, outputs, ledger_tab=ledger_tab)
 
-        # 10. FINAL STATUS
+        # 10. FINAL STATUS & DROPZONE AUTO-CLEANUP
         ctx.mark_valid()
+        _archive_dropzone(input_dir, month, ctx)
         ctx.log("Done. Check output/ folder and sheets דגלים / דגלים ספקים.")
         ctx.log(f"Status: {ctx.status} (exit {ctx.exit_code})")
         return ctx.exit_code
@@ -426,6 +427,32 @@ def run_pipeline(input_dir, output_dir, month=0, branch="all"):
         return ctx.exit_code
     finally:
         _CURRENT_RUN = None
+
+
+def _archive_dropzone(input_dir, month, ctx=None):
+    """If running from dropzone, automatically archives processed files to input/archive/YYYY-MM to leave dropzone clean."""
+    if not input_dir or not os.path.exists(input_dir):
+        return
+    import shutil
+    norm_in = os.path.abspath(input_dir)
+    if "dropzone" in norm_in or "לגרור_לכאן" in norm_in:
+        arch_dir = os.path.join(os.path.dirname(norm_in), "archive", f"2026-{month:02d}")
+        os.makedirs(arch_dir, exist_ok=True)
+        os.makedirs(os.path.join(arch_dir, "invoices"), exist_ok=True)
+        for item in os.listdir(norm_in):
+            if item.startswith("צ'קליסט") or item.startswith(".") or item in ("invoices_suppliers",):
+                continue
+            src = os.path.join(norm_in, item)
+            dst = os.path.join(arch_dir, item)
+            if item == "invoices":
+                for f in os.listdir(src):
+                    f_src = os.path.join(src, f)
+                    if os.path.isfile(f_src):
+                        shutil.move(f_src, os.path.join(arch_dir, "invoices", f))
+            elif os.path.isfile(src):
+                shutil.move(src, dst)
+        if ctx:
+            ctx.log(f"[Archive] Cleaned dropzone and archived inputs to: {arch_dir}")
 
 
 def _validate_gate_passed(result, code):

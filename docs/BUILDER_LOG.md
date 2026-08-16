@@ -12,6 +12,21 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 
 ---
 
+## 2026-08-16 — Post-Run Auto-Archiving & Dropzone Zero-Clutter Lifecycle
+
+- **What changed:** 
+  - Added `_archive_dropzone()` lifecycle function to `run_all.py`.
+  - Upon successful pipeline run on the active dropzone (`📥_לגרור_לכאן_את_קבצי_החודש`), the engine automatically moves all processed raw inputs and invoice PDFs into `input/archive/2026-MM/` (`🗄️_ארכיון_חודשים_קודמים`), leaving the dropzone pristine and ready for the next month close.
+  - Enshrined the Drop & Go Lifecycle Rule into `AGENTS.md`.
+- **Why (what Idan asked for, in his words if given):** 
+  - *"אתה יכול לשים הוראה שברגע שחודש מסוים התבצע והדו״ח רץ תמחק את הקבצים שיש בתיקייה שאליה מעלים את התכנים כדי שלא יתבלבל?"*
+- **What it touches:** 
+  - `run_all.py`, `AGENTS.md`, `docs/BUILDER_LOG.md`.
+- **How it was verified:** 
+  - Executed tests and verified clean archiving logic into `input/archive/`.
+
+---
+
 ## 2026-08-16 — Drop & Go Architecture: Active Dropzone, Output & Archive Structure
 
 - **What changed:** 

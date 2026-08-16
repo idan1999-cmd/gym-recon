@@ -41,6 +41,9 @@ It is **agent judgment + deterministic money tools.**
 **Core Operator Contract:**  
 *The operator does NOT need to create, duplicate, or calculate summary workbooks by hand. That is the exact job of this automation engine. We work on a single persistent master template that is automatically populated and updated from raw external inputs (Arbox, Hilan, Invoices, Sales).*
 
+**Drop & Go Lifecycle Rule:**  
+*Whenever the pipeline finishes processing a month from `📥_לגרור_לכאן_את_קבצי_החודש` (`input/dropzone`), all processed raw input files and PDF receipts are automatically archived to `🗄️_ארכיון_חודשים_קודמים` (`input/archive/YYYY-MM/`), leaving the dropzone clean and ready for the next month close.*
+
 Idan reviews `output/` and `דגלים`; he should not need a freestyle Excel rebuild for official BvA.
 
 ## Sibling product (do not mix pipelines)
