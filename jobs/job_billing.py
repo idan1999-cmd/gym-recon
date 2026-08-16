@@ -65,8 +65,12 @@ def validate_invoices(invoices, branch_key, all_sessions, aliases, pay, log):
                          anything touches Excel — see jobs/billing_output.py.
     """
     by_category, held, trainer_amounts = {}, [], []
+    branch_alt = {"חדר כושר": ["חדר כושר", "מועדון", "כושר"],
+                  "מועדון": ["חדר כושר", "מועדון", "כושר"],
+                  "פילאטיס": ["פילאטיס"]}.get(branch_key, [branch_key])
     for inv in invoices:
-        if inv.get("branch") != branch_key:
+        b_inv = str(inv.get("branch") or "")
+        if b_inv and not any(alt in b_inv for alt in branch_alt):
             continue
         entries = []
         audit_invoice(inv, all_sessions, aliases, pay, entries)

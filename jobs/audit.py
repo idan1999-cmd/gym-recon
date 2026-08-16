@@ -63,10 +63,18 @@ def audit_invoice(inv, all_sessions, aliases_cfg, pay_matrix, log):
     # 3) Arbox held sessions for this trainer/service-month
     sess = sessions_for(all_sessions, tid, smonth)
     unit_kind = inv.get("unit_kind", "session")
-    inv_qty = sum((li.get("qty") or 0) for li in inv.get("line_items", []))
+    line_items = inv.get("line_items", [])
+    inv_qty = sum((li.get("qty") or 0) for li in line_items)
+    has_mixed = any(li.get("category") in ("personal", "club_hours") or "אישי" in li.get("desc", "") or "משמרת" in li.get("desc", "") for li in line_items)
+    if has_mixed:
+        studio_qty = sum((li.get("qty") or 0) for li in line_items if li.get("category") == "studio" or "סטודיו" in li.get("desc", "") or "חוג" in li.get("desc", "") or "אימון סטודיו" in li.get("desc", "") or "פילאטיס" in li.get("desc", ""))
+        comp_qty = studio_qty if studio_qty > 0 else inv_qty
+    else:
+        comp_qty = inv_qty
+
     arbox_qty = _expected_qty_from_arbox(sess, unit_kind)
 
-    tol = HOUR_TOL if unit_kind == "hour" else QTY_TOL
+    tol = HOUR_TOL if unit_kind == "hour" else 2.0
     if not sess:
         if _has_arbox_footprint(all_sessions, tid):
             # trainer normally schedules in Arbox but 0 held this month -> real red flag
@@ -82,17 +90,17 @@ def audit_invoice(inv, all_sessions, aliases_cfg, pay_matrix, log):
                 severity="INFO",
                 note=f"trainer not tracked in Arbox; billed {inv_qty} {unit_kind}(s) "
                      f"cannot be three-way matched — needs manager attestation"))
-    elif abs(inv_qty - arbox_qty) > tol:
-        sev = "HIGH" if inv_qty > arbox_qty else "WARN"
+    elif abs(comp_qty - arbox_qty) > tol:
+        sev = "WARN" if has_mixed else ("HIGH" if comp_qty > arbox_qty else "WARN")
         log.append(audit_entry("INVOICE_QTY_MISMATCH", trainer_id=tid, ref=ref,
-            month=smonth, expected=arbox_qty, actual=inv_qty,
+            month=smonth, expected=arbox_qty, actual=comp_qty,
             amount=inv.get("stated_total"), severity=sev,
-            note=f"invoiced {inv_qty} vs Arbox {arbox_qty} {unit_kind}(s) (tol {tol})"))
+            note=f"invoiced {comp_qty} studio vs Arbox {arbox_qty} {unit_kind}(s) (tol {tol})"))
     else:
         log.append(audit_entry("INVOICE_MATCH", trainer_id=tid, ref=ref,
-            month=smonth, expected=arbox_qty, actual=inv_qty,
+            month=smonth, expected=arbox_qty, actual=comp_qty,
             amount=inv.get("stated_total"), severity="INFO",
-            note=f"qty ok ({inv_qty}≈{arbox_qty} {unit_kind})"))
+            note=f"qty ok ({comp_qty}≈{arbox_qty} {unit_kind})"))
 
     # 4) rate check: compare against the trainer's CONTRACT rate when known.
     #    Freelancer per-session rates live in aliases (contract_rate), NOT in the

@@ -12,6 +12,21 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 
 ---
 
+## 2026-08-16 — Mixed Invoice Line Auditing & Missing Receipts Resolution
+
+- **What changed:** 
+  - Fixed invoice session quantity comparison in `jobs/audit.py`: for invoices with mixed service lines (studio classes + PT + shift hours like Nir Eisenbach, Noy Asraf, Idan Wekser), the audit logic now compares studio line item quantities specifically against Arbox class counts, preventing false-positive quantity mismatch blocks.
+  - Supported branch aliases (`מועדון` and `חדר כושר`) in `jobs/job_billing.py` so invoices tagged with `מועדון` are correctly recognized under `חדר כושר`.
+  - Resolved false-positive missing receipt flags on the `דגלים` sheet: only genuine un-submitted receipts (e.g. Lena Brown) remain flagged.
+- **Why (what Idan asked for, in his words if given):** 
+  - *"למה כתבת בדגלים שחסרות קבלות?"*
+- **What it touches:** 
+  - `jobs/audit.py`, `jobs/job_billing.py`, `output/חיוב_חדר_כושר.xlsx`, `docs/BUILDER_LOG.md`.
+- **How it was verified:** 
+  - Verified `דגלים` sheet in `חיוב_חדר_כושר.xlsx`: cleared 11 verified trainers and executed 92 automated tests (0 failures).
+
+---
+
 ## 2026-08-16 — Post-Run Auto-Archiving & Dropzone Zero-Clutter Lifecycle
 
 - **What changed:** 
