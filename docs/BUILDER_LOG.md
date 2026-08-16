@@ -12,6 +12,25 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 
 ---
 
+## 2026-08-16 — Drop & Go Architecture: Active Dropzone, Output & Archive Structure
+
+- **What changed:** 
+  - Implemented the user-approved "Drop & Go" operating model (Idea 2).
+  - Created 3 top-level shortcuts at project root:
+    1. `📥_לגרור_לכאן_את_קבצי_החודש` -> points to active monthly input dropzone (`input/dropzone`).
+    2. `📤_דוחות_מוכנים_פלט` -> points to final deliverables folder (`output`).
+    3. `🗄️_ארכיון_חודשים_קודמים` -> points to historical runs archive (`input/archive`).
+  - Added visual checklist (`צ'קליסט_קבצים_לחודש_זה.txt`) inside the active dropzone.
+  - Populated active dropzone with full, clean July 2026 dataset (Arbox, Hilan, Sales Commissions, Budget, Trainer Invoices) ready for instant one-click execution.
+- **Why (what Idan asked for, in his words if given):** 
+  - *"רעיון 2 מעולה. תכין לי כזה שיהיה לי נוח. תמחק את כל הקבצים שאתה לא צריך או הרצות קודמות שביצענו. שנהיה ערוכים להרצה אחת מלאה כמו שצריך לבדוק אותה על הדו״ח של יולי."*
+- **What it touches:** 
+  - Root directory shortcuts, `input/dropzone/`, `docs/BUILDER_LOG.md`.
+- **How it was verified:** 
+  - Ran preflight verification on `input/dropzone` for month 7. All 6 files passed with 0 notes/errors.
+
+---
+
 ## 2026-08-16 — Sales Commissions Parser, Leonid Travel Allowance & Clean Directory Layout
 
 - **What changed:** 
