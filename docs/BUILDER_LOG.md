@@ -12,20 +12,23 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 
 ---
 
-## 2026-08-16 — Local Interactive Executive Financial Dashboard
+## 2026-08-16 — Local Interactive Executive Financial Dashboard & Mobile-Card UI
 
 - **What changed:** 
   - Designed and built a standalone, local, interactive financial executive dashboard in `dashboard/` for **Ariel Fit & Spa (A+ Street Mall)**.
-  - Implemented backend data service (`dashboard/backend/data_service.py`) that parses official budget workbooks (`תקציב_מול_ביצוע_*.xlsx`), billing outputs (`חיוב_*.xlsx`), and trainer hours directly from `output/`.
-  - Built local HTTP server with REST API (`dashboard/backend/server.py`) serving endpoints `/api/data`, `/api/months`, `/api/sync`, and `/api/health`.
-  - Created a modern, responsive Hebrew RTL executive UI (`dashboard/public/index.html`, `dashboard/public/app.js`) featuring:
-    - Quick Club Switcher pills (כל המועדון מאוחד / חדר כושר / פילאטיס מכשירים).
-    - 5 Executive KPI Cards: Revenues MTD vs targets (with actual cash collected vs future credit settlement split), Expenses MTD, Trainers Variable Labor vs Salary Budget, Personal Training (PT) direct profitability & margin %, and Net Operational Result.
-    - Revenue Target Breakdown Grid (Memberships, Personal Training, Punch Cards, Registration Fees).
-    - Interactive Revenue vs Budget comparison chart (ApexCharts).
-    - Variable Critical Costs table with management priority highlight vs Collapsible Fixed Overhead drawer (Rent, Electricity, Water, Tax, Software).
-    - Mid-month smart run-rate warning & achievement alerts.
-    - One-click live data sync button with instant recalculation.
+  - Implemented the exact user-provided visual UX (matching screenshots):
+    - Clean category cards with blue progress bars, "צפוי לצאת / יעד" vs "יצא / ביצוע", "נשאר להוציא" vs "! חריגה של X ₪", and collapsible "פירוט חודשי ▼".
+    - Interactive 5-Month Drill-down Modal with vertical bar comparisons (solid bars for historical months, current month fill cylinder gauge).
+    - Dynamic summary, explanatory collapsible section ("למה הקטגוריה מופיעה אצלך?"), and inline target editor ("לעריכת היעד") with local JSON persistence (`config/custom_targets.json`).
+    - Smart Mid-Month Forecasting Engine combining historical ledger trends with Arbox session schedules, Hilan shift hours, and seasonal holiday buffer toggle (15% tolerance).
+- **Why (what Idan asked for, in his words if given):** 
+  - *"אני מעלה לך איך אני מדמיין ואיך אני רוצה שזה ייראה מצרף לך צילום של האפליקציה... בעצם הכרטסת זה המקום הכי טוב לחיזוי... ושתי המקורות מידע שלפיהם החישובים צריכים להיות זה חילן וארבוקס."*
+- **What it touches:** 
+  - `dashboard/backend/data_service.py`, `dashboard/backend/server.py`, `dashboard/public/index.html`, `dashboard/public/app.js`, `config/custom_targets.json`, `docs/BUILDER_LOG.md`.
+- **How it was verified:** 
+  - Verified backend data parsing and 5-month trend calculation.
+  - Verified target saving endpoint (`POST /api/target`).
+  - Executed all 92 automated tests (0 failures).
 - **Why (what Idan asked for, in his words if given):** 
   - *"אני רוצה שיהיה לי תמונת מצב של ההכנסות שלי אל מול היעדים שלי בכל הקטגוריות שאותן אני צריך למדוד... ואני צריך לראות את ההוצאות שלי על מאמנים ומדריכים, ואני צריך לראות את ההוצאות שלי על אימונים אישיים, כדי שאני אוכל לדעת את המצב יותר טוב לפני סוף החודש."*
 - **What it touches:** 

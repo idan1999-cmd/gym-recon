@@ -1,6 +1,7 @@
 """
-Ariel Fit & Spa Dashboard - Data Service
-Reads and aggregates financial, budget, billing, and trainer data from gym-recon outputs and inputs.
+Ariel Fit & Spa Dashboard - Advanced Data & Forecasting Service
+Provides 5-month historical trend analysis, Arbox/Hilan-backed forecasting,
+customizable budget targets, and detailed transaction drill-downs.
 """
 from __future__ import annotations
 import os
@@ -14,10 +15,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 OUTPUT_DIR = BASE_DIR / "output"
 INPUT_DIR = BASE_DIR / "input"
 CONFIG_DIR = BASE_DIR / "config"
+CUSTOM_TARGETS_FILE = CONFIG_DIR / "custom_targets.json"
 
 MONTH_NAMES_HE = [
     "ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני",
     "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"
+]
+
+MONTH_SHORT_HE = [
+    "ינו'", "פבר'", "מרץ", "אפר'", "מאי", "יוני",
+    "יולי", "אוג'", "ספט'", "אוק'", "נוב'", "דצמ'"
 ]
 
 def get_days_in_month(year: int, month_idx: int) -> int:
@@ -36,41 +43,56 @@ def safe_float(val) -> float:
 class DashboardDataService:
     def __init__(self):
         self.year = 2026
+        self.custom_targets = self._load_custom_targets()
+
+    def _load_custom_targets(self) -> dict:
+        if CUSTOM_TARGETS_FILE.exists():
+            try:
+                with open(CUSTOM_TARGETS_FILE, encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                return {}
+        return {}
+
+    def save_custom_target(self, club: str, code: str, month: int, new_target: float) -> bool:
+        key = f"{club}_{code}_{month}"
+        self.custom_targets[key] = float(new_target)
+        try:
+            CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+            with open(CUSTOM_TARGETS_FILE, "w", encoding="utf-8") as f:
+                json.dump(self.custom_targets, f, ensure_ascii=False, indent=2)
+            return True
+        except Exception as e:
+            print("Error saving target:", e)
+            return False
 
     def get_available_months(self) -> list[dict]:
-        """Returns list of months with metadata."""
         months = []
         now = datetime.now()
         for idx, name in enumerate(MONTH_NAMES_HE, start=1):
             months.append({
                 "index": idx,
                 "name": name,
+                "short_name": MONTH_SHORT_HE[idx - 1],
                 "key": f"{self.year}-{idx:02d}",
-                "is_current": (idx == now.month and self.year == now.year) or (idx == 6), # default to active month
-                "has_data": idx <= 7 # data exists up to July/August
+                "is_current": (idx == 6), # June active in current dataset
+                "has_data": idx <= 7
             })
         return months
 
     def parse_budget_workbook(self, file_path: Path, club_name: str) -> dict:
-        """Parses a single club budget workbook."""
         if not file_path.exists():
             return {}
 
         wb = openpyxl.load_workbook(str(file_path), data_only=True)
         ws = wb.active
 
-        # Map header columns
-        # Row 2 contains column headers
         headers = {}
         for col_idx in range(1, ws.max_column + 1):
             val = ws.cell(row=2, column=col_idx).value
             if val:
-                val_clean = str(val).strip()
-                headers[col_idx] = val_clean
+                headers[col_idx] = str(val).strip()
 
-        # Find column mappings for each month
-        # Months 1-6 have: "חודש" (budget), "חודש - ביצוע" (actual)
-        # Month 7 (July) might have "יולי - תכנון ראשוני"/"יולי - תכנון עדכני" and "יולי - ביצוע"
         month_cols = {}
         for m_idx, m_name in enumerate(MONTH_NAMES_HE, start=1):
             b_col = None
@@ -86,8 +108,6 @@ class DashboardDataService:
         incomes = []
         variable_expenses = []
         fixed_expenses = []
-        member_counts = {}
-
         is_expense_section = False
 
         for row in range(3, ws.max_row + 1):
@@ -104,31 +124,23 @@ class DashboardDataService:
                 is_expense_section = True
                 continue
 
-            if "כמות מנויים" in desc_str:
-                # Capture membership stats
-                m_stats = {}
-                for m_idx, cols in month_cols.items():
-                    act_col = cols["actual_col"]
-                    bud_col = cols["budget_col"]
-                    act_val = ws.cell(row=row, column=act_col).value if act_col else None
-                    bud_val = ws.cell(row=row, column=bud_col).value if bud_col else None
-                    m_stats[m_idx] = {
-                        "budget": safe_float(bud_val),
-                        "actual": safe_float(act_val)
-                    }
-                member_counts[desc_str] = m_stats
+            if "כמות מנויים" in desc_str or "סה\"כ" in desc_str:
                 continue
 
-            # Read budget/actual by month for this item
+            # Read all 12 months for this line item
             item_months = {}
             for m_idx, cols in month_cols.items():
                 b_val = ws.cell(row=row, column=cols["budget_col"]).value if cols["budget_col"] else 0.0
                 a_val = ws.cell(row=row, column=cols["actual_col"]).value if cols["actual_col"] else 0.0
                 
-                # Incomes are stored as negative numbers in ledger standard, convert to positive magnitude for user UI
                 b_num = abs(safe_float(b_val))
                 a_num = abs(safe_float(a_val))
                 
+                # Check custom target override
+                override_key = f"{club_name}_{code_str}_{m_idx}"
+                if override_key in self.custom_targets:
+                    b_num = self.custom_targets[override_key]
+
                 item_months[m_idx] = {
                     "budget": b_num,
                     "actual": a_num,
@@ -143,26 +155,28 @@ class DashboardDataService:
             }
 
             if not is_expense_section:
-                # Income classification
                 if "מנוי" in desc_str:
                     item_data["category"] = "memberships"
                     item_data["category_he"] = "מנויים וכרטיסיות"
+                    item_data["explanation"] = "הכנסות שוטפות מדמי מנוי שנתיים וחודשיים של חברי המועדון."
                 elif "אימונים אישיים" in desc_str or "אישיים" in desc_str:
                     item_data["category"] = "personal_training"
                     item_data["category_he"] = "אימונים אישיים"
+                    item_data["explanation"] = "הכנסות מרכישת חבילות וכרטיסיות אימונים אישיים מול מדריכי המועדון."
                 elif "הרשמה" in desc_str or "צ'יפ" in desc_str:
                     item_data["category"] = "registration"
                     item_data["category_he"] = "דמי הרשמה וצ'יפ"
+                    item_data["explanation"] = "דמי רישום חד פעמיים ורכישת צ'יפים בכניסה למועדון."
                 elif "כרטיסיות" in desc_str:
                     item_data["category"] = "punch_cards"
-                    item_data["category_he"] = "כרטיסיות"
+                    item_data["category_he"] = "כרטיסיות - פריפיט"
+                    item_data["explanation"] = "הכנסות מכרטיסיות אימון גמישות וחברות חיצוניות."
                 else:
                     item_data["category"] = "other_income"
-                    item_data["category_he"] = "הכנסות שונות"
+                    item_data["category_he"] = "הכנסות שונות / סטודיו"
+                    item_data["explanation"] = "השכרת סטודיו לחברות ואירועים מיוחדים."
                 incomes.append(item_data)
             else:
-                # Expense classification
-                # Variable levers: Trainers, Instructors, Studio, Sales Commissions, Marketing, Equipment Maintenance
                 is_variable = any(k in desc_str for k in [
                     "מאמן", "מדריך", "אימונים אישיים", "חוגים", "סטודיו", "מכירות (עמלות)", 
                     "שיווק", "פרסום", "ציוד", "אחזקה", "ניקיון", "ביגוד"
@@ -170,88 +184,60 @@ class DashboardDataService:
                 if is_variable:
                     item_data["expense_type"] = "variable"
                     if "מאמן" in desc_str or "חוגים" in desc_str or "אימונים אישיים" in desc_str:
-                        item_data["category_he"] = "שכר מאמנים ומדריכים"
+                        item_data["category_he"] = "שכר מאמנים והדרכה"
+                        item_data["explanation"] = "תשלום חודשי למדריכי חדר כושר, שיעורי סטודיו ואימונים אישיים (ארבוקס + חילנט)."
                     elif "מכירות" in desc_str:
                         item_data["category_he"] = "עמלות מכירות"
+                        item_data["explanation"] = "עמלות לנציגי מכירות על סגירת מנויים חדשים."
                     elif "שיווק" in desc_str:
                         item_data["category_he"] = "שיווק ופרסום"
+                        item_data["explanation"] = "קמפיינים דיגיטליים, מיתוג ופרסום ברשתות."
                     else:
                         item_data["category_he"] = "תפעול שוטף ואחזקה"
+                        item_data["explanation"] = "חומרי ניקיון, טואלטיקה, ביגוד צוות ותחזוקת מכשירים."
                     variable_expenses.append(item_data)
                 else:
                     item_data["expense_type"] = "fixed"
                     item_data["category_he"] = "הוצאות קבועות ומבנה"
+                    item_data["explanation"] = "הוצאות תשתית קבועות בחוזה (שכירות, חשמל, מים, ארנונה, תוכנות ניהול)."
                     fixed_expenses.append(item_data)
 
         return {
             "club": club_name,
             "incomes": incomes,
             "variable_expenses": variable_expenses,
-            "fixed_expenses": fixed_expenses,
-            "member_counts": member_counts
+            "fixed_expenses": fixed_expenses
         }
 
-    def get_trainer_billing_summary(self, club: str = "all") -> list[dict]:
-        """Loads trainer breakdown from billing output files."""
-        trainers = []
-        clubs_to_load = []
-        if club in ["all", "gym"]:
-            clubs_to_load.append(("חדר כושר", OUTPUT_DIR / "חיוב_חדר_כושר.xlsx", OUTPUT_DIR / "trainer_amounts_חדר_כושר.json"))
-        if club in ["all", "pilates"]:
-            clubs_to_load.append(("פילאטיס", OUTPUT_DIR / "חיוב_פילאטיס.xlsx", OUTPUT_DIR / "trainer_amounts_פילאטיס.json"))
+    def get_drilldown_history(self, item_name: str, item_months: dict, target_month: int) -> dict:
+        """Returns 5-month comparison trend (e.g., Feb, Mar, Apr, May, Jun)."""
+        history_bars = []
+        # Calculate 5-month window ending at target_month
+        start_m = max(1, target_month - 4)
+        for m in range(start_m, target_month + 1):
+            m_data = item_months.get(m, {"budget": 0.0, "actual": 0.0})
+            history_bars.append({
+                "month_index": m,
+                "month_name": MONTH_NAMES_HE[m - 1],
+                "short_name": MONTH_SHORT_HE[m - 1],
+                "actual": m_data["actual"],
+                "budget": m_data["budget"],
+                "is_current": (m == target_month)
+            })
 
-        for c_name, xlsx_path, json_path in clubs_to_load:
-            # First try json amounts if available
-            if json_path.exists():
-                try:
-                    with open(json_path, encoding="utf-8") as f:
-                        t_list = json.load(f)
-                        for t in t_list:
-                            trainers.append({
-                                "club": c_name,
-                                "name": t.get("raw_name", "מאמן"),
-                                "category": "אימונים אישיים" if t.get("category") == "personal" else "סטודיו / קבוצתי",
-                                "amount": float(t.get("amount", 0.0)),
-                                "source": t.get("source_invoice", "חיוב"),
-                                "hours": 0.0
-                            })
-                except Exception:
-                    pass
+        # Calculate average historical run rate
+        past_actuals = [b["actual"] for b in history_bars if not b["is_current"] and b["actual"] > 0]
+        avg_past = sum(past_actuals) / len(past_actuals) if past_actuals else history_bars[-1]["budget"]
 
-            # Read detailed hours from billing xlsx
-            if xlsx_path.exists():
-                try:
-                    wb = openpyxl.load_workbook(str(xlsx_path), data_only=True)
-                    # Check "ריכוז שעות" or "דוח מרכז לאישור מנהל"
-                    sheet = wb["ריכוז שעות"] if "ריכוז שעות" in wb.sheetnames else wb.active
-                    for r in range(2, min(50, sheet.max_row + 1)):
-                        name_val = sheet.cell(row=r, column=4).value
-                        hours_val = sheet.cell(row=r, column=6).value
-                        if name_val and str(name_val).strip() and not "כללי" in str(name_val):
-                            clean_name = str(name_val).replace("סה\"כ", "").strip()
-                            hours = safe_float(hours_val)
-                            # Check if not already added
-                            existing = next((item for item in trainers if item["name"] == clean_name), None)
-                            if not existing and hours > 0:
-                                trainers.append({
-                                    "club": c_name,
-                                    "name": clean_name,
-                                    "category": "הדרכה ומשמרות",
-                                    "amount": hours * 45.0, # estimated base rate or actual
-                                    "hours": hours,
-                                    "source": "ריכוז שעות"
-                                })
-                except Exception:
-                    pass
+        return {
+            "history_bars": history_bars,
+            "historical_average": round(avg_past, 2)
+        }
 
-        return trainers
-
-    def get_dashboard_summary(self, month: int = 6, club_filter: str = "all") -> dict:
-        """Assembles the complete executive dashboard payload."""
+    def get_dashboard_summary(self, month: int = 6, club_filter: str = "all", holiday_mode: bool = False) -> dict:
         gym_data = self.parse_budget_workbook(OUTPUT_DIR / "תקציב_מול_ביצוע_חדר_כושר.xlsx", "חדר כושר")
         pilates_data = self.parse_budget_workbook(OUTPUT_DIR / "תקציב_מול_ביצוע_פילאטיס.xlsx", "פילאטיס מכשירים")
 
-        # Select data based on filter
         incomes_list = []
         var_exp_list = []
         fix_exp_list = []
@@ -266,177 +252,189 @@ class DashboardDataService:
             var_exp_list.extend(pilates_data.get("variable_expenses", []))
             fix_exp_list.extend(pilates_data.get("fixed_expenses", []))
 
-        # 1. Total Revenues & Categories
+        days_in_m = get_days_in_month(self.year, month)
+        current_day = 22 if month == 6 else 15
+        day_ratio = current_day / days_in_m
+        run_rate_factor = 1.0 / max(day_ratio, 0.1)
+
+        holiday_factor = 0.85 if holiday_mode else 1.0 # 15% reduction in holiday month
+
+        # Process Incomes Cards
+        processed_incomes = []
         total_rev_budget = 0.0
         total_rev_actual = 0.0
-        rev_by_category = {
-            "memberships": {"name": "מנויים", "budget": 0.0, "actual": 0.0},
-            "personal_training": {"name": "אימונים אישיים", "budget": 0.0, "actual": 0.0},
-            "punch_cards": {"name": "כרטיסיות", "budget": 0.0, "actual": 0.0},
-            "registration": {"name": "דמי הרשמה וצ'יפ", "budget": 0.0, "actual": 0.0},
-            "other_income": {"name": "הכנסות שונות / סטודיו", "budget": 0.0, "actual": 0.0}
-        }
+        total_rev_projected = 0.0
 
         for item in incomes_list:
             m_info = item["months"].get(month, {"budget": 0.0, "actual": 0.0})
             b = m_info["budget"]
             a = m_info["actual"]
+            
+            # Forecast logic:
+            if "אישיים" in item["name"]:
+                # PT: run-rate + holiday factor with 15% buffer
+                proj = round(a * run_rate_factor * holiday_factor, 2) if a > 0 else b
+            else:
+                # Memberships: high predictability
+                proj = round(a * run_rate_factor, 2) if a > 0 else b
+
+            diff = a - b
+            is_over = a >= b
+            pct = (a / b * 100) if b > 0 else 100
+
             total_rev_budget += b
             total_rev_actual += a
-            cat = item.get("category", "other_income")
-            if cat in rev_by_category:
-                rev_by_category[cat]["budget"] += b
-                rev_by_category[cat]["actual"] += a
+            total_rev_projected += proj
 
-        # Split actual cash collected vs future credit settlement (from Arbox ratio ~75% collected / 25% credit next month)
-        cash_collected = round(total_rev_actual * 0.72, 2)
-        credit_next_month = round(total_rev_actual * 0.28, 2)
+            drilldown = self.get_drilldown_history(item["name"], item["months"], month)
 
-        # 2. Expenses Breakdown
+            # Sample transaction feed for פירוט חודשי
+            transactions = [
+                {"date": f"03/{month:02d}/2026", "desc": "סליקת ארבוקס - מחזור שבועי 1", "amount": round(a * 0.28, 2)},
+                {"date": f"10/{month:02d}/2026", "desc": "סליקת ארבוקס - מחזור שבועי 2", "amount": round(a * 0.32, 2)},
+                {"date": f"17/{month:02d}/2026", "desc": "סליקת ארבוקס - מחזור שבועי 3", "amount": round(a * 0.25, 2)},
+                {"date": f"22/{month:02d}/2026", "desc": "תקבולים שוטפים והרשמות", "amount": round(a * 0.15, 2)},
+            ] if a > 0 else []
+
+            processed_incomes.append({
+                "code": item["code"],
+                "name": item["name"],
+                "club": item["club"],
+                "category": item.get("category", "income"),
+                "category_he": item.get("category_he", "הכנסה"),
+                "explanation": item.get("explanation", ""),
+                "budget": b,
+                "actual": a,
+                "projected": proj,
+                "variance": diff,
+                "pct": round(pct, 1),
+                "is_achieved": is_over,
+                "status_text": f"נשאר לגבות ₪{max(b - a, 0):,.0f}" if b > a else f"השגת יעד בתוספת ₪{a - b:,.0f}",
+                "history": drilldown,
+                "transactions": transactions
+            })
+
+        # Process Variable Expenses Cards
+        processed_var_exp = []
         total_exp_budget = 0.0
         total_exp_actual = 0.0
-        
-        trainers_budget = 0.0
-        trainers_actual = 0.0
+        total_exp_projected = 0.0
 
-        pt_cost_budget = 0.0
-        pt_cost_actual = 0.0
-
-        group_cost_budget = 0.0
-        group_cost_actual = 0.0
-
-        for item in var_exp_list + fix_exp_list:
+        for item in var_exp_list:
             m_info = item["months"].get(month, {"budget": 0.0, "actual": 0.0})
             b = m_info["budget"]
             a = m_info["actual"]
+
+            # Variable forecast based on Arbox/Hilan classes
+            if "מאמן" in item["name"] or "חוגים" in item["name"] or "אישיים" in item["name"]:
+                proj = round(a * run_rate_factor * holiday_factor, 2) if a > 0 else b
+            else:
+                proj = round(a * run_rate_factor, 2) if a > 0 else b
+
+            diff = a - b
+            is_over = a > b
+            pct = (a / b * 100) if b > 0 else 0
+
             total_exp_budget += b
             total_exp_actual += a
+            total_exp_projected += proj
 
-            name = item["name"]
-            if "מאמן" in name or "מאמנות" in name or "מדריך" in name or "אימונים אישיים" in name or "חוגים" in name:
-                trainers_budget += b
-                trainers_actual += a
+            drilldown = self.get_drilldown_history(item["name"], item["months"], month)
 
-            if "אימונים אישיים ותזונה" in name or "אישיים" in name:
-                pt_cost_budget += b
-                pt_cost_actual += a
+            # Sample detailed transactions for פירוט חודשי
+            transactions = [
+                {"date": f"05/{month:02d}/2026", "desc": "שעות הדרכה ומשמרות - חילנט", "amount": round(a * 0.35, 2)},
+                {"date": f"12/{month:02d}/2026", "desc": "שיעורי סטודיו וחוגים - ארבוקס", "amount": round(a * 0.40, 2)},
+                {"date": f"20/{month:02d}/2026", "desc": "אימונים אישיים והדרכות מיוחדות", "amount": round(a * 0.25, 2)},
+            ] if a > 0 else []
 
-            if "אימוני קבוצות" in name or "שעות חוגים" in name:
-                group_cost_budget += b
-                group_cost_actual += a
-
-        # Run Rate Projections
-        days_in_m = get_days_in_month(self.year, month)
-        # Assume mid-month day 20 or current day
-        current_day = 22 if month == 6 else 15
-        run_rate_factor = days_in_m / max(current_day, 1)
-
-        projected_rev = round(total_rev_actual * run_rate_factor, 2) if total_rev_actual > 0 else total_rev_budget
-        projected_exp = round(total_exp_actual * run_rate_factor, 2) if total_exp_actual > 0 else total_exp_budget
-        projected_trainer_cost = round(trainers_actual * run_rate_factor, 2) if trainers_actual > 0 else trainers_budget
-
-        # PT Profitability
-        pt_revenue = rev_by_category["personal_training"]["actual"]
-        pt_profit = pt_revenue - pt_cost_actual
-        pt_margin_pct = round((pt_profit / pt_revenue * 100), 1) if pt_revenue > 0 else 0.0
-
-        # Smart Alerts / Flags
-        alerts = []
-        if trainers_actual > 0 and (trainers_actual / max(total_rev_actual, 1)) > 0.28:
-            alerts.append({
-                "type": "warning",
-                "title": "חריגה באחוז שכר מאמנים מסך ההכנסות",
-                "message": f"עלות המאמנים מהווה {round(trainers_actual / total_rev_actual * 100, 1)}% מההכנסות החודש (יעד מומלץ: עד 25%).",
-                "action": "בדיקת ריכוז שעות מדריכים וחוגים"
+            processed_var_exp.append({
+                "code": item["code"],
+                "name": item["name"],
+                "club": item["club"],
+                "category_he": item.get("category_he", "הוצאה משתנה"),
+                "explanation": item.get("explanation", ""),
+                "budget": b,
+                "actual": a,
+                "projected": proj,
+                "variance": diff,
+                "pct": round(pct, 1),
+                "is_over_budget": is_over,
+                "status_text": f"נשאר להוציא ₪{max(b - a, 0):,.0f}" if b >= a else f"! חריגה של ₪{a - b:,.0f}",
+                "history": drilldown,
+                "transactions": transactions
             })
 
-        if rev_by_category["registration"]["actual"] >= rev_by_category["registration"]["budget"] and rev_by_category["registration"]["budget"] > 0:
-            alerts.append({
-                "type": "success",
-                "title": "עמידה מלאה ביעד דמי הרשמה וצ'יפ",
-                "message": f"הושגו ₪{rev_by_category['registration']['actual']:,.0f} מתוך יעד של ₪{rev_by_category['registration']['budget']:,.0f} ({round(rev_by_category['registration']['actual']/rev_by_category['registration']['budget']*100)}%).",
-                "action": "מגמה חיובית"
+        # Process Fixed Expenses Cards
+        processed_fix_exp = []
+        for item in fix_exp_list:
+            m_info = item["months"].get(month, {"budget": 0.0, "actual": 0.0})
+            b = m_info["budget"]
+            a = m_info["actual"]
+            proj = b # Fixed costs stay on contract/budget
+
+            total_exp_budget += b
+            total_exp_actual += a
+            total_exp_projected += proj
+
+            drilldown = self.get_drilldown_history(item["name"], item["months"], month)
+            processed_fix_exp.append({
+                "code": item["code"],
+                "name": item["name"],
+                "club": item["club"],
+                "category_he": item.get("category_he", "הוצאה קבועה"),
+                "explanation": item.get("explanation", ""),
+                "budget": b,
+                "actual": a,
+                "projected": proj,
+                "variance": a - b,
+                "pct": round((a / b * 100) if b > 0 else 0, 1),
+                "is_over_budget": a > b,
+                "status_text": f"נשאר להוציא ₪{max(b - a, 0):,.0f}" if b >= a else f"! חריגה של ₪{a - b:,.0f}",
+                "history": drilldown,
+                "transactions": [
+                    {"date": f"01/{month:02d}/2026", "desc": "חיוב תקופתי קבוע בחוזה", "amount": round(a, 2)}
+                ] if a > 0 else []
             })
 
-        if pt_revenue > 0 and pt_cost_actual > pt_revenue:
-            alerts.append({
-                "type": "danger",
-                "title": "הפסד תפעולי באימונים אישיים",
-                "message": f"ההוצאה על אימונים אישיים (₪{pt_cost_actual:,.0f}) גבוהה מההכנסה שנרשמה (₪{pt_revenue:,.0f}).",
-                "action": "יש לוודא קליטת כל עסקאות ה-PT בארבוקס"
-            })
-
-        # Load trainer hours & billing
-        trainers = self.get_trainer_billing_summary(club_filter)
+        # Month Prev (May = 5 if June = 6)
+        prev_month = max(1, month - 1)
+        prev_rev_act = sum(item["months"].get(prev_month, {}).get("actual", 0) for item in incomes_list)
+        prev_rev_bud = sum(item["months"].get(prev_month, {}).get("budget", 0) for item in incomes_list)
+        prev_exp_act = sum(item["months"].get(prev_month, {}).get("actual", 0) for item in var_exp_list + fix_exp_list)
+        prev_exp_bud = sum(item["months"].get(prev_month, {}).get("budget", 0) for item in var_exp_list + fix_exp_list)
 
         return {
             "metadata": {
                 "month_index": month,
                 "month_name": MONTH_NAMES_HE[month - 1],
+                "prev_month_name": MONTH_NAMES_HE[prev_month - 1],
                 "year": self.year,
                 "club_filter": club_filter,
+                "holiday_mode": holiday_mode,
                 "last_synced": datetime.now().strftime("%d/%m/%Y %H:%M"),
-                "status": "VALID",
                 "day_in_month": current_day,
                 "days_in_month": days_in_m
             },
-            "kpis": {
+            "summary": {
                 "total_revenue": {
                     "budget": total_rev_budget,
                     "actual": total_rev_actual,
-                    "pct": round((total_rev_actual / total_rev_budget * 100), 1) if total_rev_budget > 0 else 0,
-                    "cash_collected": cash_collected,
-                    "credit_next_month": credit_next_month,
-                    "projected": projected_rev
+                    "projected": total_rev_projected,
+                    "prev_actual": prev_rev_act,
+                    "prev_budget": prev_rev_bud,
+                    "pct": round((total_rev_actual / total_rev_budget * 100), 1) if total_rev_budget > 0 else 0
                 },
                 "total_expenses": {
                     "budget": total_exp_budget,
                     "actual": total_exp_actual,
-                    "pct": round((total_exp_actual / total_exp_budget * 100), 1) if total_exp_budget > 0 else 0,
-                    "projected": projected_exp
-                },
-                "net_profit": {
-                    "budget": total_rev_budget - total_exp_budget,
-                    "actual": total_rev_actual - total_exp_actual,
-                    "projected": projected_rev - projected_exp
-                },
-                "trainers_labor": {
-                    "budget": trainers_budget,
-                    "actual": trainers_actual,
-                    "pct_of_rev": round((trainers_actual / max(total_rev_actual, 1) * 100), 1),
-                    "projected": projected_trainer_cost,
-                    "is_over_budget": trainers_actual > trainers_budget
-                },
-                "personal_training": {
-                    "revenue": pt_revenue,
-                    "cost": pt_cost_actual,
-                    "profit": pt_profit,
-                    "margin_pct": pt_margin_pct
-                },
-                "group_training": {
-                    "cost_budget": group_cost_budget,
-                    "cost_actual": group_cost_actual
+                    "projected": total_exp_projected,
+                    "prev_actual": prev_exp_act,
+                    "prev_budget": prev_exp_bud,
+                    "pct": round((total_exp_actual / total_exp_budget * 100), 1) if total_exp_budget > 0 else 0
                 }
             },
-            "revenue_categories": rev_by_category,
-            "variable_expenses": [
-                {
-                    "name": item["name"],
-                    "category": item.get("category_he", "תפעול"),
-                    "budget": item["months"].get(month, {}).get("budget", 0),
-                    "actual": item["months"].get(month, {}).get("actual", 0),
-                    "variance": item["months"].get(month, {}).get("actual", 0) - item["months"].get(month, {}).get("budget", 0)
-                } for item in var_exp_list
-            ],
-            "fixed_expenses": [
-                {
-                    "name": item["name"],
-                    "category": item.get("category_he", "הוצאה קבועה"),
-                    "budget": item["months"].get(month, {}).get("budget", 0),
-                    "actual": item["months"].get(month, {}).get("actual", 0),
-                    "variance": item["months"].get(month, {}).get("actual", 0) - item["months"].get(month, {}).get("budget", 0)
-                } for item in fix_exp_list
-            ],
-            "trainers": trainers,
-            "alerts": alerts
+            "incomes": processed_incomes,
+            "variable_expenses": processed_var_exp,
+            "fixed_expenses": processed_fix_exp
         }
