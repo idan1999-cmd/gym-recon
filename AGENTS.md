@@ -38,6 +38,9 @@ It is **agent judgment + deterministic money tools.**
 2. **Trainer billing** — invoice OCR + validation → `output/חיוב_*.xlsx` + `דגלים`
 3. **Supplier pack** — `output/ספקים_לאישור_מנהל.xlsx` (+30/+60)
 
+**Core Operator Contract:**  
+*The operator does NOT need to create, duplicate, or calculate summary workbooks by hand. That is the exact job of this automation engine. We work on a single persistent master template that is automatically populated and updated from raw external inputs (Arbox, Hilan, Invoices, Sales).*
+
 Idan reviews `output/` and `דגלים`; he should not need a freestyle Excel rebuild for official BvA.
 
 ## Sibling product (do not mix pipelines)

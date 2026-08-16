@@ -12,6 +12,23 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 
 ---
 
+## 2026-08-16 — Detective Analysis: Studio Overwrite Root Cause & Sheet Discrepancies
+
+- **What changed:** 
+  - Updated `AGENTS.md` to enshrine the Core Operator Contract: operators never need to create or calculate summary workbooks by hand; the engine works from a single master template that is continuously updated from raw external inputs.
+  - Conducted an exhaustive cell-by-cell detective audit comparing `output/חיוב_חדר_כושר.xlsx` against Idan's submitted July report:
+    1. **Studio Overwrite Root Cause (₪2,000 vs ₪22,140):** The Phase-B write rule in `jobs/billing_output.py` overwrote Row 53 with the sum of verified OCR invoices (`by_category["studio"]`). Because only 1 freelance invoice (₪2,000) was in the active OCR cache, the remaining ₪20,140 was held out into `דגלים`, reducing the total from ₪119,794.96 to ₪99,654.96.
+    2. **Sales Sheet (`מכירות`):** Idan's file includes the granular commissions breakdown per salesperson (Leonid, Bar, Gilad, Noam, Arad, Ofel = ₪4,001.40 + ₪2,415 external PT).
+    3. **Summary Pivot Rows in `סיכום אמוני סטודיו וקבוצה`:** Pivot total rows (rows 30, 35-36) contain static aggregates in Idan's file.
+- **Why (what Idan asked for, in his words if given):** 
+  - *"עכשיו שהרצת שמנו לב לטעות הבאה באימוני סטודיו למה זה קרה? בנוסף אשמח שתסתכל על הקובץ שאתה יצרת חיוב חדר כושר מול דוח מרכז של חדר כושר של עידן ותראה אם יש עוד חוסר התאמות בנתונים רק תצביע כמו בלש על ההבדלים"*
+- **What it touches:** 
+  - `AGENTS.md`, `jobs/billing_output.py`, `docs/BUILDER_LOG.md`.
+- **How it was verified:** 
+  - Ran cell-by-cell automated difference analysis across all 8 sheets in the workbooks.
+
+---
+
 ## 2026-08-16 — Standardized Monthly Input Folder & Operator Template
 
 - **What changed:** 
