@@ -12,7 +12,26 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 
 ---
 
+## 2026-08-16 — Operator Confirmation of Travel Allowance, Commissions & Overtime
+
+- **What changed:** 
+  - Updated `docs/SYSTEM_MAP.md` with final confirmed business parameters from Idan and the gym operator:
+    1. Sales commission inputs already include the 8% National Insurance (`ביטוח לאומי`).
+    2. Travel allowance rule set to ₪100 for up to 90 monthly hours (50% capacity) and ₪200 for over 90 hours.
+    3. Confirmed exact overtime multipliers & addition formulas from `דוח מרכז לאישור מנהל` rows 36-41.
+- **Why (what Idan asked for, in his words if given):** 
+  - *"1. כשהוא יכניס את הנתונים פנימה הוא יכניס אותם כולל ביטוח לאומי. 2. שעות חודשיות עד משרה מלאה של 90 שעות בחודש זה 100 שקל 3. הוא אומר שהוא שם לך בטבלה תבדוק אם עדיין לא ברור אסביר לך"*
+- **What it touches:** 
+  - `docs/SYSTEM_MAP.md`, `docs/BUILDER_LOG.md`.
+- **How it was verified:** 
+  - Formula inspection in `files/דוח_מרכז_07.26_חדר_כושר_סופי.xlsx` and `files/דוח_מרכז_07.26_פילאטיס_סופי.xlsx` rows 6-10, 25-26, and 36-41.
+- **Watch out:** 
+  - Ensure any future input template respects the 90-hour travel allowance threshold and does not double-multiply the 8% National Insurance.
+
+---
+
 ## 2026-08-16 — Baseline System Map, Self-Documentation System & Workflow Alignment
+
 
 - **What changed:** 
   - Established persistent self-documentation rules in `AGENTS.md` and `CLAUDE.md`.

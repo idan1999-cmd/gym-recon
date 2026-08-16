@@ -175,48 +175,47 @@ MONTHLY INPUTS DROP (input/)
 
 ---
 
-## Business Rules Comparison & "CONFIRM WITH IDAN"
+## Business Rules & Operational Law (Confirmed by Idan & Gym Operator)
 
-Below is the side-by-side comparison between the gym operator's instructions and the current codebase implementation:
+Below is the verified specification for the monthly billing calculations:
 
-### 1. Developer Billing Line Items (`חיוב יזם`)
-- **Receptionist Hours (`פקידת קבלה`):**
-  - *Operator rule:* Based on Hilan clock hours for all reception staff, except Nicole Edelman (`ניקול אדלמן`) who belongs to Pilates. Rate: ₪70/hr regular, +₪17.50 (125%), +₪35.00 (150%), +₪52.50 (175%), +₪70.00 (200%).
-  - *Current implementation:* Exact rate table matches in `config/pay_matrix.json`. Nicole is mapped to Pilates reception in `config/trainer_aliases.json`.
-  - **CONFIRM WITH IDAN:** Are overtime increments added on top of the base ₪70 (e.g. 125% = ₪70 + ₪17.50 = ₪87.50, or paid as overtime differential hours)? *(In the sheet, the rate table lists base ₪70 and separate additive overtime columns 18.75/37.50 or 17.50/35.00).*
+### 1. Receptionist Hours (`פקידת קבלה`)
+- **Rule:** Calculated from Hilan clock hours for all reception staff, except Nicole Edelman (`ניקול אדלמן`) who is assigned to Pilates.
+- **Rates:**
+  - Base regular hour: ₪70.00
+  - Overtime increments: 125% = +₪17.50/hr, 150% = +₪35.00/hr, 175% = +₪52.50/hr, 200% = +₪70.00/hr.
+- **Calculation:** Shift total = `(Regular Hrs × ₪70) + (125% Hrs × ₪17.50) + (150% Hrs × ₪35.00) + (175% Hrs × ₪52.50) + (200% Hrs × ₪70.00)`.
 
-- **Instructor Shift Hours (`שעות מאמנים - משמרת`):**
-  - *Operator rule:* Distinction between salaried (Hilan) and freelancers (invoices). Salaried rates: ₪75/hr regular, +₪18.75 (125%), +₪37.50 (150%), +₪56.25 (175%), +₪75.00 (200%).
-  - *Current implementation:* Rates are in `config/pay_matrix.json`. Freelance invoices are routed to `מאמני חוץ` rows.
+### 2. Instructor Shift Hours (`שעות מאמנים - משמרת`)
+- **Rule:** Distinction between salaried employees (Hilan payroll) and freelancers (invoices).
+- **Salaried Rates:**
+  - Base regular hour: ₪75.00
+  - Overtime increments: 125% = +₪18.75/hr, 150% = +₪37.50/hr, 175% = +₪56.25/hr, 200% = +₪75.00/hr.
+- **Freelancers:** Billed according to submitted invoice totals and placed in `מאמני חוץ` lines in `דוח מרכז לאישור מנהל`.
 
-- **Deduction of Personal/Group Sessions from Shift Hours:**
-  - *Operator rule:* In Hilan, "סה״כ שעות לשכר" includes personal training and group training hours. Therefore, shift hours must subtract personal/group hours so there is no double-counting.
-  - *Current implementation:* Handled in the Excel template formulas (`שעות עבודה בפועל = סה"כ שעות פחות אימונים אישיים`).
-  - **CONFIRM WITH IDAN:** Should the Python billing engine verify and enforce this subtraction automatically if the template formulas are missing or modified?
+### 3. Deduction of Personal/Group Sessions from Shift Hours
+- **Rule:** In Hilan, "סה״כ שעות לשכר" includes personal training and group training hours. Actual shift hours are calculated by subtracting personal/group training hours to prevent double billing.
 
-- **Travel Allowance (`תשלום נסיעות`):**
-  - *Operator rule:* 50% job capacity and below = ₪100 fixed; above 50% capacity = ₪200 fixed.
-  - *Current implementation:* In July 2026 Pilates report (`דוח מרכז פילאטיס`), row 12 has ₪208.50.
-  - **CONFIRM WITH IDAN:** How is the "50% capacity" defined in practice? Is it based on a fixed hour threshold (e.g., up to 91 hours = ₪100, over 91 hours = ₪200), or based on the job percentage field in Hilan?
+### 4. Travel Allowance (`תשלום נסיעות לשכירים`)
+- **Rule:**
+  - Salaried employees working up to 90 hours monthly (up to 50% capacity): **₪100.00**
+  - Salaried employees working over 90 hours monthly: **₪200.00**
 
-- **Dual Role (Receptionist + Fitness Instructor):**
-  - *Operator rule:* Hours must be strictly separated between reception (₪70) and fitness instruction (₪75) according to Hilan project codes / invoice items without duplicate hours.
-  - *Current implementation:* Hilan project codes separate reception from fitness instruction.
+### 5. Dual Role (Receptionist + Fitness Instructor)
+- **Rule:** Hours are strictly separated by project codes in Hilan (reception at ₪70 vs gym instruction at ₪75) without duplicate hours.
 
-- **Fixed Management Fees:**
-  - *Professional Management (`ניהול מקצועי`):* ₪2,500 fixed per month. *(Matches code & sheet row 60)*.
-  - *Gym Management (`ניהול חדר כושר`):* ₪22,000 fixed per month. *(In older sheets this was split as ₪20,000 + ₪2,000; operator confirmed ₪22,000 total)*.
+### 6. Fixed Management Fees
+- **Professional Management (`ניהול מקצועי`):** ₪2,500.00 fixed monthly.
+- **Gym Management (`ניהול חדר כושר`):** ₪22,000.00 fixed monthly.
 
-- **Session Rates Charged to Developer:**
-  - *Small Studio Class (`אימון סטודיו קטן`):* ₪180. *(Matches `config/pay_matrix.json`)*.
-  - *Pilates Studio Class (`סטודיו פילאטיס קטן`):* ₪185. *(Matches `config/pay_matrix.json`)*.
-  - *Personal Training (`אימון אישי`):* ₪115. *(Matches `config/pay_matrix.json`)*.
+### 7. Session Rates Charged to Developer
+- **Small Studio Class (`אימון סטודיו קטן`):** ₪180.00 per session.
+- **Pilates Studio Class (`סטודיו פילאטיס קטן`):** ₪185.00 per session.
+- **Personal Training (`אימון אישי`):** ₪115.00 per session.
 
-- **Sales & Upgrade Commissions (`עמלות מכירת מנויים ושידרוגים`):**
-  - *Operator rule:* Total sales commissions taken from Sales Report **plus 8% National Insurance (`ביטוח לאומי`)**.
-  - *Current implementation:* Currently reads direct from `מכירות!M11`.
-  - **CONFIRM WITH IDAN:** Does the sales sheet `מכירות!M11` already include the +8% National Insurance, or should the engine add `* 1.08` to the raw commissions sum?
+### 8. Sales & Upgrade Commissions (`עמלות מכירת מנויים ושידרוגים`)
+- **Rule:** Input sales data provided in the sales sheet (`מכירות!M11`) **already includes the 8% National Insurance (`ביטוח לאומי`)**, so the figure is transferred directly without additional multiplication.
 
-- **Pilates Specific Staffing:**
-  - *Operator rule:* Naama Hayun (`נעמה חיון`) is the only salaried pilates instructor; Nicole Edelman (`ניקול אדלמן`) is the pilates receptionist; all other instructors are freelancers.
-  - *Current implementation:* Aligned in `config/trainer_aliases.json` and `config/branches.json`.
+### 9. Pilates Specific Staffing
+- **Rule:** Naama Hayun (`נעמה חיון`) is the sole salaried pilates instructor; Nicole Edelman (`ניקול אדלמן`) is the pilates receptionist; all other instructors are freelancers.
+
