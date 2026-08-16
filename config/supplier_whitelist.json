@@ -1,0 +1,177 @@
+{
+  "_doc": "Known supplier names -> GL account codes. Account_code determines branch: 180xxx = Club, 181xxx = Pilates. Payment terms: +30, +60, or מזומן. Unknown suppliers get status HOLD_NEW_SUPPLIER.",
+  "suppliers": [
+    {
+      "name": "חברת החשמל",
+      "aliases": ["חשמל", "חברת חשמל לישראל", "iec"],
+      "account_code": "18022609",
+      "branch": "מועדון",
+      "payment_terms": "+30",
+      "category": "חשמל"
+    },
+    {
+      "name": "חברת החשמל - פילאטיס",
+      "aliases": ["חשמל פילאטיס"],
+      "account_code": "18122609",
+      "branch": "פילאטיס",
+      "payment_terms": "+30",
+      "category": "חשמל"
+    },
+    {
+      "name": "עיריית תל אביב",
+      "aliases": ["עירייה", "ארנונה", "עיריית תל-אביב"],
+      "account_code": "18022611",
+      "branch": "מועדון",
+      "payment_terms": "+60",
+      "category": "ארנונה"
+    },
+    {
+      "name": "עיריית תל אביב - פילאטיס",
+      "aliases": ["ארנונה פילאטיס", "עירייה פילאטיס"],
+      "account_code": "18122611",
+      "branch": "פילאטיס",
+      "payment_terms": "+60",
+      "category": "ארנונה"
+    },
+    {
+      "name": "מי אביבים",
+      "aliases": ["מים", "חברת מים"],
+      "account_code": "18022610",
+      "branch": "מועדון",
+      "payment_terms": "+60",
+      "category": "מים"
+    },
+    {
+      "name": "בזק",
+      "aliases": ["בזק בינלאומי", "טלפון", "אינטרנט", "yes", "bezeq"],
+      "account_code": "18022622",
+      "branch": "מועדון",
+      "payment_terms": "+30",
+      "category": "אינטרנט/טלפון"
+    },
+    {
+      "name": "נקיון יוסף",
+      "aliases": ["יוסף נקיון", "שירותי נקיון", "ניקיון"],
+      "account_code": "18022614",
+      "branch": "מועדון",
+      "payment_terms": "+30",
+      "category": "נקיון"
+    },
+    {
+      "name": "נקיון יוסף - פילאטיס",
+      "aliases": ["יוסף נקיון פילאטיס", "ניקיון פילאטיס"],
+      "account_code": "18122614",
+      "branch": "פילאטיס",
+      "payment_terms": "+30",
+      "category": "נקיון"
+    },
+    {
+      "name": "מחסן הציוד",
+      "aliases": ["ציוד", "אחזקה", "חומרי אחזקה"],
+      "account_code": "18022618",
+      "branch": "מועדון",
+      "payment_terms": "+30",
+      "category": "אחזקת מכשירים / ציוד ואחזקה"
+    },
+    {
+      "name": "ביטוח ישיר",
+      "aliases": ["ביטוח", "מבטח", "מבטחים"],
+      "account_code": "18022606",
+      "branch": "מועדון",
+      "payment_terms": "+60",
+      "category": "ביטוח"
+    },
+    {
+      "name": "ארבוקס",
+      "aliases": ["arbox", "Arbox", "מערכת ארבוקס"],
+      "account_code": "18020634",
+      "branch": "מועדון",
+      "payment_terms": "+30",
+      "category": "מיחשוב-חומרה (ארבוקס)"
+    },
+    {
+      "name": "ארבוקס פילאטיס",
+      "aliases": ["arbox pilates", "ארבוקס פילאטיס"],
+      "account_code": "18120634",
+      "branch": "פילאטיס",
+      "payment_terms": "+30",
+      "category": "מיחשוב-חומרה"
+    },
+    {
+      "name": "גילוי אש",
+      "aliases": ["מערכת גילוי אש", "כבאות"],
+      "account_code": "18022628",
+      "branch": "מועדון",
+      "payment_terms": "+60",
+      "category": "גילוי אש"
+    },
+    {
+      "name": "פרסום ודיגיטל",
+      "aliases": ["פרסום", "שיווק", "פייסבוק", "גוגל", "digital"],
+      "account_code": "18022506",
+      "branch": "מועדון",
+      "payment_terms": "+30",
+      "category": "פרסום שיווק וארועים"
+    },
+    {
+      "name": "פרסום פילאטיס",
+      "aliases": ["פרסום פילאטיס", "שיווק פילאטיס"],
+      "account_code": "18122506",
+      "branch": "פילאטיס",
+      "payment_terms": "+30",
+      "category": "פרסום שיווק וארועים"
+    },
+    {
+      "name": "משרדיות",
+      "aliases": ["ציוד משרדי", "נייר", "מחסנית"],
+      "account_code": "18022633",
+      "branch": "מועדון",
+      "payment_terms": "+30",
+      "category": "משרדיות"
+    },
+    {
+      "name": "מוזיקת רקע",
+      "aliases": ["מוזיקה", "רקע מוזיקלי"],
+      "account_code": "18022638",
+      "branch": "מועדון",
+      "payment_terms": "+30",
+      "category": "מוזיקת רקע"
+    },
+    {
+      "name": "מיזוג אוויר",
+      "aliases": ["מזגן", "מיזוג", "קירור"],
+      "account_code": "18022102",
+      "branch": "מועדון",
+      "payment_terms": "+60",
+      "category": "הסכם מיזוג אויר"
+    },
+    {
+      "name": "ביגוד והשתלמויות",
+      "aliases": ["ביגוד", "השתלמות", "מדים"],
+      "account_code": "18022642",
+      "branch": "מועדון",
+      "payment_terms": "+30",
+      "category": "ביגוד והשתלמויות"
+    },
+    {
+      "name": "רואה חשבון",
+      "aliases": ["ראיית חשבון", "רו״ח", "שכ\"ט רואה חשבון"],
+      "account_code": "18010324",
+      "branch": "מועדון",
+      "payment_terms": "+60",
+      "category": "שכ\"ט רואה חשבון"
+    },
+    {
+      "name": "הנהלת חשבונות",
+      "aliases": ["הנהלת חשבונות", "חשבת"],
+      "account_code": "18010325",
+      "branch": "מועדון",
+      "payment_terms": "+30",
+      "category": "הנהלת חשבונות"
+    }
+  ],
+  "account_prefix_rules": {
+    "expense_club": "180",
+    "expense_pilates": "181"
+  }
+}

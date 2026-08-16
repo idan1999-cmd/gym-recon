@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+.env.*
+
+# Secrets
+*secret*
+*credentials*
+*.pem
+GEMINI_API_KEY
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Runtime / PII / client data (never commit)
+input/**
+!input/README.md
+output/**
+!output/.gitkeep
+config/invoices_ocr.json
+config/suppliers_ocr.json
+config/input_manifest.json
+
+# Graphify / caches
+graphify-out/
+*.pyc
+
+# Temp test artifacts
+tests/_ov.xlsx
+output/_t_*.xlsx
+test_presence2.txt
+
+# Local agent scratch (keep decisions/progress if you want — optional)
+# .opencode/ is fine to commit for agent continuity

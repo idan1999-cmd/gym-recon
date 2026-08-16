@@ -1,0 +1,333 @@
+{
+  "_doc": "Ledger account (חשבון) -> budget line (סעיף). Derived from real כרטסת.xlsx and verified against the section list. Rule: 180+code=Club(מועדון), 181+code=Pilates(פילאטיס); income 101+80xxx=Club, 101+81xxx=Pilates. 109*/120* = holding, excluded.",
+  "prefix_rules": {
+    "expense_club": "180",
+    "expense_pilates": "181",
+    "income_club": "10180",
+    "income_pilates": "10181"
+  },
+  "exclude_prefixes": [
+    "109",
+    "120",
+    "18050",
+    "18090"
+  ],
+  "_exclude_note": "109/120 = holding; 18050 = bank interest/credit-card fees; 18090 = management-fee basket. Manager confirms whether 18050/18090 belong in budget.",
+  "accounts": {
+    "10180001": {
+      "budget_code": "80001",
+      "sheet": "מועדון",
+      "type": "income",
+      "name": "הכנסות ממכירת מנויים"
+    },
+    "10180004": {
+      "budget_code": "80004",
+      "sheet": "מועדון",
+      "type": "income",
+      "name": "הכנסות אימונים אישיים"
+    },
+    "10180008": {
+      "budget_code": "80008",
+      "sheet": "מועדון",
+      "type": "income",
+      "name": "דמי הרשמה וצ'יפ ראשוני"
+    },
+    "10180009": {
+      "budget_code": "80009",
+      "sheet": "מועדון",
+      "type": "income",
+      "name": "כרטיסיות אימונים"
+    },
+    "10180010": {
+      "budget_code": "80010",
+      "sheet": "מועדון",
+      "type": "income",
+      "name": "הכנסות שונות / השכרת סטודיו"
+    },
+    "10181001": {
+      "budget_code": "81001",
+      "sheet": "פילאטיס",
+      "type": "income",
+      "name": "הכנסות ממכירת מנויים"
+    },
+    "10181008": {
+      "budget_code": "81008",
+      "sheet": "פילאטיס",
+      "type": "income",
+      "name": "דמי הרשמה וצ'יפ ראשוני"
+    },
+    "10181009": {
+      "budget_code": "81009",
+      "sheet": "פילאטיס",
+      "type": "income",
+      "name": "כרטיסיות אימונים"
+    },
+    "18010103": {
+      "budget_code": "10103",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "אגרות ומיסים"
+    },
+    "18010106": {
+      "budget_code": "10106",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "שכ\"ד (דמי ניהול קניון)"
+    },
+    "18010109": {
+      "budget_code": "10109",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "ימי עיון והשתלמות"
+    },
+    "18010324": {
+      "budget_code": "10324",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "שכ\"ט רואה חשבון"
+    },
+    "18010325": {
+      "budget_code": "10325",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "הנהלת חשבונות"
+    },
+    "18020634": {
+      "budget_code": "20634",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "מיחשוב-חומרה (ארבוקס)"
+    },
+    "18022102": {
+      "budget_code": "22102",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "הסכם מיזוג אויר"
+    },
+    "18022506": {
+      "budget_code": "22506",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "פרסום שיווק וארועים"
+    },
+    "18022601": {
+      "budget_code": "22601",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "הפעלה וניהול (מנהל חדר כושר)"
+    },
+    "18022604": {
+      "budget_code": "22604",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "מדריך חדר כושר / עלות מאמנים"
+    },
+    "18022606": {
+      "budget_code": "22606",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "ביטוח"
+    },
+    "18022609": {
+      "budget_code": "22609",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "חשמל"
+    },
+    "18022610": {
+      "budget_code": "22610",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "מים"
+    },
+    "18022611": {
+      "budget_code": "22611",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "ארנונה"
+    },
+    "18022613": {
+      "budget_code": "22613",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "חומרי נקיון וטואלטיקה"
+    },
+    "18022614": {
+      "budget_code": "22614",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "נקיון"
+    },
+    "18022618": {
+      "budget_code": "22618",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "אחזקת מכשירים / ציוד ואחזקה"
+    },
+    "18022620": {
+      "budget_code": "22620",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "פקידת קבלה"
+    },
+    "18022622": {
+      "budget_code": "22622",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "אינטרנט/טלפון"
+    },
+    "18022627": {
+      "budget_code": "22627",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "חומרי אחזקה"
+    },
+    "18022628": {
+      "budget_code": "22628",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "גילוי אש"
+    },
+    "18022633": {
+      "budget_code": "22633",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "משרדיות"
+    },
+    "18022638": {
+      "budget_code": "22638",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "מוזיקת רקע"
+    },
+    "18022642": {
+      "budget_code": "22642",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "ביגוד והשתלמויות"
+    },
+    "18022645": {
+      "budget_code": "22645",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "שכ\"ד"
+    },
+    "18022650": {
+      "budget_code": "22650",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "הוצאות אימונים אישיים"
+    },
+    "18022653": {
+      "budget_code": "22653",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "הפעלת סטודיו וחוגים"
+    },
+    "18022655": {
+      "budget_code": "22655",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "השתלמויות / ניהול מקצועי"
+    },
+    "18022660": {
+      "budget_code": "22660",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "אימון קבוצה (במשמרת)"
+    },
+    "18022662": {
+      "budget_code": "22662",
+      "sheet": "מועדון",
+      "type": "expense",
+      "name": "מכירות (עמלות)"
+    },
+    "18120634": {
+      "budget_code": "20634",
+      "sheet": "פילאטיס",
+      "type": "expense",
+      "name": "מיחשוב-חומרה"
+    },
+    "18122506": {
+      "budget_code": "22506",
+      "sheet": "פילאטיס",
+      "type": "expense",
+      "name": "פרסום שיווק וארועים"
+    },
+    "18122601": {
+      "budget_code": "22601",
+      "sheet": "פילאטיס",
+      "type": "expense",
+      "name": "הפעלה וניהול"
+    },
+    "18122604": {
+      "budget_code": "22604",
+      "sheet": "פילאטיס",
+      "type": "expense",
+      "name": "מדריך חדר כושר"
+    },
+    "18122606": {
+      "budget_code": "22606",
+      "sheet": "פילאטיס",
+      "type": "expense",
+      "name": "ביטוח"
+    },
+    "18122609": {
+      "budget_code": "22609",
+      "sheet": "פילאטיס",
+      "type": "expense",
+      "name": "חשמל"
+    },
+    "18122611": {
+      "budget_code": "22611",
+      "sheet": "פילאטיס",
+      "type": "expense",
+      "name": "ארנונה"
+    },
+    "18122614": {
+      "budget_code": "22614",
+      "sheet": "פילאטיס",
+      "type": "expense",
+      "name": "נקיון"
+    },
+    "18122618": {
+      "budget_code": "22618",
+      "sheet": "פילאטיס",
+      "type": "expense",
+      "name": "אחזקת מכשירים"
+    },
+    "18122620": {
+      "budget_code": "22620",
+      "sheet": "פילאטיס",
+      "type": "expense",
+      "name": "פקידת קבלה"
+    },
+    "18122636": {
+      "budget_code": "22636",
+      "sheet": "פילאטיס",
+      "type": "expense",
+      "name": "פרסום"
+    },
+    "18122645": {
+      "budget_code": "22645",
+      "sheet": "פילאטיס",
+      "type": "expense",
+      "name": "שכ\"ד"
+    },
+    "18122650": {
+      "budget_code": "22650",
+      "sheet": "פילאטיס",
+      "type": "expense",
+      "name": "הוצאות אימונים אישיים"
+    },
+    "18110109": {
+      "budget_code": "10109",
+      "sheet": "פילאטיס",
+      "type": "expense",
+      "name": "ימי עיון והשתלמות"
+    }
+  },
+  "_code_meaning_notes": {
+    "18122636": "LEDGER TRUTH = פרסום (advertising), consistent across all 4 snapshots. Pilates חיוב יזם mislabels this as עמלות מכירת מנויים (₪1,193.40) — likely a template copy artifact from club report (club commissions=180-22662; Pilates has NO commissions account). Manager confirmed commissions here is unlikely. Bind as advertising; FLAG the 1,193.40 billing line as mislabel to verify."
+  }
+}

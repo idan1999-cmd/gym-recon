@@ -1,0 +1,111 @@
+{
+  "_doc": "Per-branch configuration for the Trainer Billing job. Each branch has its own דוח מרכז לאישור מנהל workbook, its own חוץ (external/freelancer) line rows, and its own grand-total target. Phase B auto-writes validated freelancer invoice amounts into the 'external_lines' rows by category, then recomputes the total. The approval sheet is the manager-signed source of truth for SALARIED hours; freelancers come from invoices.",
+  "branches": {
+    "פילאטיס": {
+      "label": "Pilates",
+      "workbook_needle": "פילאטיס",
+      "approval_sheet": "דוח מרכז לאישור מנהל",
+      "total_cell": "D58",
+      "total_target": 33202.9,
+      "detail_first_row": 47,
+      "detail_last_row": 56,
+      "code_col": 2,
+      "name_col": 3,
+      "amount_col": 4,
+      "external_lines": {
+        "class": {
+          "row": 53,
+          "code": "181-22604",
+          "label": "שיעורי סטודיו פילאטיס מאמני חוץ"
+        },
+        "studio": {
+          "row": 53,
+          "code": "181-22604",
+          "label": "שיעורי סטודיו פילאטיס מאמני חוץ"
+        },
+        "personal": {
+          "row": 55,
+          "code": "181-22650",
+          "label": "אימונים אישיים פילאטיס - מאמני חוץ"
+        },
+        "group": {
+          "row": 53,
+          "code": "181-22604",
+          "label": "שיעורי סטודיו פילאטיס מאמני חוץ"
+        }
+      },
+      "hilan_system_row": 47,
+      "hilan_actual_row": 51,
+      "hilan_col": 11,
+      "hilan_delta_row": 52,
+      "chiuv_referenced_rows": [
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56
+      ]
+    },
+    "חדר כושר": {
+      "label": "Club",
+      "workbook_needle": "חדר כושר",
+      "approval_sheet": "דוח מרכז לאישור מנהל",
+      "total_cell": "D64",
+      "total_target": 124467.9,
+      "detail_first_row": 47,
+      "detail_last_row": 62,
+      "code_col": 2,
+      "name_col": 3,
+      "amount_col": 4,
+      "external_lines": {
+        "studio": {
+          "row": 53,
+          "code": "22653",
+          "label": "שיעורי סטודיו מאמני חוץ"
+        },
+        "class": {
+          "row": 53,
+          "code": "22653",
+          "label": "שיעורי סטודיו מאמני חוץ"
+        },
+        "personal": {
+          "row": 54,
+          "code": "22650",
+          "label": "אימונים אישיים מאמני חוץ"
+        },
+        "group": {
+          "row": 55,
+          "code": "22660",
+          "label": "אימונים קבוצתיים מאמני חוץ"
+        },
+        "club_hours": {
+          "row": 56,
+          "code": "22604",
+          "label": "שע חדר כושר מאמני חוץ"
+        }
+      },
+      "hilan_system_row": 47,
+      "hilan_actual_row": 57,
+      "hilan_col": 10,
+      "hilan_delta_row": 58,
+      "chiuv_referenced_rows": [
+        47,
+        48,
+        49,
+        50,
+        52,
+        53,
+        54,
+        56,
+        57,
+        58,
+        60
+      ]
+    }
+  }
+}

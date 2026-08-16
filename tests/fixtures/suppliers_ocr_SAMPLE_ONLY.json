@@ -1,0 +1,77 @@
+{
+  "_doc": "Supplier invoices OCR cache. Populated by tools/ocr_gemini.py --suppliers or created manually for testing.",
+  "invoices": [
+    {
+      "file": "חשבון_חשמל_יוני2026.pdf",
+      "supplier_name": "חברת החשמל",
+      "tax_id": "511111111",
+      "doc_number": "ELEC-06-2026",
+      "doc_date": "2026-06-25",
+      "total_amount": 5400.00,
+      "vat_amount": 900.00,
+      "payment_terms_hint": "+30",
+      "line_description": "חשמל חודש יוני 2026 - מועדון",
+      "notes": ""
+    },
+    {
+      "file": "חשבון_חשמל_פילאטיס_יוני2026.pdf",
+      "supplier_name": "חברת החשמל - פילאטיס",
+      "tax_id": "511111112",
+      "doc_number": "ELEC-PIL-06-2026",
+      "doc_date": "2026-06-25",
+      "total_amount": 1800.00,
+      "vat_amount": 300.00,
+      "payment_terms_hint": "+30",
+      "line_description": "חשמל חודש יוני 2026 - פילאטיס",
+      "notes": ""
+    },
+    {
+      "file": "ארנונה_יוני2026.pdf",
+      "supplier_name": "עיריית תל אביב",
+      "tax_id": "522222222",
+      "doc_number": "ARN-06-2026",
+      "doc_date": "2026-06-15",
+      "total_amount": 8200.00,
+      "vat_amount": 0.00,
+      "payment_terms_hint": "+60",
+      "line_description": "ארנונה חודש יוני 2026 - מועדון",
+      "notes": ""
+    },
+    {
+      "file": "invoice_unknown_supplier.pdf",
+      "supplier_name": "ספק חדש לא מוכר בע\"מ",
+      "tax_id": "533333333",
+      "doc_number": "NEW-001",
+      "doc_date": "2026-06-10",
+      "total_amount": 3200.00,
+      "vat_amount": 533.33,
+      "payment_terms_hint": "+30",
+      "line_description": "שירותי תחזוקה כלליים",
+      "notes": ""
+    },
+    {
+      "file": "מים_יוני2026.pdf",
+      "supplier_name": "מי אביבים",
+      "tax_id": "544444444",
+      "doc_number": "WATER-06-2026",
+      "doc_date": "2026-06-20",
+      "total_amount": 950.00,
+      "vat_amount": 158.33,
+      "payment_terms_hint": "+60",
+      "line_description": "מים חודש יוני 2026",
+      "notes": ""
+    },
+    {
+      "file": "ניקיון_יוני2026.pdf",
+      "supplier_name": "נקיון יוסף",
+      "tax_id": "555555555",
+      "doc_number": "CLEAN-06-2026",
+      "doc_date": "2026-06-30",
+      "total_amount": 4500.00,
+      "vat_amount": 750.00,
+      "payment_terms_hint": "+30",
+      "line_description": "שירותי ניקיון חודש יוני 2026",
+      "notes": ""
+    }
+  ]
+}

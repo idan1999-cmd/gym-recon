@@ -1,0 +1,35 @@
+{
+  "_doc": "Agreed rates, extracted from 'דוח מרכז לאישור מנהל' rows 35-43 in the real gym report. CELLS MARKED confirm=true STILL NEED CLIENT SIGN-OFF (see spec 5.2 / 14.1). Keyed by (employment_type, category, tier).",
+  "salaried_hourly_tiers": {
+    "instructor": {
+      "_social_pct": 30,
+      "100": {"gross": 40, "employer_cost": 52.00, "project_charge": 75.00},
+      "125": {"gross": 50, "employer_cost": 66.50, "project_charge": 18.75, "confirm": true},
+      "150": {"gross": 60, "employer_cost": 79.80, "project_charge": 37.50, "confirm": true},
+      "175": {"gross": 70, "employer_cost": 93.10, "project_charge": 56.25, "confirm": true},
+      "200": {"gross": 80, "employer_cost": 106.40, "project_charge": 75.00, "confirm": true}
+    },
+    "reception": {
+      "_social_pct": 25,
+      "100": {"gross": 40, "employer_cost": 52.00, "project_charge": 70.00},
+      "125": {"gross": 50, "employer_cost": 66.50, "project_charge": 17.50},
+      "150": {"gross": 60, "employer_cost": 79.80, "project_charge": 35.00},
+      "175": {"gross": 70, "employer_cost": 93.10, "project_charge": 52.50},
+      "200": {"gross": 80, "employer_cost": 106.40, "project_charge": 70.00}
+    }
+  },
+  "session_rates": {
+    "אימוני קבוצות":        {"rate": 55},
+    "אימונים אישי":         {"rate_base": 40, "rate_charge": 115, "confirm": true},
+    "אימון סטודיו קטן":     {"rate": 180},
+    "סטודיו פילאטיס":       {"rate": 185},
+    "אישי קבוצתי":          {"rate": 150},
+    "אימוני חברה":          {"rate": 250}
+  },
+  "external_trainer_rates": {
+    "_doc": "מאמני חוץ. Columns observed: studio / personal / group. employee_in_pay and employer_cost arrays.",
+    "employee_in_pay": [95, 95, 130, 130, 130],
+    "employer_cost":   [123.5, 123.5, 169, 169, 169]
+  },
+  "hilan_tolerance_hours": 2.0
+}
