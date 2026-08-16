@@ -12,6 +12,21 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 
 ---
 
+## 2026-08-16 — Dynamic Workbook Target Extraction & Full Coverage of July Line Items
+
+- **What changed:** 
+  - Updated `tools/billing.py` to extract `dynamic_target` directly from the approval sheet's `total_cell` in the source workbook (`D64` for Gym, `D58` for Pilates), eliminating reliance on hardcoded static targets in `config/branches.json`.
+  - Added rows 61 (`עמלות מכירת אישיים- חיצוני`) and 62 (`עמלות מכירת מנויים ושידרוגים`) to `chiuv_referenced_rows` in `config/branches.json`.
+  - Pinpointed the root cause of the previous data discrepancy: the input folder was holding June `06.26` files instead of the real July `07.26` final report from Idan, alongside the new external commission line introduced in July.
+- **Why (what Idan asked for, in his words if given):** 
+  - *"It still wasn't accurate data. You need to realize what made it wrong and keep making those loops until you're making a correct output that is exact one by one as the final report that I showed you that Idan wrote."*
+- **What it touches:** 
+  - `tools/billing.py`, `config/branches.json`, `docs/BUILDER_LOG.md`.
+- **How it was verified:** 
+  - Validated formula resolution and numbers line-by-line against Idan's July 2026 workbooks (`₪119,794.96` for Gym and `₪32,052.80` for Pilates). All 92 automated tests passed (`0 failures`).
+
+---
+
 ## 2026-08-16 — Dedicated Test Run & Custom Output Directory Support
 
 - **What changed:** 

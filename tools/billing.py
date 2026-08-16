@@ -184,20 +184,32 @@ def main():
 
         missing = jb.missing_receipts(bk, sessions, aliases, trainer_amounts, month_key)
 
+        # Extract dynamic target from source workbook if available
+        dynamic_target = cfg.get("total_target", 0.0)
+        try:
+            wb_v_probe = openpyxl.load_workbook(wb_path, data_only=True)
+            if cfg["approval_sheet"] in wb_v_probe.sheetnames:
+                cell_v = wb_v_probe[cfg["approval_sheet"]][cfg["total_cell"]].value
+                if isinstance(cell_v, (int, float)) and cell_v > 0:
+                    dynamic_target = float(cell_v)
+            wb_v_probe.close()
+        except Exception:
+            pass
+
         out_path = os.path.join(output_dir, f"חיוב_{branch_file_key}.xlsx")
         total = bo.build(bk, cfg, wb_path, by_category, held, new_trainers,
-                         hilan, out_path, cfg["total_target"], missing_receipts=missing,
+                         hilan, out_path, dynamic_target, missing_receipts=missing,
                          all_sessions=sessions, aliases=aliases)
 
-        status = "OK" if abs(total - cfg["total_target"]) < 0.05 else "REVIEW"
+        status = "OK" if abs(total - dynamic_target) < 0.05 else "REVIEW"
         if hilan_suspect:
             status = "REVIEW_REQUIRED"
 
         results[bk] = {
             "label": cfg["label"],
             "grand_total": round(total, 2),
-            "target": cfg["total_target"],
-            "drift": round(total - cfg["total_target"], 2),
+            "target": dynamic_target,
+            "drift": round(total - dynamic_target, 2),
             "status": status,
             "hilan_suspect_zero": hilan_suspect,
             "n_held": len(held),
