@@ -125,12 +125,17 @@ def _parse_hilan_data(hilan_file, aliases):
                 hilan_data[name_key]["grp"] += float(ws_h.cell(r, 21).value or 0)
         else:
             for r in range(2, ws_h.max_row + 1):
-                raw_name = str(ws_h.cell(r, 4).value or "").strip()
-                if raw_name.startswith('סה"כ '):
-                    raw_name = raw_name[6:].strip()
-                elif raw_name.startswith('סה"כ'):
-                    raw_name = raw_name[5:].strip()
+                # find first non-empty cell in row for name
+                raw_name = ""
+                for c in range(1, min(ws_h.max_column + 1, 6)):
+                    v = ws_h.cell(r, c).value
+                    if v and isinstance(v, str) and ("סה" in v or len(v.strip().split()) >= 1):
+                        raw_name = v.strip()
+                        break
                 if not raw_name:
+                    raw_name = str(ws_h.cell(r, 4).value or ws_h.cell(r, 1).value or "").strip()
+                raw_name = re.sub(r'^סה["״\']?כ\s*', '', raw_name).strip()
+                if not raw_name or raw_name == "כללי":
                     continue
                 parts = raw_name.split()
                 if len(parts) >= 2:
@@ -146,12 +151,23 @@ def _parse_hilan_data(hilan_file, aliases):
                         "total_wage": 0.0, "reg": 0.0, "ot125": 0.0, "ot150": 0.0,
                         "ot175": 0.0, "ot200": 0.0, "std": 0.0, "pers": 0.0, "grp": 0.0
                     }
-                hilan_data[name_key]["total_wage"] += float(ws_h.cell(r, 6).value or 0)
-                hilan_data[name_key]["reg"] += float(ws_h.cell(r, 7).value or 0)
-                hilan_data[name_key]["ot125"] += float(ws_h.cell(r, 9).value or 0)
-                hilan_data[name_key]["ot150"] += float(ws_h.cell(r, 10).value or 0)
-                hilan_data[name_key]["pers"] += float(ws_h.cell(r, 11).value or 0)
-                hilan_data[name_key]["grp"] += float(ws_h.cell(r, 12).value or 0)
+                # Find columns dynamically based on non-empty numeric cells
+                nums = [float(ws_h.cell(r, c).value) for c in range(1, ws_h.max_column + 1)
+                        if isinstance(ws_h.cell(r, c).value, (int, float))]
+                if len(nums) >= 2:
+                    hilan_data[name_key]["total_wage"] = nums[0]
+                    hilan_data[name_key]["reg"] = nums[1]
+                    if len(nums) >= 3 and nums[2] <= 20:
+                        hilan_data[name_key]["ot125"] = nums[2]
+                    if len(nums) >= 4 and nums[3] <= 20:
+                        hilan_data[name_key]["ot150"] = nums[3]
+                else:
+                    hilan_data[name_key]["total_wage"] += float(ws_h.cell(r, 6).value or ws_h.cell(r, 2).value or 0)
+                    hilan_data[name_key]["reg"] += float(ws_h.cell(r, 7).value or ws_h.cell(r, 3).value or 0)
+                    hilan_data[name_key]["ot125"] += float(ws_h.cell(r, 9).value or ws_h.cell(r, 4).value or 0)
+                    hilan_data[name_key]["ot150"] += float(ws_h.cell(r, 10).value or ws_h.cell(r, 5).value or 0)
+                    hilan_data[name_key]["pers"] += float(ws_h.cell(r, 11).value or 0)
+                    hilan_data[name_key]["grp"] += float(ws_h.cell(r, 12).value or 0)
         wb_h.close()
     except Exception:
         pass
@@ -226,6 +242,8 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases)
                 _, canon, _, _ = resolve_trainer(emp_name, aliases)
                 hil = hilan_data.get(canon, {})
                 if hil:
+                    if hil.get("reg", 0) > 0:
+                        ws_main.cell(6, c, value=round(hil["reg"], 2))
                     if hil.get("ot125", 0) > 0:
                         ws_main.cell(7, c, value=round(hil["ot125"], 2))
                     if hil.get("ot150", 0) > 0:
@@ -242,6 +260,24 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases)
                         ws_main.cell(11, c, value=100)
 
     elif branch_key == "פילאטיס":
+        if "דוח מרכז לאישור מנהל" in wb.sheetnames:
+            ws_main = wb["דוח מרכז לאישור מנהל"]
+            for c in range(2, 5):
+                emp_name = ws_main.cell(4, c).value
+                if not emp_name:
+                    continue
+                _, canon, _, _ = resolve_trainer(emp_name, aliases)
+                hil = hilan_data.get(canon, {})
+                if hil:
+                    if hil.get("reg", 0) > 0:
+                        ws_main.cell(6, c, value=round(hil["reg"], 2))
+                    if hil.get("ot125", 0) > 0:
+                        ws_main.cell(7, c, value=round(hil["ot125"], 2))
+                    tot_hrs = hil.get("total_wage", 0)
+                    if tot_hrs > 90:
+                        ws_main.cell(12, c, value=200)
+                    elif tot_hrs > 0:
+                        ws_main.cell(12, c, value=100)
         if "סיכום אימונים ומכירות מנויים" in wb.sheetnames:
             ws = wb["סיכום אימונים ומכירות מנויים"]
             for r in range(3, 11):
