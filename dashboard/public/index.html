@@ -34,6 +34,9 @@
     }
   </script>
 
+  <!-- ApexCharts CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
@@ -71,7 +74,7 @@
 
   <!-- Top App Navigation -->
   <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 lg:px-8 py-3 shadow-xs">
-    <div class="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+    <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
       
       <!-- Brand & Status -->
       <div class="flex items-center justify-between w-full md:w-auto">
@@ -92,7 +95,7 @@
         </button>
       </div>
 
-      <!-- Month Selector Header (With arrows < Month Year >) -->
+      <!-- Center: Month Navigator with Arrows -->
       <div class="flex items-center justify-center gap-3 bg-slate-100/80 px-3 py-1.5 rounded-full border border-slate-200/80">
         <button onclick="navigateMonth(-1)" class="p-1 rounded-full hover:bg-white text-slate-600 transition">
           <i data-lucide="chevron-right" class="w-4 h-4"></i>
@@ -108,15 +111,13 @@
         </button>
       </div>
 
-      <!-- Left Controls: Club Switcher & Holiday Mode -->
+      <!-- Right Controls: Holiday Mode & Sync -->
       <div class="flex items-center gap-2 w-full md:w-auto justify-end">
-        <!-- Holiday Factor Toggle -->
         <button id="holiday-toggle-btn" onclick="toggleHolidayMode()" class="px-2.5 py-1.5 rounded-lg border text-xs font-medium transition flex items-center gap-1.5 bg-white border-slate-200 text-slate-600 hover:bg-slate-50">
           <i data-lucide="sun" class="w-3.5 h-3.5 text-amber-500"></i>
           <span id="holiday-toggle-text">חודש רגיל</span>
         </button>
 
-        <!-- Sync Button -->
         <button onclick="syncData()" class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition shadow-sm">
           <i data-lucide="refresh-cw" class="w-3.5 h-3.5 sync-icon"></i>
           <span>סנכרן</span>
@@ -125,26 +126,51 @@
 
     </div>
 
-    <!-- Club Tabs Sub-bar -->
-    <div class="max-w-4xl mx-auto mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-center gap-2 text-xs">
-      <button id="club-all" onclick="setClub('all')" class="club-tab-btn px-4 py-1 rounded-full transition font-semibold bg-slate-900 text-white shadow-xs">
-        כל המועדון (מאוחד)
-      </button>
-      <button id="club-gym" onclick="setClub('gym')" class="club-tab-btn px-4 py-1 rounded-full transition font-medium text-slate-600 hover:bg-slate-100">
-        חדר כושר
-      </button>
-      <button id="club-pilates" onclick="setClub('pilates')" class="club-tab-btn px-4 py-1 rounded-full transition font-medium text-slate-600 hover:bg-slate-100">
-        פילאטיס מכשירים
-      </button>
+    <!-- Secondary Navigation Bar: Club Tabs & VIEW SWITCHER (ורסטיליות) -->
+    <div class="max-w-5xl mx-auto mt-2.5 pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+      
+      <!-- Club Switcher Pills -->
+      <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+        <button id="club-all" onclick="setClub('all')" class="club-tab-btn px-3.5 py-1 rounded-lg transition font-bold bg-slate-900 text-white shadow-xs">
+          כל המועדון (מאוחד)
+        </button>
+        <button id="club-gym" onclick="setClub('gym')" class="club-tab-btn px-3.5 py-1 rounded-lg transition font-medium text-slate-600 hover:bg-slate-200">
+          חדר כושר
+        </button>
+        <button id="club-pilates" onclick="setClub('pilates')" class="club-tab-btn px-3.5 py-1 rounded-lg transition font-medium text-slate-600 hover:bg-slate-200">
+          פילאטיס מכשירים
+        </button>
+      </div>
+
+      <!-- Versatile Views Mode Switcher -->
+      <div class="flex items-center gap-1 bg-blue-50/80 p-1 rounded-xl border border-blue-200/60 font-semibold text-blue-900">
+        <button id="view-cards" onclick="switchView('cards')" class="view-btn px-3 py-1 rounded-lg transition flex items-center gap-1.5 bg-blue-600 text-white shadow-xs">
+          <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+          <span>כרטיסיות ויעדים</span>
+        </button>
+        <button id="view-charts" onclick="switchView('charts')" class="view-btn px-3 py-1 rounded-lg transition flex items-center gap-1.5 text-blue-700 hover:bg-blue-100">
+          <i data-lucide="line-chart" class="w-3.5 h-3.5"></i>
+          <span>גרפים ומגמות שנתיות</span>
+        </button>
+        <button id="view-matrix" onclick="switchView('matrix')" class="view-btn px-3 py-1 rounded-lg transition flex items-center gap-1.5 text-blue-700 hover:bg-blue-100">
+          <i data-lucide="table-2" class="w-3.5 h-3.5"></i>
+          <span>טבלה שנתית מלאה</span>
+        </button>
+      </div>
+
     </div>
   </header>
 
-  <!-- Main View Area -->
-  <main class="max-w-4xl mx-auto px-4 py-5 space-y-6">
+  <!-- Main View Container -->
+  <main class="max-w-5xl mx-auto px-4 py-5 space-y-6">
+
+    <!-- Smart AI Insights & Proactive Tips Bar -->
+    <section id="smart-insights-section" class="space-y-2">
+      <!-- Injected dynamically -->
+    </section>
 
     <!-- Top Overview KPI Strip -->
     <section class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <!-- Income Total -->
       <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
         <div class="text-[11px] font-medium text-slate-500">סה״כ הכנסות (MTD)</div>
         <div class="text-xl font-black text-slate-900 mt-0.5" id="strip-rev-actual">₪0</div>
@@ -154,7 +180,6 @@
         </div>
       </div>
 
-      <!-- Expense Total -->
       <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
         <div class="text-[11px] font-medium text-slate-500">סה״כ הוצאות (MTD)</div>
         <div class="text-xl font-black text-slate-900 mt-0.5" id="strip-exp-actual">₪0</div>
@@ -164,14 +189,12 @@
         </div>
       </div>
 
-      <!-- Projected Revenue -->
       <div class="bg-blue-50/60 p-3.5 rounded-2xl border border-blue-100 shadow-xs">
         <div class="text-[11px] font-medium text-blue-900">תחזית הכנסות לסוף חודש</div>
         <div class="text-xl font-black text-blue-700 mt-0.5" id="strip-rev-proj">₪0</div>
         <div class="text-[10px] text-blue-600/80 mt-0.5">מבוסס קצב יומי ועונתיות</div>
       </div>
 
-      <!-- Projected Expenses -->
       <div class="bg-amber-50/60 p-3.5 rounded-2xl border border-amber-100 shadow-xs">
         <div class="text-[11px] font-medium text-amber-900">תחזית הוצאות לסוף חודש</div>
         <div class="text-xl font-black text-amber-700 mt-0.5" id="strip-exp-proj">₪0</div>
@@ -179,62 +202,144 @@
       </div>
     </section>
 
-    <!-- SECTION 1: INCOMES CARDS (Like Image 1) -->
-    <section class="space-y-3">
-      <div class="flex items-center justify-between px-1">
-        <h2 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-          <i data-lucide="coins" class="w-4 h-4 text-emerald-600"></i>
-          הכנסות ויעדי מכירה
-        </h2>
-        <span class="text-xs text-slate-400 font-medium">לחץ על כרטיס לפירוט היסטורי</span>
-      </div>
+    <!-- ========================================================================= -->
+    <!-- VIEW 1: CARDS & GOALS (MATCHING USER SCREENSHOTS)                          -->
+    <!-- ========================================================================= -->
+    <div id="view-container-cards" class="space-y-6">
+      
+      <!-- Incomes Category Cards -->
+      <section class="space-y-3">
+        <div class="flex items-center justify-between px-1">
+          <h2 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+            <i data-lucide="coins" class="w-4 h-4 text-emerald-600"></i>
+            הכנסות ויעדי מכירה
+          </h2>
+          <span class="text-xs text-slate-400 font-medium">לחץ על כרטיס לפירוט היסטורי</span>
+        </div>
+        <div class="space-y-3" id="incomes-cards-container"></div>
+      </section>
 
-      <div class="space-y-3" id="incomes-cards-container">
-        <!-- Dynamically injected category cards -->
-      </div>
-    </section>
+      <!-- Variable Operational Expenses Cards -->
+      <section class="space-y-3 pt-2">
+        <div class="flex items-center justify-between px-1">
+          <h2 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+            <i data-lucide="pie-chart" class="w-4 h-4 text-blue-600"></i>
+            הוצאות משתנות ובקרת שכר
+          </h2>
+          <span class="text-xs text-slate-400 font-medium">מאמנים, שיעורים, שיווק ותפעול</span>
+        </div>
+        <div class="space-y-3" id="expenses-cards-container"></div>
+      </section>
 
-    <!-- SECTION 2: VARIABLE OPERATIONAL EXPENSES CARDS (Like Image 1) -->
-    <section class="space-y-3 pt-2">
-      <div class="flex items-center justify-between px-1">
-        <h2 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-          <i data-lucide="pie-chart" class="w-4 h-4 text-blue-600"></i>
-          הוצאות משתנות ובקרת שכר
-        </h2>
-        <span class="text-xs text-slate-400 font-medium">מאמנים, שיעורים, שיווק ותפעול</span>
-      </div>
-
-      <div class="space-y-3" id="expenses-cards-container">
-        <!-- Dynamically injected category cards -->
-      </div>
-    </section>
-
-    <!-- SECTION 3: FIXED EXPENSES (Collapsible Drawer) -->
-    <section class="pt-2">
-      <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-        <button onclick="toggleFixedSection()" class="w-full p-4 flex items-center justify-between hover:bg-slate-50/80 transition text-right">
-          <div class="flex items-center gap-2.5">
-            <div class="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500">
-              <i data-lucide="building-2" class="w-4 h-4"></i>
+      <!-- Fixed Expenses Collapsible Drawer -->
+      <section class="pt-2">
+        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
+          <button onclick="toggleFixedSection()" class="w-full p-4 flex items-center justify-between hover:bg-slate-50/80 transition text-right">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500">
+                <i data-lucide="building-2" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-slate-800">הוצאות קבועות ומבנה (שכירות, חשמל, מים, ארנונה)</h3>
+                <p class="text-[11px] text-slate-500">הוצאות רקע קבועות בחוזה — לחץ לצפייה</p>
+              </div>
             </div>
-            <div>
-              <h3 class="text-sm font-bold text-slate-800">הוצאות קבועות ומבנה (שכירות, חשמל, מים, ארנונה)</h3>
-              <p class="text-[11px] text-slate-500">הוצאות רקע קבועות בחוזה — לחץ לצפייה</p>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-slate-700" id="fixed-total-header">₪0</span>
+              <i data-lucide="chevron-down" id="fixed-chevron-icon" class="w-4 h-4 text-slate-400 transition-transform"></i>
             </div>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-bold text-slate-700" id="fixed-total-header">₪0</span>
-            <i data-lucide="chevron-down" id="fixed-chevron-icon" class="w-4 h-4 text-slate-400 transition-transform"></i>
-          </div>
-        </button>
+          </button>
 
-        <div id="fixed-section-content" class="hidden border-t border-slate-100 p-4 space-y-3 bg-slate-50/50">
-          <div class="space-y-2.5" id="fixed-cards-container">
-            <!-- Injected dynamically -->
+          <div id="fixed-section-content" class="hidden border-t border-slate-100 p-4 space-y-3 bg-slate-50/50">
+            <div class="space-y-2.5" id="fixed-cards-container"></div>
           </div>
         </div>
+      </section>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 2: ANNUAL TRENDS & CHARTS (RICH VISUALS FOR EXECUTIVE REVIEW)        -->
+    <!-- ========================================================================= -->
+    <div id="view-container-charts" class="space-y-6 hidden">
+      
+      <!-- Chart 1: Revenue vs Expenses Annual Trend -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <i data-lucide="trending-up" class="w-4 h-4 text-blue-600"></i>
+              מגמת הכנסות והוצאות שנתית (ביצוע מול תקציב 12 חודשים)
+            </h3>
+            <p class="text-xs text-slate-400">תמונת מצב שנתית מלאה לניתוח מגמות ושינויים</p>
+          </div>
+        </div>
+        <div id="annual-main-chart" class="w-full h-72"></div>
       </div>
-    </section>
+
+      <!-- Charts 2 & 3: Trainer Costs Trend + PT Profitability Trend -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        <!-- Trainer Costs Trend -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+          <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <i data-lucide="users" class="w-4 h-4 text-purple-600"></i>
+            מגמת עלות שכר מאמנים והדרכה לאורך השנה
+          </h3>
+          <div id="trainer-trend-chart" class="w-full h-64"></div>
+        </div>
+
+        <!-- Personal Training Profit Trend -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+          <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <i data-lucide="sparkles" class="w-4 h-4 text-emerald-600"></i>
+            אימונים אישיים: הכנסות מול עלויות שכר
+          </h3>
+          <div id="pt-trend-chart" class="w-full h-64"></div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 3: FULL 12-MONTH FINANCIAL MATRIX (EXHAUSTIVE DRILL-DOWN)             -->
+    <!-- ========================================================================= -->
+    <div id="view-container-matrix" class="space-y-4 hidden">
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <i data-lucide="table" class="w-4 h-4 text-blue-600"></i>
+              טבלת תקציב מול ביצוע שנתית מלאה
+            </h3>
+            <p class="text-xs text-slate-400">השוואת כל הסעיפים התקציביים לאורך כל חודשי השנה</p>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-right text-xs divide-y divide-slate-200">
+            <thead class="bg-slate-50 text-slate-600 font-bold">
+              <tr>
+                <th class="py-2.5 px-3">סעיף תקציבי</th>
+                <th class="py-2.5 px-2">סוג</th>
+                <th class="py-2.5 px-2">תקציב חודשי</th>
+                <th class="py-2.5 px-2">ינואר</th>
+                <th class="py-2.5 px-2">פברואר</th>
+                <th class="py-2.5 px-2">מרץ</th>
+                <th class="py-2.5 px-2">אפריל</th>
+                <th class="py-2.5 px-2">מאי</th>
+                <th class="py-2.5 px-2 bg-blue-50 text-blue-900">יוני (פעיל)</th>
+                <th class="py-2.5 px-2">יולי</th>
+              </tr>
+            </thead>
+            <tbody id="matrix-tbody" class="divide-y divide-slate-100 text-slate-700">
+              <!-- Injected dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
 
   </main>
 

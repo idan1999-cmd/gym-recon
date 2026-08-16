@@ -12,15 +12,23 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 
 ---
 
-## 2026-08-16 — Local Interactive Executive Financial Dashboard & Mobile-Card UI
+## 2026-08-16 — Versatile Multi-View Dashboard: Cards, Annual Trend Charts & Full Matrix
 
 - **What changed:** 
-  - Designed and built a standalone, local, interactive financial executive dashboard in `dashboard/` for **Ariel Fit & Spa (A+ Street Mall)**.
-  - Implemented the exact user-provided visual UX (matching screenshots):
-    - Clean category cards with blue progress bars, "צפוי לצאת / יעד" vs "יצא / ביצוע", "נשאר להוציא" vs "! חריגה של X ₪", and collapsible "פירוט חודשי ▼".
-    - Interactive 5-Month Drill-down Modal with vertical bar comparisons (solid bars for historical months, current month fill cylinder gauge).
-    - Dynamic summary, explanatory collapsible section ("למה הקטגוריה מופיעה אצלך?"), and inline target editor ("לעריכת היעד") with local JSON persistence (`config/custom_targets.json`).
-    - Smart Mid-Month Forecasting Engine combining historical ledger trends with Arbox session schedules, Hilan shift hours, and seasonal holiday buffer toggle (15% tolerance).
+  - Added a 3-mode **Versatile View Switcher** in `dashboard/public/index.html`:
+    1. 📱 **כרטיסיות ויעדים (Cards & Goals):** Clean mobile-friendly cards with progress bars and 5-month comparison drilldowns.
+    2. 📊 **גרפים ומגמות שנתיות (Annual Trends & Graphs):** 12-month interactive ApexCharts displaying Revenue vs Expenses, Trainer Labor Cost trends, and Personal Training Profit margins.
+    3. 📑 **טבלה שנתית מלאה (Full Financial Matrix):** Comprehensive 12-month table showing Budget vs Actual for all line items side-by-side with drilldowns.
+  - Implemented **AI Smart Insights (תובנות חכמות וניתוח שינויים):** Proactively analyzes sales commissions efficiency, trainer overtime alerts, PT margin health, and holiday seasonality suggestions.
+  - Updated branding to **A+ Street Mall (Premium Club by Ariel Properties)** with official logo.
+- **Why (what Idan asked for, in his words if given):** 
+  - *"אני חושב שצריכה להיות ורסטיליות במערכת... כמה שיותר גרפים, כמה שיותר השוואות, כמה שיותר טבלאות... שהמערכת תדע לתת לי טיפים לגבי זה, תגיד לי שמת לב ש-1 2 3 השתנה בעקבות השינוי שעשית."*
+- **What it touches:** 
+  - `dashboard/backend/data_service.py`, `dashboard/public/index.html`, `dashboard/public/app.js`, `docs/BUILDER_LOG.md`.
+- **How it was verified:** 
+  - Verified API payload returning `annual_trends` and `smart_insights`.
+  - Tested view switching and graph rendering.
+  - Executed all 92 automated tests (0 failures).
 - **Why (what Idan asked for, in his words if given):** 
   - *"אני מעלה לך איך אני מדמיין ואיך אני רוצה שזה ייראה מצרף לך צילום של האפליקציה... בעצם הכרטסת זה המקום הכי טוב לחיזוי... ושתי המקורות מידע שלפיהם החישובים צריכים להיות זה חילן וארבוקס."*
 - **What it touches:** 

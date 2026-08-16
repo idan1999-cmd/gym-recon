@@ -1,7 +1,7 @@
 """
 Ariel Fit & Spa Dashboard - Advanced Data & Forecasting Service
-Provides 5-month historical trend analysis, Arbox/Hilan-backed forecasting,
-customizable budget targets, and detailed transaction drill-downs.
+Provides 5-month historical trend analysis, 12-month full-year matrix,
+smart AI financial insights, and flexible multi-view aggregation.
 """
 from __future__ import annotations
 import os
@@ -68,14 +68,13 @@ class DashboardDataService:
 
     def get_available_months(self) -> list[dict]:
         months = []
-        now = datetime.now()
         for idx, name in enumerate(MONTH_NAMES_HE, start=1):
             months.append({
                 "index": idx,
                 "name": name,
                 "short_name": MONTH_SHORT_HE[idx - 1],
                 "key": f"{self.year}-{idx:02d}",
-                "is_current": (idx == 6), # June active in current dataset
+                "is_current": (idx == 6),
                 "has_data": idx <= 7
             })
         return months
@@ -127,7 +126,6 @@ class DashboardDataService:
             if "כמות מנויים" in desc_str or "סה\"כ" in desc_str:
                 continue
 
-            # Read all 12 months for this line item
             item_months = {}
             for m_idx, cols in month_cols.items():
                 b_val = ws.cell(row=row, column=cols["budget_col"]).value if cols["budget_col"] else 0.0
@@ -136,7 +134,6 @@ class DashboardDataService:
                 b_num = abs(safe_float(b_val))
                 a_num = abs(safe_float(a_val))
                 
-                # Check custom target override
                 override_key = f"{club_name}_{code_str}_{m_idx}"
                 if override_key in self.custom_targets:
                     b_num = self.custom_targets[override_key]
@@ -210,9 +207,7 @@ class DashboardDataService:
         }
 
     def get_drilldown_history(self, item_name: str, item_months: dict, target_month: int) -> dict:
-        """Returns 5-month comparison trend (e.g., Feb, Mar, Apr, May, Jun)."""
         history_bars = []
-        # Calculate 5-month window ending at target_month
         start_m = max(1, target_month - 4)
         for m in range(start_m, target_month + 1):
             m_data = item_months.get(m, {"budget": 0.0, "actual": 0.0})
@@ -225,13 +220,124 @@ class DashboardDataService:
                 "is_current": (m == target_month)
             })
 
-        # Calculate average historical run rate
         past_actuals = [b["actual"] for b in history_bars if not b["is_current"] and b["actual"] > 0]
         avg_past = sum(past_actuals) / len(past_actuals) if past_actuals else history_bars[-1]["budget"]
 
         return {
             "history_bars": history_bars,
             "historical_average": round(avg_past, 2)
+        }
+
+    def generate_smart_insights(self, incomes: list, var_exp: list, fix_exp: list, month: int) -> list[dict]:
+        """Generates proactive AI financial tips and trend observations."""
+        tips = []
+
+        # 1. Check Sales Commission vs Revenue trend
+        comm_item = next((x for x in var_exp if "עמלות" in x["name"]), None)
+        mem_item = next((x for x in incomes if "מנויים" in x["name"]), None)
+        if comm_item and mem_item:
+            c_act = comm_item["months"].get(month, {}).get("actual", 0)
+            c_prev = comm_item["months"].get(max(1, month - 1), {}).get("actual", 0)
+            m_act = mem_item["months"].get(month, {}).get("actual", 0)
+            m_prev = mem_item["months"].get(max(1, month - 1), {}).get("actual", 0)
+            if c_act > 0 and c_prev > 0:
+                c_diff_pct = round(((c_act - c_prev) / c_prev) * 100, 1)
+                m_diff_pct = round(((m_act - m_prev) / m_prev) * 100, 1) if m_prev > 0 else 0
+                if c_diff_pct > 15 and m_diff_pct > 10:
+                    tips.append({
+                        "icon": "trending-up",
+                        "color": "emerald",
+                        "title": "יעילות צוות מכירות במגמת עלייה",
+                        "text": f"עמלות המכירה עלו ב-{c_diff_pct}% החודש במקביל לעלייה של {m_diff_pct}% בהכנסות ממנויים. התמריצים מניבים תוצאות."
+                    })
+
+        # 2. Check Trainer cost efficiency
+        trainer_item = next((x for x in var_exp if "עלות מאמנים" in x["name"] or "מאמנות" in x["name"]), None)
+        if trainer_item:
+            t_act = trainer_item["months"].get(month, {}).get("actual", 0)
+            t_bud = trainer_item["months"].get(month, {}).get("budget", 0)
+            if t_act > t_bud:
+                diff = t_act - t_bud
+                tips.append({
+                    "icon": "alert-triangle",
+                    "color": "amber",
+                    "title": "התראת קצב שעות מאמנים",
+                    "text": f"נרשמה חריגה של ₪{diff:,.0f} בעלות המאמנים לעומת התקציב. כדאי לבדוק את פירוט החלפות המשמרות בחילנט."
+                })
+            else:
+                tips.append({
+                    "icon": "check-circle",
+                    "color": "blue",
+                    "title": "בקרת שכר מאמנים תקינה",
+                    "text": f"עלות המאמנים עומדת על ₪{t_act:,.0f} (מתוך תקציב של ₪{t_bud:,.0f}), חיסכון של ₪{t_bud - t_act:,.0f} מהתקרה."
+                })
+
+        # 3. Personal Training profitability check
+        pt_inc = next((x for x in incomes if "אישיים" in x["name"]), None)
+        pt_exp = next((x for x in var_exp if "אישיים" in x["name"]), None)
+        if pt_inc and pt_exp:
+            inc_val = pt_inc["months"].get(month, {}).get("actual", 0)
+            exp_val = pt_exp["months"].get(month, {}).get("actual", 0)
+            if inc_val > exp_val:
+                margin = round(((inc_val - exp_val) / inc_val) * 100, 1) if inc_val > 0 else 0
+                tips.append({
+                    "icon": "sparkles",
+                    "color": "purple",
+                    "title": f"רווחיות אימונים אישיים: {margin}%",
+                    "text": f"הכנסות ה-PT (₪{inc_val:,.0f}) מכסות את שכר המאמנים (₪{exp_val:,.0f}) ומותירות רווח תפעולי של ₪{inc_val - exp_val:,.0f}."
+                })
+
+        # 4. Seasonal forecast tip
+        tips.append({
+            "icon": "calendar",
+            "color": "slate",
+            "title": "המלצת היערכות לחודשי חגים",
+            "text": "באוגוסט וספטמבר מומלץ להפעיל את מתג 'חודש חגים' שמכייל את צפי ההכנסות מאימונים אישיים ב-15% בהתאם לעונתיות."
+        })
+
+        return tips
+
+    def get_annual_trends(self, incomes: list, var_exp: list, fix_exp: list) -> dict:
+        """Calculates 12-month trend arrays for rich multi-chart visualizations."""
+        months_labels = MONTH_SHORT_HE
+        monthly_rev_actual = []
+        monthly_rev_budget = []
+        monthly_exp_actual = []
+        monthly_exp_budget = []
+        monthly_profit = []
+        
+        trainer_trend = []
+        pt_rev_trend = []
+        pt_cost_trend = []
+
+        for m in range(1, 13):
+            r_act = sum(x["months"].get(m, {}).get("actual", 0) for x in incomes)
+            r_bud = sum(x["months"].get(m, {}).get("budget", 0) for x in incomes)
+            e_act = sum(x["months"].get(m, {}).get("actual", 0) for x in var_exp + fix_exp)
+            e_bud = sum(x["months"].get(m, {}).get("budget", 0) for x in var_exp + fix_exp)
+
+            monthly_rev_actual.append(round(r_act))
+            monthly_rev_budget.append(round(r_bud))
+            monthly_exp_actual.append(round(e_act))
+            monthly_exp_budget.append(round(e_bud))
+            monthly_profit.append(round(r_act - e_act))
+
+            # Trainer specifics
+            t_cost = sum(x["months"].get(m, {}).get("actual", 0) for x in var_exp if "מאמן" in x["name"] or "חוגים" in x["name"])
+            trainer_trend.append(round(t_cost))
+
+            pt_r = sum(x["months"].get(m, {}).get("actual", 0) for x in incomes if "אישיים" in x["name"])
+            pt_c = sum(x["months"].get(m, {}).get("actual", 0) for x in var_exp if "אישיים" in x["name"])
+            pt_rev_trend.append(round(pt_r))
+            pt_cost_trend.append(round(pt_c))
+
+        return {
+            "months_labels": months_labels,
+            "revenue": {"actual": monthly_rev_actual, "budget": monthly_rev_budget},
+            "expenses": {"actual": monthly_exp_actual, "budget": monthly_exp_budget},
+            "profit": monthly_profit,
+            "trainers": trainer_trend,
+            "pt": {"revenue": pt_rev_trend, "cost": pt_cost_trend}
         }
 
     def get_dashboard_summary(self, month: int = 6, club_filter: str = "all", holiday_mode: bool = False) -> dict:
@@ -256,10 +362,8 @@ class DashboardDataService:
         current_day = 22 if month == 6 else 15
         day_ratio = current_day / days_in_m
         run_rate_factor = 1.0 / max(day_ratio, 0.1)
+        holiday_factor = 0.85 if holiday_mode else 1.0
 
-        holiday_factor = 0.85 if holiday_mode else 1.0 # 15% reduction in holiday month
-
-        # Process Incomes Cards
         processed_incomes = []
         total_rev_budget = 0.0
         total_rev_actual = 0.0
@@ -270,14 +374,7 @@ class DashboardDataService:
             b = m_info["budget"]
             a = m_info["actual"]
             
-            # Forecast logic:
-            if "אישיים" in item["name"]:
-                # PT: run-rate + holiday factor with 15% buffer
-                proj = round(a * run_rate_factor * holiday_factor, 2) if a > 0 else b
-            else:
-                # Memberships: high predictability
-                proj = round(a * run_rate_factor, 2) if a > 0 else b
-
+            proj = round(a * run_rate_factor * holiday_factor, 2) if a > 0 else b
             diff = a - b
             is_over = a >= b
             pct = (a / b * 100) if b > 0 else 100
@@ -288,7 +385,6 @@ class DashboardDataService:
 
             drilldown = self.get_drilldown_history(item["name"], item["months"], month)
 
-            # Sample transaction feed for פירוט חודשי
             transactions = [
                 {"date": f"03/{month:02d}/2026", "desc": "סליקת ארבוקס - מחזור שבועי 1", "amount": round(a * 0.28, 2)},
                 {"date": f"10/{month:02d}/2026", "desc": "סליקת ארבוקס - מחזור שבועי 2", "amount": round(a * 0.32, 2)},
@@ -309,12 +405,11 @@ class DashboardDataService:
                 "variance": diff,
                 "pct": round(pct, 1),
                 "is_achieved": is_over,
-                "status_text": f"נשאר לגבות ₪{max(b - a, 0):,.0f}" if b > a else f"השגת יעד בתוספת ₪{a - b:,.0f}",
                 "history": drilldown,
-                "transactions": transactions
+                "transactions": transactions,
+                "all_months": item["months"]
             })
 
-        # Process Variable Expenses Cards
         processed_var_exp = []
         total_exp_budget = 0.0
         total_exp_actual = 0.0
@@ -325,12 +420,7 @@ class DashboardDataService:
             b = m_info["budget"]
             a = m_info["actual"]
 
-            # Variable forecast based on Arbox/Hilan classes
-            if "מאמן" in item["name"] or "חוגים" in item["name"] or "אישיים" in item["name"]:
-                proj = round(a * run_rate_factor * holiday_factor, 2) if a > 0 else b
-            else:
-                proj = round(a * run_rate_factor, 2) if a > 0 else b
-
+            proj = round(a * run_rate_factor * holiday_factor, 2) if a > 0 else b
             diff = a - b
             is_over = a > b
             pct = (a / b * 100) if b > 0 else 0
@@ -341,7 +431,6 @@ class DashboardDataService:
 
             drilldown = self.get_drilldown_history(item["name"], item["months"], month)
 
-            # Sample detailed transactions for פירוט חודשי
             transactions = [
                 {"date": f"05/{month:02d}/2026", "desc": "שעות הדרכה ומשמרות - חילנט", "amount": round(a * 0.35, 2)},
                 {"date": f"12/{month:02d}/2026", "desc": "שיעורי סטודיו וחוגים - ארבוקס", "amount": round(a * 0.40, 2)},
@@ -360,18 +449,17 @@ class DashboardDataService:
                 "variance": diff,
                 "pct": round(pct, 1),
                 "is_over_budget": is_over,
-                "status_text": f"נשאר להוציא ₪{max(b - a, 0):,.0f}" if b >= a else f"! חריגה של ₪{a - b:,.0f}",
                 "history": drilldown,
-                "transactions": transactions
+                "transactions": transactions,
+                "all_months": item["months"]
             })
 
-        # Process Fixed Expenses Cards
         processed_fix_exp = []
         for item in fix_exp_list:
             m_info = item["months"].get(month, {"budget": 0.0, "actual": 0.0})
             b = m_info["budget"]
             a = m_info["actual"]
-            proj = b # Fixed costs stay on contract/budget
+            proj = b
 
             total_exp_budget += b
             total_exp_actual += a
@@ -390,25 +478,21 @@ class DashboardDataService:
                 "variance": a - b,
                 "pct": round((a / b * 100) if b > 0 else 0, 1),
                 "is_over_budget": a > b,
-                "status_text": f"נשאר להוציא ₪{max(b - a, 0):,.0f}" if b >= a else f"! חריגה של ₪{a - b:,.0f}",
                 "history": drilldown,
                 "transactions": [
                     {"date": f"01/{month:02d}/2026", "desc": "חיוב תקופתי קבוע בחוזה", "amount": round(a, 2)}
-                ] if a > 0 else []
+                ] if a > 0 else [],
+                "all_months": item["months"]
             })
 
-        # Month Prev (May = 5 if June = 6)
-        prev_month = max(1, month - 1)
-        prev_rev_act = sum(item["months"].get(prev_month, {}).get("actual", 0) for item in incomes_list)
-        prev_rev_bud = sum(item["months"].get(prev_month, {}).get("budget", 0) for item in incomes_list)
-        prev_exp_act = sum(item["months"].get(prev_month, {}).get("actual", 0) for item in var_exp_list + fix_exp_list)
-        prev_exp_bud = sum(item["months"].get(prev_month, {}).get("budget", 0) for item in var_exp_list + fix_exp_list)
+        # Calculate annual trends & smart insights
+        annual_trends = self.get_annual_trends(incomes_list, var_exp_list, fix_exp_list)
+        smart_insights = self.generate_smart_insights(incomes_list, var_exp_list, fix_exp_list, month)
 
         return {
             "metadata": {
                 "month_index": month,
                 "month_name": MONTH_NAMES_HE[month - 1],
-                "prev_month_name": MONTH_NAMES_HE[prev_month - 1],
                 "year": self.year,
                 "club_filter": club_filter,
                 "holiday_mode": holiday_mode,
@@ -421,20 +505,18 @@ class DashboardDataService:
                     "budget": total_rev_budget,
                     "actual": total_rev_actual,
                     "projected": total_rev_projected,
-                    "prev_actual": prev_rev_act,
-                    "prev_budget": prev_rev_bud,
                     "pct": round((total_rev_actual / total_rev_budget * 100), 1) if total_rev_budget > 0 else 0
                 },
                 "total_expenses": {
                     "budget": total_exp_budget,
                     "actual": total_exp_actual,
                     "projected": total_exp_projected,
-                    "prev_actual": prev_exp_act,
-                    "prev_budget": prev_exp_bud,
                     "pct": round((total_exp_actual / total_exp_budget * 100), 1) if total_exp_budget > 0 else 0
                 }
             },
             "incomes": processed_incomes,
             "variable_expenses": processed_var_exp,
-            "fixed_expenses": processed_fix_exp
+            "fixed_expenses": processed_fix_exp,
+            "annual_trends": annual_trends,
+            "smart_insights": smart_insights
         }
