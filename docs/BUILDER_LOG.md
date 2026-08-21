@@ -12,22 +12,22 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 
 ---
 
-## 2026-08-21 — Executive Design Polish, Full Layer Subtotals & Conditional Variance Highlighting
+## 2026-08-21 — Top Metric Rows Stripping, Dynamic YTD Summary & Per-Month Variance Highlighting
 
 - **What changed:** 
-  - Added subtotal calculations (`סה"כ הכנסות`, `סה"כ הוצאות`, `רווח/הפסד (EBITDA)`) across **all three layers**: `ביצוע (כרטסת)` (lc), `התאמה ידנית` (mc), and `- ביצוע` (dc), so subtotals are never blank or missing on any column.
-  - Implemented **Conditional Variance Highlighting (הדגשת חריגות תקציב בצבעים בולטים)**:
-    - **Expense overruns / Income shortfalls:** Highlighted in soft rose/red fill (`#FFEBEE`) with bold red text (`#C00000`).
-    - **Expense savings / Income targets met:** Highlighted in soft light green fill (`#E8F5E9`) with dark green text (`#2E7D32`).
-  - Eliminated the unstyled "white gap" in `jobs/ledger_output.py`: header backgrounds, fonts, cell fills, borders, and alignments are now fully propagated from existing table columns.
-  - Implemented **Freeze Panes (קיבוע חלונות)** at `C3`: columns A & B (`סעיף תקציבי`, `שם סעיף`) and header rows 1 & 2 remain pinned while scrolling.
-  - Implemented dynamic column auto-widths (`>= 16` for numeric columns, `14` for code, `34` for labels) and enforced clean accounting number formatting (`#,##0;[Red]-#,##0;"-"`).
+  - Added `_strip_top_metric_rows`: completely stripped the active subscriber and frozen membership count rows at the top of the worksheet (rows 3–6 in Club, rows 3–7 in Pilates) so the P&L begins immediately on Row 3 with direct budget codes (`80001` / `81001`).
+  - Updated `_write_ytd`: dynamic in-place update of summary columns (`סה"כ תקציב 1-N/26`, `סה"כ ביצוע 1-N/26`, `ביצוע מול תקציב`) right after `תקציב 2026` without adding redundant duplicate columns at the sheet end.
+  - Implemented **Per-Month Conditional Variance Highlighting**: every individual month column (Jan–Jul) is evaluated against its budget, applying soft red highlights (`#FFEBEE`, `#C00000`) on over-budget expenses and missed revenue targets, and soft green highlights (`#E8F5E9`, `#2E7D32`) on savings and achieved targets.
+  - Added subtotal calculations (`סה"כ הכנסות`, `סה"כ הוצאות`, `רווח/הפסד (EBITDA)`) across **all three layers**: `ביצוע (כרטסת)` (lc), `התאמה ידנית` (mc), and `- ביצוע` (dc).
+  - Implemented **Freeze Panes (קיבוע חלונות)** at `C3` and dynamic column auto-widths.
 - **Why (what Idan asked for, in his words if given):** 
-  - *"שים לב ששכחת להוסיף לי עמודת סה״כ לעמודה של הכרטסת הידנית כדי שאוכל לחשב הכל. מה דעתך להוסיף לי גם התייחסות בצבעים בולטים לסעיפים שבהם אני חורג/לא עומד בתקציב? תריץ שוב אחרי התיקון ותמחק דו״חות קודמים."*
+  - *"תמחק מההנחיות של הגיליון את ההתייחסות למנויים פעילים ותמחק את כל השורות שקשורות לזה (מופיע בתחילת הגיליון למעלה). העמודות שצילמתי לך בסוף המסמך צריכות להראות את הסה״כ העדכני מתחילת השנה ועד היום (עמידה בביצוע של ההכנסות/הוצאות אל מול הביצוע)... את ההתנייה של מה לא עמדנו, צריך לכל חודש בנפרד ולא רק לסה״כ הכולל. תעדכן בהתאם, תמחק את שאר הדו״חות ותריץ לי שוב."*
 - **What it touches:** 
   - `jobs/ledger_output.py`, `output/תקציב_מול_ביצוע_חדר_כושר.xlsx`, `output/תקציב_מול_ביצוע_פילאטיס.xlsx`, `docs/BUILDER_LOG.md`.
 - **How it was verified:** 
-  - Verified totals across all columns (`Row 12`, `Row 49`, `Row 50` on Club; `Row 14`, `Row 37`, `Row 38` on Pilates).
+  - Verified that rows 3+ start immediately with budget codes.
+  - Verified per-month alert & ok counts across all months (Jan–Jul) and YTD variance.
+  - Executed all 94 automated tests (0 failures).
   - Verified variance highlighting on over-budget items.
   - Executed all 94 automated tests (0 failures).
 

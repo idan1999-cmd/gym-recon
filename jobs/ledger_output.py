@@ -114,6 +114,23 @@ def _strip_note_rows(ws):
     return len(to_delete)
 
 
+def _strip_top_metric_rows(ws):
+    """
+    Remove subscriber/metric rows at the top before the first P&L budget code row.
+    """
+    first_code_row = None
+    for r in range(HEADER_ROW + 1, ws.max_row + 1):
+        if _code_str(ws.cell(r, CODE_COL).value):
+            first_code_row = r
+            break
+    if first_code_row and first_code_row > HEADER_ROW + 1:
+        to_delete = list(range(HEADER_ROW + 1, first_code_row))
+        for r in reversed(to_delete):
+            ws.delete_rows(r, 1)
+        return len(to_delete)
+    return 0
+
+
 def _find_header(ws, text):
     for c in range(1, ws.max_column+1):
         if str(ws.cell(HEADER_ROW,c).value or "").strip()==text: return c
@@ -323,49 +340,74 @@ def _find_month_display_col(ws, month_he):
 
 
 def _find_month_budget_col(ws, month_he):
-    return _find_header(ws, month_he) or _find_header(ws, month_he + " ")
+    for pattern in (
+        f"{month_he} - תכנון עדכני",
+        f"{month_he} - תכנון ראשוני",
+        f"{month_he} - תכנון",
+        f"{month_he} תכנון",
+        month_he,
+        f"{month_he} ",
+    ):
+        c = _find_header(ws, pattern)
+        if c is not None:
+            return c
+    return None
 
 
 def _write_ytd(ws, rows, target_month_n, year_suffix="26"):
     """
     Phase 4: write YTD budget, actual, variance columns for months 1..N.
+    Reuses existing summary columns if present.
     """
     if target_month_n < 1 or target_month_n > 12:
         return 0
 
     ytd_budget_h = f'סה"כ תקציב 1-{target_month_n}/{year_suffix}'
     ytd_actual_h = f'סה"כ ביצוע 1-{target_month_n}/{year_suffix}'
-    ytd_var_h = f"הפרש YTD 1-{target_month_n}/{year_suffix}"
+    ytd_var_h = "ביצוע מול תקציב"
 
-    # Place after last used header col
+    bc = None
+    ac = None
+    vc = None
+    for c in range(1, ws.max_column + 1):
+        h = str(ws.cell(HEADER_ROW, c).value or "").strip()
+        is_budget_total = ("סה\"כ תקציב" in h) or ("סה”כ תקציב" in h) or ("סהכ תקציב" in h)
+        is_actual_total = ("סה\"כ ביצוע" in h) or ("סה”כ ביצוע" in h) or ("סהכ ביצוע" in h)
+        if is_budget_total and bc is None:
+            bc = c
+        elif is_actual_total and ac is None:
+            ac = c
+        elif ("ביצוע מול תקציב" in h or "הפרש YTD" in h) and vc is None:
+            vc = c
+
     last_col = 1
     for c in range(1, ws.max_column + 1):
         if ws.cell(HEADER_ROW, c).value is not None:
             last_col = c
 
-    # Reuse existing columns if same header already present
-    bc = _find_header(ws, ytd_budget_h)
-    ac = _find_header(ws, ytd_actual_h)
-    vc = _find_header(ws, ytd_var_h)
     ref_col = last_col
     if bc is None:
         last_col += 1
         bc = last_col
-        ws.cell(HEADER_ROW, bc, value=ytd_budget_h)
         for r in range(1, ws.max_row + 1):
             _copy_cell_style(ws.cell(r, ref_col), ws.cell(r, bc))
+    ws.cell(HEADER_ROW, bc, value=ytd_budget_h)
+
     if ac is None:
         last_col = max(last_col, bc) + 1
         ac = last_col
-        ws.cell(HEADER_ROW, ac, value=ytd_actual_h)
         for r in range(1, ws.max_row + 1):
             _copy_cell_style(ws.cell(r, ref_col), ws.cell(r, ac))
+    ws.cell(HEADER_ROW, ac, value=ytd_actual_h)
+
     if vc is None:
         last_col = max(last_col, ac) + 1
         vc = last_col
-        ws.cell(HEADER_ROW, vc, value=ytd_var_h)
         for r in range(1, ws.max_row + 1):
             _copy_cell_style(ws.cell(r, ref_col), ws.cell(r, vc))
+    current_vc_h = str(ws.cell(HEADER_ROW, vc).value or "").strip()
+    if not current_vc_h or "הפרש YTD" in current_vc_h:
+        ws.cell(HEADER_ROW, vc, value=ytd_var_h)
 
     budget_cols = []
     actual_cols = []
@@ -433,9 +475,44 @@ def _sync(ws, month_he, month_key, sheet_key, movement):
     return written, dc, rows, flipped
 
 
-def _format_variance(ws, rows):
-    """Highlight variances and overruns with prominent colors."""
+def _format_variance(ws, rows, target_month_n=12):
+    """
+    Highlight variances and overruns with prominent colors across every month and in YTD summary.
+    """
     isub, etot, gtot = _find_rollup_rows(ws)
+
+    # 1. Format each month's actual column vs budget column
+    for i in range(1, target_month_n + 1):
+        mhe = MONTHS_HE[i - 1]
+        bcol = _find_month_budget_col(ws, mhe)
+        dcol = _find_month_display_col(ws, mhe)
+        if not bcol or not dcol:
+            continue
+
+        for code, r in rows.items():
+            b_val = _num(ws.cell(r, bcol).value)
+            d_val = _num(ws.cell(r, dcol).value)
+            if ws.cell(r, dcol).value is None or (d_val == 0 and b_val == 0):
+                continue
+
+            if is_income_budget_code(code):
+                # Income: target met if actual revenue is >= budget revenue
+                if abs(d_val) < abs(b_val) - 100:  # missed revenue target
+                    ws.cell(r, dcol).fill = FILL_RED_ALERT
+                    ws.cell(r, dcol).font = FONT_RED_ALERT
+                else:  # met/exceeded revenue target
+                    ws.cell(r, dcol).fill = FILL_GREEN_OK
+                    ws.cell(r, dcol).font = FONT_GREEN_OK
+            else:
+                # Expense: under budget is good, over budget is alert
+                if d_val > b_val + 100:  # over budget
+                    ws.cell(r, dcol).fill = FILL_RED_ALERT
+                    ws.cell(r, dcol).font = FONT_RED_ALERT
+                elif d_val > 0:  # on or under budget
+                    ws.cell(r, dcol).fill = FILL_GREEN_OK
+                    ws.cell(r, dcol).font = FONT_GREEN_OK
+
+    # 2. Format YTD variance columns
     var_cols = []
     for c in range(1, ws.max_column + 1):
         h = str(ws.cell(HEADER_ROW, c).value or "").strip()
@@ -447,17 +524,17 @@ def _format_variance(ws, rows):
             val = ws.cell(r, vc).value
             if isinstance(val, (int, float)):
                 if is_income_budget_code(code):
-                    if val > 100:  # income under target (underperforming)
+                    if val > 100:
                         ws.cell(r, vc).fill = FILL_RED_ALERT
                         ws.cell(r, vc).font = FONT_RED_ALERT
-                    elif val <= 0:  # income met/exceeded target
+                    elif val <= 0:
                         ws.cell(r, vc).fill = FILL_GREEN_OK
                         ws.cell(r, vc).font = FONT_GREEN_OK
                 else:
-                    if val > 100:  # expense over budget (overrun)
+                    if val > 100:
                         ws.cell(r, vc).fill = FILL_RED_ALERT
                         ws.cell(r, vc).font = FONT_RED_ALERT
-                    elif val <= 0:  # expense on/under budget
+                    elif val <= 0:
                         ws.cell(r, vc).fill = FILL_GREEN_OK
                         ws.cell(r, vc).font = FONT_GREEN_OK
 
@@ -506,8 +583,9 @@ def build(src_path, branch_key, movement, out_path, target_month_he="יוני",
           month_key="2026-06"):
     tab = SRC_TABS[branch_key]
     out, ws = _extract_tab(src_path, tab, out_path)
-    # Phase 1: strip pricing notes before any writes
+    # Phase 1: strip pricing notes and top subscriber metric rows
     _strip_note_rows(ws)
+    _strip_top_metric_rows(ws)
     written, dc, rows, flipped = _sync(
         ws, target_month_he, month_key, SHEET_KEY[branch_key], movement
     )
@@ -515,7 +593,7 @@ def build(src_path, branch_key, movement, out_path, target_month_he="יוני",
     n = _month_num_from_key(month_key)
     year_suffix = str(month_key).split("-")[0][-2:] if month_key else "26"
     _write_ytd(ws, rows, n, year_suffix=year_suffix)
-    _format_variance(ws, rows)
+    _format_variance(ws, rows, target_month_n=n)
     _apply_polish(ws)
     _write_engine_footer(ws)
     out.save(out_path)
