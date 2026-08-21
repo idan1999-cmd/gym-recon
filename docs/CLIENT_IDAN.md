@@ -431,3 +431,4 @@ Append only. One line per entry.
 | Date | Who | Change |
 |------|-----|--------|
 | 2026-07-31 | Amit + agent | Created from full email transcript, workflow answers, and 6-point feedback |
+| 2026-08-21 | Idan + agent | Clarified active month planning structure (תכנון ראשוני vs תכנון עדכני) and dynamic monthly roll-forward |

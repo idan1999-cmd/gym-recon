@@ -19,9 +19,10 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
   - Updated `_write_ytd`: dynamic in-place update of summary columns (`סה"כ תקציב 1-N/26`, `סה"כ ביצוע 1-N/26`, `ביצוע מול תקציב`) right after `תקציב 2026` without adding redundant duplicate columns at the sheet end.
   - Implemented **Per-Month Conditional Variance Highlighting**: every individual month column (Jan–Jul) is evaluated against its budget, applying soft red highlights (`#FFEBEE`, `#C00000`) on over-budget expenses and missed revenue targets, and soft green highlights (`#E8F5E9`, `#2E7D32`) on savings and achieved targets.
   - Added subtotal calculations (`סה"כ הכנסות`, `סה"כ הוצאות`, `רווח/הפסד (EBITDA)`) across **all three layers**: `ביצוע (כרטסת)` (lc), `התאמה ידנית` (mc), and `- ביצוע` (dc).
+  - Implemented dynamic budget column resolution in `_find_month_budget_col`: automatically prioritizes `{month} - תכנון עדכני` when present, falling back to `{month} - תכנון ראשוני` / `{month}`, ensuring that when August or future months are closed, the latest updated plan is compared seamlessly.
   - Implemented **Freeze Panes (קיבוע חלונות)** at `C3` and dynamic column auto-widths.
 - **Why (what Idan asked for, in his words if given):** 
-  - *"תמחק מההנחיות של הגיליון את ההתייחסות למנויים פעילים ותמחק את כל השורות שקשורות לזה (מופיע בתחילת הגיליון למעלה). העמודות שצילמתי לך בסוף המסמך צריכות להראות את הסה״כ העדכני מתחילת השנה ועד היום (עמידה בביצוע של ההכנסות/הוצאות אל מול הביצוע)... את ההתנייה של מה לא עמדנו, צריך לכל חודש בנפרד ולא רק לסה״כ הכולל. תעדכן בהתאם, תמחק את שאר הדו״חות ותריץ לי שוב."*
+  - *"תמחק מההנחיות של הגיליון את ההתייחסות למנויים פעילים... העמודות שצילמתי לך בסוף המסמך צריכות להראות את הסה״כ העדכני... את ההתנייה של מה לא עמדנו, צריך לכל חודש בנפרד... שים לב שליולי יש עמודת: תכנון ראשוני, תכנון עדכני ויולי - ביצוע. לכל חודש שניכנס, אני רוצה שתעדכן את זה בהתאם."*
 - **What it touches:** 
   - `jobs/ledger_output.py`, `output/תקציב_מול_ביצוע_חדר_כושר.xlsx`, `output/תקציב_מול_ביצוע_פילאטיס.xlsx`, `docs/BUILDER_LOG.md`.
 - **How it was verified:** 
