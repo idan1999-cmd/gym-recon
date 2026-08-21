@@ -125,22 +125,49 @@ def _code_rows(ws):
     return rows
 
 
+def _copy_cell_style(src_cell, target_cell):
+    if src_cell is not None and src_cell.has_style:
+        target_cell.font = copy(src_cell.font)
+        target_cell.fill = copy(src_cell.fill)
+        target_cell.border = copy(src_cell.border)
+        target_cell.alignment = copy(src_cell.alignment)
+        target_cell.number_format = src_cell.number_format
+
+
 def _ensure_two_layer(ws, month_he):
-    disp=f"{month_he} - {DISPLAY_SUFFIX}"; disp2=f"{month_he} {DISPLAY_SUFFIX}"
-    led=f"{month_he} {LEDGER_SUFFIX}"; man=f"{month_he} {MANUAL_SUFFIX}"
-    lc=_find_header(ws,led)
+    disp = f"{month_he} - {DISPLAY_SUFFIX}"
+    disp2 = f"{month_he} {DISPLAY_SUFFIX}"
+    led = f"{month_he} {LEDGER_SUFFIX}"
+    man = f"{month_he} {MANUAL_SUFFIX}"
+    lc = _find_header(ws, led)
     if lc is not None:
-        return lc,_find_header(ws,man),(_find_header(ws,disp) or _find_header(ws,disp2))
-    dc=_find_header(ws,disp) or _find_header(ws,disp2)
+        return lc, _find_header(ws, man), (_find_header(ws, disp) or _find_header(ws, disp2))
+    dc = _find_header(ws, disp) or _find_header(ws, disp2)
+    ref_col = None
     if dc is None:
-        bcol=_find_header(ws,month_he) or _find_header(ws,month_he+" ")
+        bcol = _find_header(ws, month_he) or _find_header(ws, month_he + " ")
         if bcol is None:
             bcol = 3
-        ws.insert_cols(bcol+1); dc=bcol+1; ws.cell(HEADER_ROW,dc,value=disp)
-    ws.insert_cols(dc,2); lc,mc,dc=dc,dc+1,dc+2
-    ws.cell(HEADER_ROW,lc,value=led); ws.cell(HEADER_ROW,mc,value=man)
-    ws.cell(HEADER_ROW,dc,value=disp)
-    return lc,mc,dc
+        ws.insert_cols(bcol + 1)
+        dc = bcol + 1
+        ws.cell(HEADER_ROW, dc, value=disp)
+        ref_col = bcol
+    else:
+        ref_col = dc - 1 if dc > 1 else dc
+
+    ws.insert_cols(dc, 2)
+    lc, mc, dc = dc, dc + 1, dc + 2
+    ws.cell(HEADER_ROW, lc, value=led)
+    ws.cell(HEADER_ROW, mc, value=man)
+    ws.cell(HEADER_ROW, dc, value=disp)
+
+    # Propagate styles across all rows for inserted columns
+    for r in range(1, ws.max_row + 1):
+        src_c = ws.cell(r, ref_col)
+        for col_idx in (lc, mc, dc):
+            _copy_cell_style(src_c, ws.cell(r, col_idx))
+
+    return lc, mc, dc
 
 
 def _find_section_rows(ws):
@@ -346,18 +373,25 @@ def _write_ytd(ws, rows, target_month_n, year_suffix="26"):
     bc = _find_header(ws, ytd_budget_h)
     ac = _find_header(ws, ytd_actual_h)
     vc = _find_header(ws, ytd_var_h)
+    ref_col = last_col
     if bc is None:
         last_col += 1
         bc = last_col
         ws.cell(HEADER_ROW, bc, value=ytd_budget_h)
+        for r in range(1, ws.max_row + 1):
+            _copy_cell_style(ws.cell(r, ref_col), ws.cell(r, bc))
     if ac is None:
         last_col = max(last_col, bc) + 1
         ac = last_col
         ws.cell(HEADER_ROW, ac, value=ytd_actual_h)
+        for r in range(1, ws.max_row + 1):
+            _copy_cell_style(ws.cell(r, ref_col), ws.cell(r, ac))
     if vc is None:
         last_col = max(last_col, ac) + 1
         vc = last_col
         ws.cell(HEADER_ROW, vc, value=ytd_var_h)
+        for r in range(1, ws.max_row + 1):
+            _copy_cell_style(ws.cell(r, ref_col), ws.cell(r, vc))
 
     budget_cols = []
     actual_cols = []
@@ -433,6 +467,30 @@ def _format_variance(ws, rows):
             ws.cell(r, vc).font = Font(color=("00A050" if v >= 0 else "C00000"))
 
 
+def _apply_polish(ws):
+    """Clean layout, freeze panes, show gridlines, auto-widen columns, format numbers."""
+    ws.sheet_view.rightToLeft = True
+    if ws.views.sheetView:
+        ws.views.sheetView[0].showGridLines = True
+    ws.freeze_panes = "C3"
+
+    ws.column_dimensions["A"].width = 14
+    ws.column_dimensions["B"].width = 34
+
+    acct_format = '_ * #,##0_ ;_ * \\-#,##0_ ;_ * "-"??_ ;_ @_ '
+    for c in range(3, ws.max_column + 1):
+        col_letter = get_column_letter(c)
+        hdr_val = str(ws.cell(HEADER_ROW, c).value or "")
+        ws.column_dimensions[col_letter].width = max(len(hdr_val) + 4, 16)
+
+    for r in range(HEADER_ROW + 1, ws.max_row + 1):
+        for c in range(3, ws.max_column + 1):
+            cell = ws.cell(r, c)
+            if isinstance(cell.value, (int, float)):
+                if not cell.number_format or cell.number_format == "General":
+                    cell.number_format = acct_format
+
+
 def _write_engine_footer(ws):
     r = ws.max_row + 2
     ws.cell(r, 1, value=ENGINE_FOOTER)
@@ -453,6 +511,7 @@ def build(src_path, branch_key, movement, out_path, target_month_he="יוני",
     year_suffix = str(month_key).split("-")[0][-2:] if month_key else "26"
     _write_ytd(ws, rows, n, year_suffix=year_suffix)
     _format_variance(ws, rows)
+    _apply_polish(ws)
     _write_engine_footer(ws)
     out.save(out_path)
     out.close()

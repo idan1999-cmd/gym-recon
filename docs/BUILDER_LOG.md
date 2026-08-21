@@ -12,6 +12,23 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 
 ---
 
+## 2026-08-21 — Executive Design Polish & Uniform Formatting for Budget vs. Actual
+
+- **What changed:** 
+  - Eliminated the unstyled "white gap" in `jobs/ledger_output.py`: when inserting Two-Layer columns (`ביצוע (כרטסת)`, `התאמה ידנית`, `- ביצוע`) and YTD columns (`סה"כ תקציב`, `סה"כ ביצוע`, `הפרש YTD`), header backgrounds, fonts, cell fills, borders, and alignments are now fully propagated from existing table columns.
+  - Implemented **Freeze Panes (קיבוע חלונות)** at `C3`: columns A & B (`סעיף תקציבי`, `שם סעיף`) and header rows 1 & 2 remain pinned while scrolling horizontally through months or vertically through P&L line items.
+  - Implemented dynamic column auto-widths (`>= 16` for numeric columns, `14` for code, `34` for labels) to prevent `######` truncation overflow on large amounts.
+  - Enforced clean Israeli accounting number formatting (`#,##0;[Red]-#,##0;"-"`) across all numeric cells and explicitly enabled worksheet gridlines (`showGridLines = True`).
+- **Why (what Idan asked for, in his words if given):** 
+  - *"למה הדו״ח לא בצבע אחיד? ופתאום יש הפסקה?... אני צריך שתעצב לי את המסמך הזה בצורה יותר נוחה וקריאה לעין. מה היית עושה על מנת לעשות את זה?... תבצע לי את זה בבקשה, תריץ את הדו״ח בשנית ותמחק דו״חות אחרים שהרצת."*
+- **What it touches:** 
+  - `jobs/ledger_output.py`, `output/תקציב_מול_ביצוע_חדר_כושר.xlsx`, `output/תקציב_מול_ביצוע_פילאטיס.xlsx`, `docs/BUILDER_LOG.md`.
+- **How it was verified:** 
+  - Verified openpyxl properties on generated Excel (`freeze_panes = 'C3'`, `showGridLines = True`, `fill = solid`).
+  - Executed the full automated test suite (94 tests passed across `test_idan_fixes.py`, `test_resilience.py`, and `test_acceptance.py`).
+
+---
+
 ## 2026-08-16 — Versatile Multi-View Dashboard: Cards, Annual Trend Charts & Full Matrix
 
 - **What changed:** 
