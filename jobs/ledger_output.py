@@ -30,6 +30,10 @@ CODE_COL = 1
 LABEL_COL = 2
 
 RED = Font(color="C00000")
+FILL_RED_ALERT = PatternFill(start_color="FFEBEE", end_color="FFEBEE", fill_type="solid")
+FONT_RED_ALERT = Font(name="Calibri", size=10, bold=True, color="C00000")
+FILL_GREEN_OK = PatternFill(start_color="E8F5E9", end_color="E8F5E9", fill_type="solid")
+FONT_GREEN_OK = Font(name="Calibri", size=10, color="2E7D32")
 LEDGER_SUFFIX="ביצוע (כרטסת)"; MANUAL_SUFFIX="התאמה ידנית"; DISPLAY_SUFFIX="ביצוע"
 ENGINE_FOOTER = "written by gym-recon ledger_sync — do not freestyle Excel"
 
@@ -172,77 +176,48 @@ def _ensure_two_layer(ws, month_he):
 
 def _find_section_rows(ws):
     """
-    Phase 5: locate structural rows by label (not blank-row heuristics).
-    Returns dict with optional keys: expense_header, income_total, expense_total, grand_total
+    Phase 5: locate structural rows by label and layout.
+    Returns dict with keys: expense_header, income_total, expense_total, grand_total
     """
     out = {}
+    exp_h = None
+    gtot = None
     for r in range(HEADER_ROW + 1, ws.max_row + 1):
         lbl = str(ws.cell(r, LABEL_COL).value or "").strip()
-        if not lbl:
+        code = _code_str(ws.cell(r, CODE_COL).value)
+        if not lbl and not code:
             continue
-        if lbl == "הוצאה" and "expense_header" not in out:
+        if lbl == "הוצאה" and exp_h is None:
+            exp_h = r
             out["expense_header"] = r
-        # Require סה"כ-style total (not bare header "הכנסה" which also contains סה as substring of ... no —
-        # "הכנסה" ends with "סה"; require explicit total marker.
         is_total = ("סה\"" in lbl) or ("סה”" in lbl) or ("סהכ" in lbl.replace('"', "").replace("”", "").replace(" ", ""))
         if is_total and "הכנס" in lbl:
             out["income_total"] = r
         elif is_total and "הוצא" in lbl:
             out["expense_total"] = r
-        elif "רווח" in lbl or "הפסד" in lbl:
+        elif (is_total or "רווח" in lbl or "הפסד" in lbl) and gtot is None:
+            gtot = r
             out["grand_total"] = r
-        elif is_total and "תקציב" in lbl and "grand_total" not in out:
-            out.setdefault("grand_total", r)
+
+    if "income_total" not in out and exp_h is not None:
+        if exp_h > 1 and _code_str(ws.cell(exp_h - 1, CODE_COL).value) is None:
+            out["income_total"] = exp_h - 1
+    if "expense_total" not in out and gtot is not None:
+        if gtot > 1 and _code_str(ws.cell(gtot - 1, CODE_COL).value) is None:
+            out["expense_total"] = gtot - 1
     return out
 
 
 def _find_rollup_rows(ws, ref_col=CODE_COL+2):
     """
-    Backward-compatible API used by tests.
-    Prefer label-based section rows; fall back to legacy blank-row scan.
     Returns (income_subtotal_row, expense_total_row, grand_total_row).
     """
     sec = _find_section_rows(ws)
-    if sec.get("income_total") or sec.get("expense_total") or sec.get("grand_total"):
-        return (
-            sec.get("income_total"),
-            sec.get("expense_total"),
-            sec.get("grand_total"),
-        )
-
-    exp_header_row = sec.get("expense_header")
-    if exp_header_row is None:
-        for r in range(HEADER_ROW+1, ws.max_row+1):
-            if str(ws.cell(r, LABEL_COL).value or "").strip()=="הוצאה":
-                exp_header_row=r; break
-    if exp_header_row is None:
-        return None,None,None
-
-    income_subtotal_row=None
-    for r in range(HEADER_ROW+1, exp_header_row):
-        v_code=ws.cell(r,CODE_COL).value
-        v_ref=ws.cell(r,ref_col).value
-        if v_code is None and isinstance(v_ref,(int,float)):
-            income_subtotal_row=r
-
-    grand_total_row=None
-    for r in range(exp_header_row+1, ws.max_row+1):
-        lbl=str(ws.cell(r,LABEL_COL).value or "")
-        if "סה\"כ" in lbl or "סה”כ" in lbl or "רווח" in lbl:
-            grand_total_row=r; break
-    if grand_total_row is None:
-        return income_subtotal_row,None,None
-
-    expense_total_row=None
-    for r in range(exp_header_row+1, grand_total_row):
-        v_code=ws.cell(r,CODE_COL).value
-        v_ref=ws.cell(r,ref_col).value
-        if v_code is None and isinstance(v_ref,(int,float)):
-            expense_total_row=r
-    if expense_total_row is None and grand_total_row-1>exp_header_row:
-        expense_total_row=grand_total_row-1
-
-    return income_subtotal_row,expense_total_row,grand_total_row
+    return (
+        sec.get("income_total"),
+        sec.get("expense_total"),
+        sec.get("grand_total"),
+    )
 
 
 def _income_expense_code_sets(rows):
@@ -256,11 +231,11 @@ def _income_expense_code_sets(rows):
     return income, expense
 
 
-def _fill_rollup_totals(ws, dc, rows, income_subtotal_row, expense_total_row, grand_total_row):
+def _fill_rollup_totals(ws, target_col, rows, income_subtotal_row, expense_total_row, grand_total_row):
     """
-    Phase 5: write NUMERIC totals using code-prefix sums when possible.
+    Phase 5: write NUMERIC totals using code-prefix sums across all layers.
     """
-    style_ref_col = dc - 4 if dc - 4 >= 1 else dc
+    style_ref_col = target_col - 4 if target_col - 4 >= 1 else target_col
 
     def _style_from(ref_row, target_cell):
         if ref_row is None:
@@ -274,34 +249,33 @@ def _fill_rollup_totals(ws, dc, rows, income_subtotal_row, expense_total_row, gr
             target_cell.border = copy(ref_cell.border)
 
     inc_list, exp_list = _income_expense_code_sets(rows)
-    # Prefer explicit income/expense code sets; fall back to row-range split
     if inc_list or exp_list:
-        income_total = round(sum(_num(ws.cell(r, dc).value) for _, r in inc_list), 2)
-        expense_total = round(sum(_num(ws.cell(r, dc).value) for _, r in exp_list), 2)
+        income_total = round(sum(_num(ws.cell(r, target_col).value) for _, r in inc_list), 2)
+        expense_total = round(sum(_num(ws.cell(r, target_col).value) for _, r in exp_list), 2)
     elif income_subtotal_row is not None and expense_total_row is not None:
         income_rows = [r for r in rows.values() if HEADER_ROW < r < income_subtotal_row]
         expense_rows = [r for r in rows.values() if income_subtotal_row < r < expense_total_row]
-        income_total = round(sum(_num(ws.cell(r, dc).value) for r in income_rows), 2)
-        expense_total = round(sum(_num(ws.cell(r, dc).value) for r in expense_rows), 2)
+        income_total = round(sum(_num(ws.cell(r, target_col).value) for r in income_rows), 2)
+        expense_total = round(sum(_num(ws.cell(r, target_col).value) for r in expense_rows), 2)
     else:
         return
 
     grand_total = round(expense_total + income_total, 2)
 
     if income_subtotal_row is not None:
-        c = ws.cell(income_subtotal_row, dc, value=income_total)
+        c = ws.cell(income_subtotal_row, target_col, value=income_total)
         _style_from(income_subtotal_row, c)
         if income_total < 0:
             c.font = RED
 
     if expense_total_row is not None:
-        c = ws.cell(expense_total_row, dc, value=expense_total)
+        c = ws.cell(expense_total_row, target_col, value=expense_total)
         _style_from(expense_total_row, c)
         if expense_total < 0:
             c.font = RED
 
     if grand_total_row is not None:
-        c = ws.cell(grand_total_row, dc, value=grand_total)
+        c = ws.cell(grand_total_row, target_col, value=grand_total)
         _style_from(grand_total_row, c)
         if grand_total < 0:
             c.font = RED
@@ -451,20 +425,51 @@ def _sync(ws, month_he, month_key, sheet_key, movement):
     # Phase 6: force income sign on system layer
     flipped = _enforce_income_sign(ws, lc, mc, dc, rows)
 
+    # Fill rollup totals across all layers: ledger, manual, and display
     isub, etot, gtot = _find_rollup_rows(ws)
+    _fill_rollup_totals(ws, lc, rows, isub, etot, gtot)
+    _fill_rollup_totals(ws, mc, rows, isub, etot, gtot)
     _fill_rollup_totals(ws, dc, rows, isub, etot, gtot)
     return written, dc, rows, flipped
 
 
 def _format_variance(ws, rows):
-    """Colour the 'ביצוע מול תקציב' column green(≥0)/red(<0) if present."""
-    vc = _find_header(ws, "ביצוע מול תקציב")
-    if vc is None:
-        return
-    for r in rows.values():
-        v = ws.cell(r, vc).value
-        if isinstance(v, (int, float)):
-            ws.cell(r, vc).font = Font(color=("00A050" if v >= 0 else "C00000"))
+    """Highlight variances and overruns with prominent colors."""
+    isub, etot, gtot = _find_rollup_rows(ws)
+    var_cols = []
+    for c in range(1, ws.max_column + 1):
+        h = str(ws.cell(HEADER_ROW, c).value or "").strip()
+        if "ביצוע מול תקציב" in h or "הפרש YTD" in h:
+            var_cols.append(c)
+
+    for vc in var_cols:
+        for code, r in rows.items():
+            val = ws.cell(r, vc).value
+            if isinstance(val, (int, float)):
+                if is_income_budget_code(code):
+                    if val > 100:  # income under target (underperforming)
+                        ws.cell(r, vc).fill = FILL_RED_ALERT
+                        ws.cell(r, vc).font = FONT_RED_ALERT
+                    elif val <= 0:  # income met/exceeded target
+                        ws.cell(r, vc).fill = FILL_GREEN_OK
+                        ws.cell(r, vc).font = FONT_GREEN_OK
+                else:
+                    if val > 100:  # expense over budget (overrun)
+                        ws.cell(r, vc).fill = FILL_RED_ALERT
+                        ws.cell(r, vc).font = FONT_RED_ALERT
+                    elif val <= 0:  # expense on/under budget
+                        ws.cell(r, vc).fill = FILL_GREEN_OK
+                        ws.cell(r, vc).font = FONT_GREEN_OK
+
+        if gtot is not None:
+            g_val = ws.cell(gtot, vc).value
+            if isinstance(g_val, (int, float)):
+                if g_val < 0:
+                    ws.cell(gtot, vc).fill = FILL_RED_ALERT
+                    ws.cell(gtot, vc).font = FONT_RED_ALERT
+                else:
+                    ws.cell(gtot, vc).fill = FILL_GREEN_OK
+                    ws.cell(gtot, vc).font = FONT_GREEN_OK
 
 
 def _apply_polish(ws):
