@@ -723,6 +723,10 @@ function renderMemberships(data) {
     const sSum = sales.summary;
     document.getElementById('mem-kpi-refund-pending').innerText = formatNIS(sSum.approved_pending_refund_amount);
     document.getElementById('mem-kpi-refund-pending-count').innerText = `${sSum.approved_pending_count || 0} פניות ממתינות`;
+    document.getElementById('mem-kpi-refund-approved').innerText = formatNIS(sSum.approved_pending_refund_amount);
+    document.getElementById('mem-kpi-refund-completed').innerText = formatNIS(sSum.completed_refund_amount);
+  }
+
   // Update Home View Banner Elements (View 1)
   const homeBadge = document.getElementById('home-mem-snapshot-badge');
   if (homeBadge) homeBadge.innerText = `Snapshot ${mem.active_tab || ''}`;
@@ -959,16 +963,21 @@ function filterMembershipsTables() {
   });
 }
 
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeModal();
-});
-
-document.getElementById('drilldown-modal').addEventListener('click', (e) => {
-  if (e.target.id === 'drilldown-modal') closeModal();
-});
+function initDashboard() {
+  const modalEl = document.getElementById('drilldown-modal');
+  if (modalEl) {
+    modalEl.addEventListener('click', (e) => {
+      if (e.target.id === 'drilldown-modal') closeModal();
+    });
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeModal();
+  });
+  fetchDashboardData();
+}
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', fetchDashboardData);
+  document.addEventListener('DOMContentLoaded', initDashboard);
 } else {
-  fetchDashboardData();
+  initDashboard();
 }
