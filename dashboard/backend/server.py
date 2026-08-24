@@ -7,7 +7,7 @@ import os
 import sys
 import json
 import urllib.parse
-from http.server import HTTPServer, SimpleHTTPRequestHandler
+from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -63,6 +63,16 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         # Serve static assets
         super().do_GET()
 
+    def do_HEAD(self):
+        parsed = urllib.parse.urlparse(self.path)
+        if parsed.path.startswith("/api/"):
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            return
+        super().do_HEAD()
+
     def do_POST(self):
         global data_service
         parsed = urllib.parse.urlparse(self.path)
@@ -103,8 +113,15 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         self.end_headers()
 
 def run_server(port=PORT):
+    print("🔄 Pre-warming dashboard cache...")
+    try:
+        data_service.get_dashboard_summary(month=6, club_filter="all")
+        print("✅ Dashboard cache ready!")
+    except Exception as e:
+        print("⚠️ Cache pre-warm notice:", e)
+
     server_address = ("", port)
-    httpd = HTTPServer(server_address, DashboardHandler)
+    httpd = ThreadingHTTPServer(server_address, DashboardHandler)
     print(f"🚀 Ariel Fit & Spa Dashboard is running at http://localhost:{port}")
     try:
         httpd.serve_forever()
