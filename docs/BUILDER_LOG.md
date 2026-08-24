@@ -10,6 +10,26 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
 
+## 2026-08-24 — Custom Revenue & Expense Forecast Editor (Per Club & Unified)
+
+- **What changed:** 
+  - Added dedicated **"ערוך תחזית" (Edit Forecast)** action buttons to both the **תחזית הכנסות לסוף חודש** and **תחזית הוצאות לסוף חודש** KPI cards.
+  - Implemented the interactive **Projection & Forecast Modal (`#projection-modal`)** allowing executive overrides:
+    1. **Per-Club Precision:** Allows editing forecasts separately for **כל המועדון (מאוחד)**, **חדר כושר**, and **פילאטיס מכשירים**.
+    2. **Calculated vs. Custom:** Displays the run-rate/ledger calculated projection baseline with a single-click "החל תחזית מחושבת" reset button.
+    3. **Visual Indicator:** Displays an executive `מוגדר` badge whenever a custom forecast override is active for that club/month.
+  - Updated backend (`data_service.py` & `server.py`) to persist and apply projection keys (`{club}_projected_revenue_{month}` and `{club}_projected_expenses_{month}`) in `config/custom_targets.json`.
+- **Why (what Idan asked for, in his words if given):** 
+  - *"חושב שכדאי לבנות כזה בעתיד, בוא תכניס לי בינתיים כפתור שבו אני יכול לערוך את צפי ההכנסות/ההוצאות לסוף החודש. כמובן למועדון, לפילאטיס ולשני הסניפים - כל אחד בנפרד."*
+- **What it touches:** 
+  - `dashboard/backend/data_service.py`, `dashboard/backend/server.py`, `dashboard/public/index.html`, `dashboard/public/app.js`, `docs/BUILDER_LOG.md`.
+- **How it was verified:** 
+  - Tested setting and resetting custom forecasts via HTTP POST and verifying immediate reactivity in the UI.
+  - Verified branch isolation between All, Gym, and Pilates.
+  - Validated syntax with `jsc` and ran automated test suite.
+
+---
+
 ## 2026-08-24 — Brand Identity System Redesign (A+ Street Mall / Premium Club by Ariel Properties)
 
 - **What changed:** 

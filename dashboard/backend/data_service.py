@@ -57,9 +57,13 @@ class DashboardDataService:
                 return {}
         return {}
 
-    def save_custom_target(self, club: str, code: str, month: int, new_target: float) -> bool:
+    def save_custom_target(self, club: str, code: str, month: int, new_target) -> bool:
         key = f"{club}_{code}_{month}"
-        self.custom_targets[key] = float(new_target)
+        if new_target is None or new_target == "" or (isinstance(new_target, (int, float)) and new_target < 0):
+            if key in self.custom_targets:
+                del self.custom_targets[key]
+        else:
+            self.custom_targets[key] = float(new_target)
         try:
             CONFIG_DIR.mkdir(parents=True, exist_ok=True)
             with open(CUSTOM_TARGETS_FILE, "w", encoding="utf-8") as f:
@@ -928,9 +932,27 @@ class DashboardDataService:
             total_rev_budget = float(self.custom_targets[rev_override_key])
             is_custom_rev = True
 
-        # For closed/recorded months, projected equals actuals (accurate figures without artificial inflation)
-        total_rev_projected = total_rev_actual if total_rev_actual > 0 else total_rev_budget
-        total_exp_projected = total_exp_actual if total_exp_actual > 0 else total_exp_budget
+        # Base calculated projections (for closed/recorded months, equals actuals)
+        calc_rev_projected = total_rev_actual if total_rev_actual > 0 else total_rev_budget
+        calc_exp_projected = total_exp_actual if total_exp_actual > 0 else total_exp_budget
+
+        # Check for custom revenue forecast override
+        is_custom_rev_proj = False
+        rev_proj_override_key = f"{club_filter}_projected_revenue_{month}"
+        if rev_proj_override_key in self.custom_targets:
+            total_rev_projected = float(self.custom_targets[rev_proj_override_key])
+            is_custom_rev_proj = True
+        else:
+            total_rev_projected = calc_rev_projected
+
+        # Check for custom expense forecast override
+        is_custom_exp_proj = False
+        exp_proj_override_key = f"{club_filter}_projected_expenses_{month}"
+        if exp_proj_override_key in self.custom_targets:
+            total_exp_projected = float(self.custom_targets[exp_proj_override_key])
+            is_custom_exp_proj = True
+        else:
+            total_exp_projected = calc_exp_projected
 
         # Calculate annual trends & smart insights
         annual_trends = self.get_annual_trends(incomes_list, var_exp_list, fix_exp_list)
@@ -973,12 +995,16 @@ class DashboardDataService:
                     "is_custom": is_custom_rev,
                     "actual": total_rev_actual,
                     "projected": total_rev_projected,
+                    "calculated_projected": calc_rev_projected,
+                    "is_custom_projected": is_custom_rev_proj,
                     "pct": round((total_rev_actual / total_rev_budget * 100), 1) if total_rev_budget > 0 else 0
                 },
                 "total_expenses": {
                     "budget": total_exp_budget,
                     "actual": total_exp_actual,
                     "projected": total_exp_projected,
+                    "calculated_projected": calc_exp_projected,
+                    "is_custom_projected": is_custom_exp_proj,
                     "pct": round((total_exp_actual / total_exp_budget * 100), 1) if total_exp_budget > 0 else 0
                 }
             },

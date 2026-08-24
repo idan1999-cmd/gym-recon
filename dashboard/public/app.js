@@ -230,6 +230,114 @@ async function applyGenericRevenueTarget() {
   }
 }
 
+let currentProjectionType = 'revenue'; // 'revenue' | 'expenses'
+
+function openProjectionModal(type) {
+  if (!dashboardData || !dashboardData.summary) return;
+  currentProjectionType = type;
+  const isRev = type === 'revenue';
+  const targetObj = isRev ? dashboardData.summary.total_revenue : dashboardData.summary.total_expenses;
+  const meta = dashboardData.metadata;
+
+  const clubName = (currentClub === 'gym') ? 'חדר כושר' : ((currentClub === 'pilates') ? 'פילאטיס' : 'כל המועדון');
+  
+  const titleEl = document.getElementById('projection-modal-title');
+  const subEl = document.getElementById('projection-modal-subtitle');
+  const iconEl = document.getElementById('projection-modal-icon');
+  const iconBox = document.getElementById('projection-modal-icon-box');
+  const calcDisplay = document.getElementById('calculated-projection-display');
+  const inputEl = document.getElementById('custom-projection-input');
+
+  if (titleEl) titleEl.innerText = isRev ? 'הגדרת תחזית הכנסות לסוף חודש' : 'הגדרת תחזית הוצאות לסוף חודש';
+  if (subEl) subEl.innerText = `${clubName} • ${meta.month_name} ${meta.year}`;
+  if (iconEl) iconEl.setAttribute('data-lucide', isRev ? 'trending-up' : 'trending-down');
+  if (iconBox) {
+    iconBox.className = `w-9 h-9 rounded-2xl ${isRev ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-zinc-100 text-zinc-700 border border-zinc-200'} flex items-center justify-center font-black`;
+  }
+
+  const calcVal = targetObj.calculated_projected || targetObj.actual || targetObj.budget;
+  if (calcDisplay) calcDisplay.innerText = formatNIS(calcVal);
+  if (inputEl) inputEl.value = Math.round(targetObj.projected);
+
+  const modal = document.getElementById('projection-modal');
+  const card = document.getElementById('projection-modal-card');
+  modal.classList.remove('hidden');
+  setTimeout(() => {
+    modal.classList.remove('opacity-0');
+    card.classList.remove('scale-95');
+    card.classList.add('scale-100');
+  }, 10);
+  try { lucide.createIcons(); } catch (e) {}
+}
+
+function closeProjectionModal() {
+  const modal = document.getElementById('projection-modal');
+  const card = document.getElementById('projection-modal-card');
+  if (!modal || !card) return;
+  modal.classList.add('opacity-0');
+  card.classList.remove('scale-100');
+  card.classList.add('scale-95');
+  setTimeout(() => {
+    modal.classList.add('hidden');
+  }, 200);
+}
+
+async function saveCustomProjection() {
+  const inputVal = parseFloat(document.getElementById('custom-projection-input').value);
+  if (isNaN(inputVal) || inputVal < 0) {
+    showToast('נא להזין סכום תחזית תקין');
+    return;
+  }
+
+  const codeKey = currentProjectionType === 'revenue' ? 'projected_revenue' : 'projected_expenses';
+
+  try {
+    const res = await fetch('/api/target', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        club: currentClub,
+        code: codeKey,
+        month: currentMonth,
+        target: inputVal
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('התחזית נשמרה בהצלחה!');
+      closeProjectionModal();
+      await fetchDashboardData();
+    }
+  } catch (err) {
+    showToast('שגיאה בשמירת התחזית');
+  }
+}
+
+async function applyCalculatedProjection() {
+  const codeKey = currentProjectionType === 'revenue' ? 'projected_revenue' : 'projected_expenses';
+
+  try {
+    const res = await fetch('/api/target', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        club: currentClub,
+        code: codeKey,
+        month: currentMonth,
+        target: null
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('הוחלה תחזית מחושבת!');
+      closeProjectionModal();
+      await fetchDashboardData();
+    }
+  } catch (err) {
+    showToast('שגיאה באיפוס התחזית');
+  }
+}
+
 function renderDashboard(data) {
   if (!data) return;
 
@@ -249,10 +357,20 @@ function renderDashboard(data) {
     customBadge.classList.toggle('hidden', !sum.total_revenue.is_custom);
   }
 
+  const customRevProjBadge = document.getElementById('strip-rev-proj-custom-badge');
+  if (customRevProjBadge) {
+    customRevProjBadge.classList.toggle('hidden', !sum.total_revenue.is_custom_projected);
+  }
+
   document.getElementById('strip-exp-actual').innerText = formatNIS(sum.total_expenses.actual);
   document.getElementById('strip-exp-budget').innerText = formatNIS(sum.total_expenses.budget);
   document.getElementById('strip-exp-pct').innerText = `${sum.total_expenses.pct}%`;
   document.getElementById('strip-exp-proj').innerText = formatNIS(sum.total_expenses.projected);
+
+  const customExpProjBadge = document.getElementById('strip-exp-proj-custom-badge');
+  if (customExpProjBadge) {
+    customExpProjBadge.classList.toggle('hidden', !sum.total_expenses.is_custom_projected);
+  }
 
   // 1. Render AI Smart Insights
   renderSmartInsights(data.smart_insights);

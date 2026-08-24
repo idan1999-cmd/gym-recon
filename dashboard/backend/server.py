@@ -84,14 +84,15 @@ class DashboardHandler(SimpleHTTPRequestHandler):
                 club = data.get("club", "חדר כושר")
                 code = data.get("code", "")
                 month = int(data.get("month", 6))
-                target = float(data.get("target", 0.0))
+                raw_target = data.get("target")
+                target = float(raw_target) if (raw_target is not None and raw_target != "") else None
 
                 success = data_service.save_custom_target(club, code, month, target)
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.send_header("Access-Control-Allow-Origin", "*")
                 self.end_headers()
-                self.wfile.write(json.dumps({"success": success, "message": "היעד עודכן בהצלחה"}, ensure_ascii=False).encode("utf-8"))
+                self.wfile.write(json.dumps({"success": success, "message": "הנתונים עודכנו בהצלחה"}, ensure_ascii=False).encode("utf-8"))
                 return
             except Exception as e:
                 self.send_response(400)

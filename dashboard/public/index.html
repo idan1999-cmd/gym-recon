@@ -194,16 +194,34 @@
         </div>
       </div>
 
-      <div class="bg-zinc-900 text-white p-4 rounded-2xl border border-zinc-800 shadow-2xs">
-        <div class="text-[11px] font-medium text-zinc-400">תחזית הכנסות לסוף חודש</div>
+      <div class="bg-zinc-900 text-white p-4 rounded-2xl border border-zinc-800 shadow-2xs relative group">
+        <div class="flex items-center justify-between">
+          <div class="text-[11px] font-medium text-zinc-400">תחזית הכנסות לסוף חודש</div>
+          <button onclick="openProjectionModal('revenue')" class="text-[10px] font-bold text-rose-300 bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-lg border border-white/15 transition flex items-center gap-1" title="עריכת תחזית הכנסות">
+            <i data-lucide="trending-up" class="w-3 h-3 text-rose-400"></i>
+            <span>ערוך תחזית</span>
+          </button>
+        </div>
         <div class="text-2xl font-black text-white mt-1" id="strip-rev-proj">₪0</div>
-        <div class="text-[10px] text-rose-400 font-semibold mt-1">מבוסס קצב יומי ועונתיות</div>
+        <div class="text-[10px] text-rose-400 font-semibold mt-1 flex items-center justify-between">
+          <span>מבוסס קצב יומי ועונתיות</span>
+          <span id="strip-rev-proj-custom-badge" class="hidden text-[9px] bg-rose-600 text-white px-1.5 py-0.5 rounded-md font-black shadow-2xs">מוגדר</span>
+        </div>
       </div>
 
-      <div class="bg-zinc-50 p-4 rounded-2xl border border-zinc-200 shadow-2xs">
-        <div class="text-[11px] font-bold text-zinc-600">תחזית הוצאות לסוף חודש</div>
+      <div class="bg-zinc-50 p-4 rounded-2xl border border-zinc-200 shadow-2xs relative group">
+        <div class="flex items-center justify-between">
+          <div class="text-[11px] font-bold text-zinc-600">תחזית הוצאות לסוף חודש</div>
+          <button onclick="openProjectionModal('expenses')" class="text-[10px] font-bold text-zinc-700 bg-zinc-200/80 hover:bg-zinc-300 px-2 py-0.5 rounded-lg border border-zinc-300 transition flex items-center gap-1" title="עריכת תחזית הוצאות">
+            <i data-lucide="trending-down" class="w-3 h-3 text-zinc-600"></i>
+            <span>ערוך תחזית</span>
+          </button>
+        </div>
         <div class="text-2xl font-black text-zinc-900 mt-1" id="strip-exp-proj">₪0</div>
-        <div class="text-[10px] text-zinc-500 mt-1">משקלל שיעורי ארבוקס וחילנט</div>
+        <div class="text-[10px] text-zinc-500 mt-1 flex items-center justify-between">
+          <span>משקלל שיעורי ארבוקס וחילנט</span>
+          <span id="strip-exp-proj-custom-badge" class="hidden text-[9px] bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded-md font-black">מוגדר</span>
+        </div>
       </div>
     </section>
 
@@ -782,12 +800,57 @@
     </div>
   </div>
 
+  <!-- Projection / Forecast Editor Modal (תחזית מחושבת מול תחזית מוגדרת אישית) -->
+  <div id="projection-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/70 backdrop-blur-xs transition-opacity duration-200 hidden opacity-0">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-zinc-200 transform scale-95 transition-transform duration-200" id="projection-modal-card">
+      <div class="flex items-center justify-between border-b border-zinc-100 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-black border border-rose-100" id="projection-modal-icon-box">
+            <i data-lucide="trending-up" class="w-5 h-5" id="projection-modal-icon"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-black text-zinc-900" id="projection-modal-title">הגדרת תחזית הכנסות לסוף חודש</h3>
+            <p class="text-[11px] text-zinc-400 font-medium" id="projection-modal-subtitle">כל המועדון • חודש יוני 2026</p>
+          </div>
+        </div>
+        <button onclick="closeProjectionModal()" class="w-7 h-7 rounded-full bg-zinc-100 text-zinc-500 hover:bg-zinc-200 flex items-center justify-center transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <!-- Calculated projection box -->
+        <div class="bg-zinc-50 p-3.5 rounded-2xl border border-zinc-200/80 flex items-center justify-between">
+          <div>
+            <div class="text-[11px] font-bold text-zinc-500">תחזית מחושבת (קצב / ביצוע)</div>
+            <div class="text-base font-black text-zinc-900" id="calculated-projection-display">₪ 0</div>
+          </div>
+          <button onclick="applyCalculatedProjection()" class="text-xs px-3.5 py-1.5 bg-white hover:bg-zinc-100 text-zinc-800 font-bold rounded-xl border border-zinc-300 shadow-2xs transition">
+            החל תחזית מחושבת
+          </button>
+        </div>
+
+        <!-- Custom projection input box -->
+        <div class="space-y-1.5 pt-1">
+          <label class="text-xs font-bold text-zinc-800">תחזית מוגדרת אישית (₪):</label>
+          <div class="flex items-center gap-2">
+            <input type="number" id="custom-projection-input" placeholder="הזן סכום תחזית..." class="flex-1 px-3.5 py-2.5 rounded-xl border border-zinc-300 text-sm font-bold text-zinc-900 focus:outline-none focus:ring-2 focus:ring-rose-500" />
+            <button onclick="saveCustomProjection()" class="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-2xs transition">
+              שמור תחזית
+            </button>
+          </div>
+          <p class="text-[10px] text-zinc-400">התחזית שתגדיר תוצג בכרטיס הראשי עבור הסניף והחודש הנוכחיים.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Notification Toast -->
   <div id="toast" class="fixed bottom-5 left-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-semibold">
     <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
     <span id="toast-message">הנתונים סונכרנו בהצלחה!</span>
   </div>
 
-  <script src="app.js?v=3.1"></script>
+  <script src="app.js?v=3.2"></script>
 </body>
 </html>
