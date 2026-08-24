@@ -5,6 +5,7 @@ smart AI financial insights, and flexible multi-view aggregation.
 """
 from __future__ import annotations
 import os
+import re
 import json
 import calendar
 from datetime import datetime
@@ -44,6 +45,7 @@ class DashboardDataService:
     def __init__(self):
         self.year = 2026
         self.custom_targets = self._load_custom_targets()
+        self._cache = {}
 
     def _load_custom_targets(self) -> dict:
         if CUSTOM_TARGETS_FILE.exists():
@@ -82,6 +84,11 @@ class DashboardDataService:
     def parse_budget_workbook(self, file_path: Path, club_name: str) -> dict:
         if not file_path.exists():
             return {}
+
+        mtime = file_path.stat().st_mtime
+        cache_key = f"budget_{file_path}_{club_name}_{mtime}"
+        if cache_key in self._cache:
+            return self._cache[cache_key]
 
         wb = openpyxl.load_workbook(str(file_path), data_only=True)
         ws = wb.active
@@ -199,12 +206,14 @@ class DashboardDataService:
                     item_data["explanation"] = "הוצאות תשתית קבועות בחוזה (שכירות, חשמל, מים, ארנונה, תוכנות ניהול)."
                     fixed_expenses.append(item_data)
 
-        return {
+        res = {
             "club": club_name,
             "incomes": incomes,
             "variable_expenses": variable_expenses,
             "fixed_expenses": fixed_expenses
         }
+        self._cache[cache_key] = res
+        return res
 
     def get_drilldown_history(self, item_name: str, item_months: dict, target_month: int) -> dict:
         history_bars = []
@@ -340,7 +349,288 @@ class DashboardDataService:
             "pt": {"revenue": pt_rev_trend, "cost": pt_cost_trend}
         }
 
-    def get_dashboard_summary(self, month: int = 6, club_filter: str = "all", holiday_mode: bool = False) -> dict:
+    def find_input_file(self, pattern: str) -> Path | None:
+        search_dirs = [
+            INPUT_DIR / "dropzone",
+            INPUT_DIR,
+            INPUT_DIR / "archive"
+        ]
+        for sdir in search_dirs:
+            if not sdir.exists():
+                continue
+            for f in sdir.rglob(pattern):
+                if not f.name.startswith("~$") and f.is_file():
+                    return f
+        return None
+
+    def parse_membership_data(self, selected_tab: str | None = None) -> dict:
+        mem_file = self.find_input_file("*מנויים*.xlsx")
+        if not mem_file or not mem_file.exists():
+            return {
+                "active_tab": "",
+                "available_snapshots": [],
+                "stats": {
+                    "all": {"active": 0, "frozen": 0, "future_cancellations": 0, "total": 0, "avg_price": 0.0, "avg_monthly_price": 0.0},
+                    "gym": {"name": "מועדון A+", "active": 0, "frozen": 0, "future_cancellations": 0, "total": 0, "avg_price": 0.0, "avg_monthly_price": 0.0},
+                    "pilates": {"name": "פילאטיס מכשירים", "active": 0, "frozen": 0, "future_cancellations": 0, "total": 0, "avg_price": 0.0, "avg_monthly_price": 0.0}
+                },
+                "future_cancellations": [],
+                "cancellations_by_month": []
+            }
+
+        mtime = mem_file.stat().st_mtime
+        cache_key = f"mem_{mem_file}_{selected_tab}_{mtime}"
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+
+        try:
+            wb = openpyxl.load_workbook(str(mem_file), data_only=True)
+            snapshots = []
+            for s in wb.sheetnames:
+                m = re.match(r"^(\d{1,2})\.(\d{1,2})$", s.strip())
+                if m:
+                    day, month = int(m.group(1)), int(m.group(2))
+                    snapshots.append({
+                        "sheet": s,
+                        "day": day,
+                        "month": month,
+                        "sort_key": (month, day),
+                        "label": f"{day:02d}/{month:02d}"
+                    })
+            snapshots.sort(key=lambda x: x["sort_key"], reverse=True)
+
+            active_tab = selected_tab if (selected_tab and selected_tab in wb.sheetnames) else (snapshots[0]["sheet"] if snapshots else wb.sheetnames[0])
+            ws = wb[active_tab]
+
+            headers = {}
+            for c in range(1, ws.max_column + 1):
+                v = ws.cell(1, c).value
+                if v:
+                    headers[str(v).strip()] = c
+
+            def get_val(row, header_names, default=None):
+                for name in header_names:
+                    if name in headers:
+                        v = ws.cell(row, headers[name]).value
+                        if v is not None:
+                            return v
+                return default
+
+            branches_stats = {
+                "all": {"active": 0, "frozen": 0, "future_cancellations": 0, "total": 0, "prices": [], "monthly_prices": []},
+                "gym": {"name": "מועדון A+", "active": 0, "frozen": 0, "future_cancellations": 0, "total": 0, "prices": [], "monthly_prices": []},
+                "pilates": {"name": "פילאטיס מכשירים", "active": 0, "frozen": 0, "future_cancellations": 0, "total": 0, "prices": [], "monthly_prices": []}
+            }
+
+            future_cancel_members = []
+            cancellations_by_month = {}
+
+            for r in range(2, ws.max_row + 1):
+                name = get_val(r, ["שם", "משתמש", " "])
+                status = get_val(r, ["סטטוס"])
+                if not status:
+                    continue
+                st = str(status).strip()
+
+                m_type = get_val(r, ["מנוי"]) or ""
+                branch_raw = get_val(r, ["סניף"])
+
+                branch_key = "gym"
+                if branch_raw:
+                    if "פילאטיס" in str(branch_raw):
+                        branch_key = "pilates"
+                elif "פילאטיס" in str(m_type):
+                    branch_key = "pilates"
+
+                start_d = get_val(r, ["תאריך התחלה"])
+                end_d = get_val(r, ["תאריך סיום"])
+                price = safe_float(get_val(r, ["מחיר מכירה", "שולם", "מחיר"]))
+
+                # Monthly price
+                explicit_monthly = get_val(r, ["מחיר לחודש"])
+                if explicit_monthly is not None:
+                    m_price = safe_float(explicit_monthly)
+                else:
+                    months = 12.0
+                    if start_d and end_d and hasattr(start_d, "year") and hasattr(end_d, "year"):
+                        days = (end_d - start_d).days
+                        if days > 0:
+                            months = max(days / 30.4167, 1.0)
+                    m_price = round(price / months, 2) if months > 0 else price
+
+                is_active = "פעיל" in st and "ביטול" not in st
+                is_frozen = "הוקפא" in st or "הקפאה" in st
+                is_future_cancel = "ביטול" in st
+
+                target_keys = ["all", branch_key]
+                for tk in target_keys:
+                    branches_stats[tk]["total"] += 1
+                    if is_active:
+                        branches_stats[tk]["active"] += 1
+                        if price > 0:
+                            branches_stats[tk]["prices"].append(price)
+                            branches_stats[tk]["monthly_prices"].append(m_price)
+                    elif is_frozen:
+                        branches_stats[tk]["frozen"] += 1
+                        if price > 0:
+                            branches_stats[tk]["prices"].append(price)
+                            branches_stats[tk]["monthly_prices"].append(m_price)
+                    elif is_future_cancel:
+                        branches_stats[tk]["future_cancellations"] += 1
+                        if price > 0:
+                            branches_stats[tk]["prices"].append(price)
+                            branches_stats[tk]["monthly_prices"].append(m_price)
+
+                if is_future_cancel:
+                    end_d_str = end_d.strftime("%d/%m/%Y") if hasattr(end_d, "strftime") else str(end_d)
+                    end_month_key = end_d.strftime("%Y-%m") if hasattr(end_d, "strftime") else "unknown"
+                    cancellations_by_month[end_month_key] = cancellations_by_month.get(end_month_key, 0) + 1
+
+                    future_cancel_members.append({
+                        "name": str(name).strip() if name else "ללא שם",
+                        "branch": "פילאטיס מכשירים" if branch_key == "pilates" else "מועדון A+",
+                        "branch_key": branch_key,
+                        "membership_type": str(m_type).strip(),
+                        "end_date": end_d_str,
+                        "end_month": end_month_key,
+                        "price": price,
+                        "monthly_price": m_price
+                    })
+
+            for bk in ["all", "gym", "pilates"]:
+                p_list = branches_stats[bk]["prices"]
+                mp_list = branches_stats[bk]["monthly_prices"]
+                branches_stats[bk]["avg_price"] = round(sum(p_list) / len(p_list), 1) if p_list else 0.0
+                branches_stats[bk]["avg_monthly_price"] = round(sum(mp_list) / len(mp_list), 1) if mp_list else 0.0
+                del branches_stats[bk]["prices"]
+                del branches_stats[bk]["monthly_prices"]
+
+            res = {
+                "file_name": mem_file.name,
+                "active_tab": active_tab,
+                "available_snapshots": snapshots,
+                "stats": branches_stats,
+                "future_cancellations": future_cancel_members,
+                "cancellations_by_month": sorted([{"month": k, "count": v} for k, v in cancellations_by_month.items()], key=lambda x: x["month"])
+            }
+            self._cache[cache_key] = res
+            return res
+        except Exception as e:
+            print("Error parsing memberships:", e)
+            return {
+                "active_tab": "",
+                "available_snapshots": [],
+                "stats": {
+                    "all": {"active": 0, "frozen": 0, "future_cancellations": 0, "total": 0, "avg_price": 0.0, "avg_monthly_price": 0.0},
+                    "gym": {"name": "מועדון A+", "active": 0, "frozen": 0, "future_cancellations": 0, "total": 0, "avg_price": 0.0, "avg_monthly_price": 0.0},
+                    "pilates": {"name": "פילאטיס מכשירים", "active": 0, "frozen": 0, "future_cancellations": 0, "total": 0, "avg_price": 0.0, "avg_monthly_price": 0.0}
+                },
+                "future_cancellations": [],
+                "cancellations_by_month": []
+            }
+
+    def parse_sales_cancellations(self) -> dict:
+        sales_file = self.find_input_file("*מכירות*.xlsx")
+        if not sales_file or not sales_file.exists():
+            return {
+                "summary": {
+                    "total_requests": 0,
+                    "approved_pending_refund_amount": 0.0,
+                    "approved_pending_count": 0,
+                    "completed_refund_amount": 0.0,
+                    "completed_count": 0,
+                    "total_refund_amount": 0.0
+                },
+                "requests": []
+            }
+
+        mtime = sales_file.stat().st_mtime
+        cache_key = f"sales_{sales_file}_{mtime}"
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+
+        try:
+            wb = openpyxl.load_workbook(str(sales_file), data_only=True)
+            if "הקפאותביטולים" not in wb.sheetnames:
+                return {"summary": {}, "requests": []}
+            ws = wb["הקפאותביטולים"]
+
+            headers = {}
+            for c in range(1, ws.max_column + 1):
+                v = ws.cell(1, c).value
+                if v:
+                    headers[str(v).strip()] = c
+
+            def get_val(row, header_names, default=None):
+                for name in header_names:
+                    if name in headers:
+                        v = ws.cell(row, headers[name]).value
+                        if v is not None:
+                            return v
+                return default
+
+            summary = {
+                "total_requests": 0,
+                "approved_pending_refund_amount": 0.0,
+                "approved_pending_count": 0,
+                "completed_refund_amount": 0.0,
+                "completed_count": 0,
+                "total_refund_amount": 0.0
+            }
+
+            requests_list = []
+
+            for r in range(2, ws.max_row + 1):
+                name = get_val(r, ["שם"])
+                req_type = get_val(r, ["סוג"]) or ""
+                status = get_val(r, ["סטטוס"]) or "ללא סטטוס"
+                req_date = get_val(r, ["תאריך פנייה", "תאריך"])
+                notes = get_val(r, ["הערות"]) or ""
+                refund_amount = safe_float(get_val(r, ["סה״כ זיכוי", "סכום זיכוי"]))
+                opener = get_val(r, ["פותח הפנייה"]) or ""
+
+                if not name and not req_type and refund_amount == 0:
+                    continue
+
+                summary["total_requests"] += 1
+                summary["total_refund_amount"] += refund_amount
+
+                st_clean = str(status).strip()
+                if "אושר" in st_clean and "ממתין" in st_clean:
+                    summary["approved_pending_refund_amount"] += refund_amount
+                    summary["approved_pending_count"] += 1
+                elif "טופל" in st_clean:
+                    summary["completed_refund_amount"] += refund_amount
+                    summary["completed_count"] += 1
+
+                req_d_str = req_date.strftime("%d/%m/%Y") if hasattr(req_date, "strftime") else (str(req_date)[:10] if req_date else "")
+
+                requests_list.append({
+                    "name": str(name).strip() if name else "ללא שם",
+                    "type": str(req_type).strip(),
+                    "status": st_clean,
+                    "req_date": req_d_str,
+                    "refund_amount": refund_amount,
+                    "notes": str(notes).strip(),
+                    "opener": str(opener).strip()
+                })
+
+            summary["approved_pending_refund_amount"] = round(summary["approved_pending_refund_amount"], 2)
+            summary["completed_refund_amount"] = round(summary["completed_refund_amount"], 2)
+            summary["total_refund_amount"] = round(summary["total_refund_amount"], 2)
+
+            res = {
+                "file_name": sales_file.name,
+                "summary": summary,
+                "requests": requests_list
+            }
+            self._cache[cache_key] = res
+            return res
+        except Exception as e:
+            print("Error parsing sales cancellations:", e)
+            return {"summary": {}, "requests": []}
+
+    def get_dashboard_summary(self, month: int = 6, club_filter: str = "all", holiday_mode: bool = False, snapshot: str | None = None) -> dict:
         gym_data = self.parse_budget_workbook(OUTPUT_DIR / "תקציב_מול_ביצוע_חדר_כושר.xlsx", "חדר כושר")
         pilates_data = self.parse_budget_workbook(OUTPUT_DIR / "תקציב_מול_ביצוע_פילאטיס.xlsx", "פילאטיס מכשירים")
 
@@ -489,6 +779,25 @@ class DashboardDataService:
         annual_trends = self.get_annual_trends(incomes_list, var_exp_list, fix_exp_list)
         smart_insights = self.generate_smart_insights(incomes_list, var_exp_list, fix_exp_list, month)
 
+        # Parse memberships and sales cancellations reports
+        memberships_data = self.parse_membership_data(selected_tab=snapshot)
+        sales_cancellations = self.parse_sales_cancellations()
+
+        # Enrich future cancellations with sales refunds where name matches
+        refund_map = {}
+        for req in sales_cancellations.get("requests", []):
+            req_name = req.get("name", "").strip()
+            if req_name and req.get("refund_amount", 0) > 0:
+                refund_map[req_name] = req
+
+        for fc in memberships_data.get("future_cancellations", []):
+            m_name = fc.get("name", "").strip()
+            if m_name in refund_map:
+                match_req = refund_map[m_name]
+                fc["refund_status"] = match_req.get("status")
+                fc["refund_amount"] = match_req.get("refund_amount")
+                fc["refund_notes"] = match_req.get("notes")
+
         return {
             "metadata": {
                 "month_index": month,
@@ -496,6 +805,7 @@ class DashboardDataService:
                 "year": self.year,
                 "club_filter": club_filter,
                 "holiday_mode": holiday_mode,
+                "snapshot": memberships_data.get("active_tab"),
                 "last_synced": datetime.now().strftime("%d/%m/%Y %H:%M"),
                 "day_in_month": current_day,
                 "days_in_month": days_in_m
@@ -518,5 +828,7 @@ class DashboardDataService:
             "variable_expenses": processed_var_exp,
             "fixed_expenses": processed_fix_exp,
             "annual_trends": annual_trends,
-            "smart_insights": smart_insights
+            "smart_insights": smart_insights,
+            "memberships": memberships_data,
+            "sales_cancellations": sales_cancellations
         }

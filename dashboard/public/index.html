@@ -148,6 +148,10 @@
           <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
           <span>כרטיסיות ויעדים</span>
         </button>
+        <button id="view-memberships" onclick="switchView('memberships')" class="view-btn px-3 py-1 rounded-lg transition flex items-center gap-1.5 text-blue-700 hover:bg-blue-100">
+          <i data-lucide="users" class="w-3.5 h-3.5"></i>
+          <span>סטטוס מנויים וביטולים</span>
+        </button>
         <button id="view-charts" onclick="switchView('charts')" class="view-btn px-3 py-1 rounded-lg transition flex items-center gap-1.5 text-blue-700 hover:bg-blue-100">
           <i data-lucide="line-chart" class="w-3.5 h-3.5"></i>
           <span>גרפים ומגמות שנתיות</span>
@@ -255,6 +259,280 @@
           </div>
         </div>
       </section>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW: MEMBERSHIPS & CANCELLATIONS STATUS (דו"ח ארבוקס + מכירות)          -->
+    <!-- ========================================================================= -->
+    <div id="view-container-memberships" class="space-y-6 hidden">
+      
+      <!-- Top Control Header: Snapshot Selector & Source Info -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black">
+            <i data-lucide="users-round" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <span>תמונת מצב מנויים, הקפאות וביטולים</span>
+              <span class="px-2 py-0.5 text-[11px] font-semibold bg-blue-100 text-blue-800 rounded-full" id="mem-source-badge">ארבוקס + מכירות</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">סנכרון אוטומטי מתוך קובצי הקלט בתיקייה (ארבוקס וקובץ מכירות 2026)</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 w-full md:w-auto justify-end">
+          <div class="flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
+            <i data-lucide="history" class="w-4 h-4 text-blue-600"></i>
+            <span>לשונית תאריך (Snapshot):</span>
+            <select id="mem-snapshot-select" onchange="changeMembershipSnapshot(this.value)" class="bg-white text-slate-900 font-bold px-2 py-1 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs">
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6 Main KPI Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        
+        <!-- KPI 1: Active Members -->
+        <div class="app-card p-5 space-y-3 bg-white border-l-4 border-l-emerald-500">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">מנויים פעילים</span>
+            <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <i data-lucide="user-check" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline justify-between">
+            <span class="text-3xl font-black text-slate-900" id="mem-kpi-active-total">0</span>
+            <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md" id="mem-kpi-active-pct">100% פעילים</span>
+          </div>
+          <div class="space-y-1.5 pt-2 border-t border-slate-100 text-xs">
+            <div class="flex justify-between items-center text-slate-600">
+              <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-slate-900"></span>מועדון A+:</span>
+              <strong class="text-slate-900 font-bold" id="mem-kpi-active-gym">0</strong>
+            </div>
+            <div class="flex justify-between items-center text-slate-600">
+              <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-blue-500"></span>פילאטיס מכשירים:</span>
+              <strong class="text-slate-900 font-bold" id="mem-kpi-active-pilates">0</strong>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-1.5 flex overflow-hidden mt-1">
+              <div id="mem-kpi-active-gym-bar" class="bg-slate-900 h-full" style="width: 80%"></div>
+              <div id="mem-kpi-active-pilates-bar" class="bg-blue-500 h-full" style="width: 20%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI 2: Frozen Members -->
+        <div class="app-card p-5 space-y-3 bg-white border-l-4 border-l-amber-500">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">מנויים בהקפאה</span>
+            <div class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+              <i data-lucide="pause-circle" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline justify-between">
+            <span class="text-3xl font-black text-slate-900" id="mem-kpi-frozen-total">0</span>
+            <span class="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md" id="mem-kpi-frozen-pct">0% מסה״כ</span>
+          </div>
+          <div class="space-y-1.5 pt-2 border-t border-slate-100 text-xs">
+            <div class="flex justify-between items-center text-slate-600">
+              <span>מועדון A+:</span>
+              <strong class="text-slate-900 font-bold" id="mem-kpi-frozen-gym">0</strong>
+            </div>
+            <div class="flex justify-between items-center text-slate-600">
+              <span>פילאטיס מכשירים:</span>
+              <strong class="text-slate-900 font-bold" id="mem-kpi-frozen-pilates">0</strong>
+            </div>
+            <div class="text-[11px] text-slate-400 pt-0.5">זמני בלבד - פוטנציאל חזרה לפעילות</div>
+          </div>
+        </div>
+
+        <!-- KPI 3: Future Cancellations -->
+        <div class="app-card p-5 space-y-3 bg-white border-l-4 border-l-rose-500">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">ביטולים עתידיים</span>
+            <div class="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+              <i data-lucide="calendar-x" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline justify-between">
+            <span class="text-3xl font-black text-slate-900" id="mem-kpi-cancel-total">0</span>
+            <span class="text-xs font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md">בתהליך עזיבה</span>
+          </div>
+          <div class="space-y-1.5 pt-2 border-t border-slate-100 text-xs">
+            <div class="flex justify-between items-center text-slate-600">
+              <span>מועדון A+:</span>
+              <strong class="text-slate-900 font-bold" id="mem-kpi-cancel-gym">0</strong>
+            </div>
+            <div class="flex justify-between items-center text-slate-600">
+              <span>פילאטיס מכשירים:</span>
+              <strong class="text-slate-900 font-bold" id="mem-kpi-cancel-pilates">0</strong>
+            </div>
+            <div class="text-[11px] text-slate-400 pt-0.5" id="mem-kpi-cancel-note">מתוכם ב-3 החודשים הקרובים</div>
+          </div>
+        </div>
+
+        <!-- KPI 4: Average Membership Price -->
+        <div class="app-card p-5 space-y-3 bg-white border-l-4 border-l-indigo-500">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">מחיר מנוי ממוצע</span>
+            <div class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <i data-lucide="tag" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline justify-between">
+            <span class="text-3xl font-black text-slate-900" id="mem-kpi-avg-price-total">₪ 0</span>
+            <span class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">שווי שנתי/מלא</span>
+          </div>
+          <div class="space-y-1.5 pt-2 border-t border-slate-100 text-xs">
+            <div class="flex justify-between items-center text-slate-600">
+              <span>מועדון A+:</span>
+              <strong class="text-slate-900 font-bold" id="mem-kpi-avg-price-gym">₪ 0</strong>
+            </div>
+            <div class="flex justify-between items-center text-slate-600">
+              <span>פילאטיס מכשירים:</span>
+              <strong class="text-slate-900 font-bold" id="mem-kpi-avg-price-pilates">₪ 0</strong>
+            </div>
+            <div class="text-[11px] text-slate-400 pt-0.5">מחושב מתוך מחירי המכירה בארבוקס</div>
+          </div>
+        </div>
+
+        <!-- KPI 5: Average Monthly Price -->
+        <div class="app-card p-5 space-y-3 bg-white border-l-4 border-l-cyan-500">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">מחיר ממוצע לחודש</span>
+            <div class="w-7 h-7 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center">
+              <i data-lucide="credit-card" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline justify-between">
+            <span class="text-3xl font-black text-slate-900" id="mem-kpi-monthly-price-total">₪ 0</span>
+            <span class="text-xs font-semibold text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded-md">ערך לחודש</span>
+          </div>
+          <div class="space-y-1.5 pt-2 border-t border-slate-100 text-xs">
+            <div class="flex justify-between items-center text-slate-600">
+              <span>מועדון A+:</span>
+              <strong class="text-slate-900 font-bold" id="mem-kpi-monthly-price-gym">₪ 0</strong>
+            </div>
+            <div class="flex justify-between items-center text-slate-600">
+              <span>פילאטיס מכשירים:</span>
+              <strong class="text-slate-900 font-bold" id="mem-kpi-monthly-price-pilates">₪ 0</strong>
+            </div>
+            <div class="text-[11px] text-slate-400 pt-0.5">מנורמל לפי משך המנוי בפועל</div>
+          </div>
+        </div>
+
+        <!-- KPI 6: Expected Refunds Forecast -->
+        <div class="app-card p-5 space-y-3 bg-white border-l-4 border-l-violet-500">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">צפי החזר כספי (ביטולים)</span>
+            <div class="w-7 h-7 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center">
+              <i data-lucide="badge-dollar-sign" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline justify-between">
+            <span class="text-3xl font-black text-violet-700" id="mem-kpi-refund-pending">₪ 0</span>
+            <span class="text-xs font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded-md" id="mem-kpi-refund-pending-count">0 פניות</span>
+          </div>
+          <div class="space-y-1.5 pt-2 border-t border-slate-100 text-xs">
+            <div class="flex justify-between items-center text-slate-600">
+              <span>מאושר וממתין לזיכוי:</span>
+              <strong class="text-amber-600 font-bold" id="mem-kpi-refund-approved">₪ 0</strong>
+            </div>
+            <div class="flex justify-between items-center text-slate-600">
+              <span>זיכויים שטופלו עד כה:</span>
+              <strong class="text-slate-700 font-bold" id="mem-kpi-refund-completed">₪ 0</strong>
+            </div>
+            <div class="text-[11px] text-slate-400 pt-0.5">נלקח מטבלת הקפאות/ביטולים בדו״ח מכירות</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Charts Section: Branch Distribution + Cancellations by Month -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+          <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <i data-lucide="pie-chart" class="w-4 h-4 text-blue-600"></i>
+            התפלגות מנויים לפי סניף וסטטוס
+          </h3>
+          <div id="mem-distribution-chart" class="w-full h-64"></div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+          <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <i data-lucide="bar-chart-3" class="w-4 h-4 text-rose-600"></i>
+            צפי ביטולים עתידיים לפי חודשי סיום
+          </h3>
+          <div id="mem-cancellations-timeline-chart" class="w-full h-64"></div>
+        </div>
+      </div>
+
+      <!-- Interactive Detailed Lists & Tables -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        
+        <!-- Table Mode Switcher Header -->
+        <div class="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/50">
+          <div class="flex items-center gap-2">
+            <button id="mem-tab-btn-cancels" onclick="setMembershipsTableTab('cancels')" class="px-3.5 py-1.5 rounded-xl font-bold text-xs bg-slate-900 text-white shadow-xs transition">
+              רשימת מנויים עם ביטול עתידי (<span id="mem-table-cancels-count">0</span>)
+            </button>
+            <button id="mem-tab-btn-refunds" onclick="setMembershipsTableTab('refunds')" class="px-3.5 py-1.5 rounded-xl font-medium text-xs text-slate-600 hover:bg-slate-200 transition">
+              דו״ח בקשות זיכוי והקפאה ממכירות (<span id="mem-table-refunds-count">0</span>)
+            </button>
+          </div>
+
+          <!-- Search Input -->
+          <div class="relative w-full sm:w-64">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute right-3 top-2.5"></i>
+            <input type="text" id="mem-search-input" oninput="filterMembershipsTables()" placeholder="חיפוש לפי שם, סניף או מנוי..." class="w-full pr-9 pl-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
+          </div>
+        </div>
+
+        <!-- Table 1: Future Cancellations List -->
+        <div id="mem-table-container-cancels" class="overflow-x-auto custom-scrollbar p-2">
+          <table class="w-full text-right text-xs divide-y divide-slate-100">
+            <thead class="bg-slate-50 text-slate-600 font-bold">
+              <tr>
+                <th class="py-2.5 px-3">שם המתאמן</th>
+                <th class="py-2.5 px-3">סניף</th>
+                <th class="py-2.5 px-3">סוג מנוי</th>
+                <th class="py-2.5 px-3 text-center">תאריך סיום ביטול</th>
+                <th class="py-2.5 px-3 text-left">מחיר מכירה</th>
+                <th class="py-2.5 px-3 text-left">מחיר לחודש</th>
+                <th class="py-2.5 px-3 text-center">סטטוס זיכוי במכירות</th>
+                <th class="py-2.5 px-3 text-left">צפי החזר כספי</th>
+              </tr>
+            </thead>
+            <tbody id="mem-tbody-cancels" class="divide-y divide-slate-100 text-slate-700">
+              <!-- Injected dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Table 2: Sales Cancellations / Freeze Requests -->
+        <div id="mem-table-container-refunds" class="overflow-x-auto custom-scrollbar p-2 hidden">
+          <table class="w-full text-right text-xs divide-y divide-slate-100">
+            <thead class="bg-slate-50 text-slate-600 font-bold">
+              <tr>
+                <th class="py-2.5 px-3">שם הלקוח</th>
+                <th class="py-2.5 px-3">סוג פנייה</th>
+                <th class="py-2.5 px-3">תאריך פנייה</th>
+                <th class="py-2.5 px-3">סטטוס טיפול</th>
+                <th class="py-2.5 px-3 text-left">סכום זיכוי</th>
+                <th class="py-2.5 px-3">פותח הפנייה</th>
+                <th class="py-2.5 px-3">הערות וסיבת ביטול</th>
+              </tr>
+            </thead>
+            <tbody id="mem-tbody-refunds" class="divide-y divide-slate-100 text-slate-700">
+              <!-- Injected dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+      </div>
 
     </div>
 

@@ -6,6 +6,8 @@
 let currentMonth = 6;
 let currentClub = 'all';
 let currentView = 'cards';
+let currentSnapshot = null;
+let currentMembershipsTableTab = 'cancels';
 let holidayMode = false;
 let dashboardData = null;
 let activeModalItem = null;
@@ -13,6 +15,8 @@ let activeModalItem = null;
 let chartMain = null;
 let chartTrainer = null;
 let chartPT = null;
+let chartMemDist = null;
+let chartMemTimeline = null;
 
 const MONTH_NAMES = [
   'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
@@ -35,7 +39,7 @@ function showToast(msg) {
   }, 2500);
 }
 
-// View Switcher (Cards | Charts | Matrix)
+// View Switcher (Cards | Memberships | Charts | Matrix)
 function switchView(viewName) {
   currentView = viewName;
 
@@ -52,11 +56,14 @@ function switchView(viewName) {
 
   // Toggle View Containers
   document.getElementById('view-container-cards').classList.toggle('hidden', viewName !== 'cards');
+  document.getElementById('view-container-memberships').classList.toggle('hidden', viewName !== 'memberships');
   document.getElementById('view-container-charts').classList.toggle('hidden', viewName !== 'charts');
   document.getElementById('view-container-matrix').classList.toggle('hidden', viewName !== 'matrix');
 
   if (viewName === 'charts' && dashboardData) {
     renderAnnualCharts(dashboardData.annual_trends);
+  } else if (viewName === 'memberships' && dashboardData) {
+    renderMemberships(dashboardData);
   }
 }
 
@@ -135,7 +142,8 @@ async function syncData() {
 
 async function fetchDashboardData() {
   try {
-    const res = await fetch(`/api/data?month=${currentMonth}&club=${currentClub}&holiday=${holidayMode}`);
+    const snapParam = currentSnapshot ? `&snapshot=${encodeURIComponent(currentSnapshot)}` : '';
+    const res = await fetch(`/api/data?month=${currentMonth}&club=${currentClub}&holiday=${holidayMode}${snapParam}`);
     dashboardData = await res.json();
     renderDashboard(dashboardData);
   } catch (err) {
@@ -170,12 +178,15 @@ function renderDashboard(data) {
   renderCategoryCards(data.variable_expenses, 'expenses-cards-container', 'expense');
   renderFixedCards(data.fixed_expenses);
 
-  // 3. Render Charts View (View 2)
+  // 3. Render Memberships View
+  renderMemberships(data);
+
+  // 4. Render Charts View (View 2)
   if (currentView === 'charts') {
     renderAnnualCharts(data.annual_trends);
   }
 
-  // 4. Render Matrix View (View 3)
+  // 5. Render Matrix View (View 3)
   renderFinancialMatrix(data.incomes, data.variable_expenses, data.fixed_expenses);
 
   lucide.createIcons();
@@ -604,6 +615,311 @@ async function saveNewTarget() {
   } catch (err) {
     showToast('שגיאה בשמירת היעד');
   }
+}
+
+// =========================================================================
+// MEMBERSHIPS & CANCELLATIONS MODULE (דו״ח ארבוקס + מכירות)
+// =========================================================================
+
+function changeMembershipSnapshot(val) {
+  currentSnapshot = val;
+  fetchDashboardData();
+}
+
+function setMembershipsTableTab(tab) {
+  currentMembershipsTableTab = tab;
+  const btnCancels = document.getElementById('mem-tab-btn-cancels');
+  const btnRefunds = document.getElementById('mem-tab-btn-refunds');
+  const containerCancels = document.getElementById('mem-table-container-cancels');
+  const containerRefunds = document.getElementById('mem-table-container-refunds');
+
+  if (tab === 'cancels') {
+    btnCancels.className = 'px-3.5 py-1.5 rounded-xl font-bold text-xs bg-slate-900 text-white shadow-xs transition';
+    btnRefunds.className = 'px-3.5 py-1.5 rounded-xl font-medium text-xs text-slate-600 hover:bg-slate-200 transition';
+    containerCancels.classList.remove('hidden');
+    containerRefunds.classList.add('hidden');
+  } else {
+    btnRefunds.className = 'px-3.5 py-1.5 rounded-xl font-bold text-xs bg-slate-900 text-white shadow-xs transition';
+    btnCancels.className = 'px-3.5 py-1.5 rounded-xl font-medium text-xs text-slate-600 hover:bg-slate-200 transition';
+    containerRefunds.classList.remove('hidden');
+    containerCancels.classList.add('hidden');
+  }
+}
+
+function renderMemberships(data) {
+  const mem = data.memberships;
+  const sales = data.sales_cancellations;
+  if (!mem || !mem.stats) return;
+
+  // 1. Populate Snapshot Select
+  const snapSelect = document.getElementById('mem-snapshot-select');
+  if (snapSelect && mem.available_snapshots && mem.available_snapshots.length > 0) {
+    const currentVal = mem.active_tab;
+    snapSelect.innerHTML = mem.available_snapshots.map(s => `
+      <option value="${s.sheet}" ${s.sheet === currentVal ? 'selected' : ''}>
+        ${s.sheet} (${s.label})
+      </option>
+    `).join('');
+  }
+
+  const stats = mem.stats;
+  const targetKey = (currentClub === 'all') ? 'all' : currentClub;
+  const curStats = stats[targetKey] || stats['all'];
+  const gymStats = stats['gym'];
+  const pilStats = stats['pilates'];
+  const allStats = stats['all'];
+
+  // Total active & percentages
+  document.getElementById('mem-kpi-active-total').innerText = curStats.active.toLocaleString('he-IL');
+  const totalBase = curStats.active + curStats.frozen + curStats.future_cancellations;
+  const activePct = totalBase > 0 ? Math.round((curStats.active / totalBase) * 100) : 100;
+  document.getElementById('mem-kpi-active-pct').innerText = `${activePct}% פעילים`;
+
+  document.getElementById('mem-kpi-active-gym').innerText = gymStats.active.toLocaleString('he-IL');
+  document.getElementById('mem-kpi-active-pilates').innerText = pilStats.active.toLocaleString('he-IL');
+
+  const gymActivePct = allStats.active > 0 ? (gymStats.active / allStats.active) * 100 : 50;
+  const pilActivePct = allStats.active > 0 ? (pilStats.active / allStats.active) * 100 : 50;
+  const gymBar = document.getElementById('mem-kpi-active-gym-bar');
+  const pilBar = document.getElementById('mem-kpi-active-pilates-bar');
+  if (gymBar) gymBar.style.width = `${gymActivePct}%`;
+  if (pilBar) pilBar.style.width = `${pilActivePct}%`;
+
+  // Frozen
+  document.getElementById('mem-kpi-frozen-total').innerText = curStats.frozen.toLocaleString('he-IL');
+  const frozenPct = totalBase > 0 ? ((curStats.frozen / totalBase) * 100).toFixed(1) : 0;
+  document.getElementById('mem-kpi-frozen-pct').innerText = `${frozenPct}% מסה״כ`;
+  document.getElementById('mem-kpi-frozen-gym').innerText = gymStats.frozen.toLocaleString('he-IL');
+  document.getElementById('mem-kpi-frozen-pilates').innerText = pilStats.frozen.toLocaleString('he-IL');
+
+  // Future Cancellations
+  document.getElementById('mem-kpi-cancel-total').innerText = curStats.future_cancellations.toLocaleString('he-IL');
+  document.getElementById('mem-kpi-cancel-gym').innerText = gymStats.future_cancellations.toLocaleString('he-IL');
+  document.getElementById('mem-kpi-cancel-pilates').innerText = pilStats.future_cancellations.toLocaleString('he-IL');
+
+  // Average Price
+  document.getElementById('mem-kpi-avg-price-total').innerText = formatNIS(curStats.avg_price);
+  document.getElementById('mem-kpi-avg-price-gym').innerText = formatNIS(gymStats.avg_price);
+  document.getElementById('mem-kpi-avg-price-pilates').innerText = formatNIS(pilStats.avg_price);
+
+  // Average Monthly Price
+  document.getElementById('mem-kpi-monthly-price-total').innerText = `${formatNIS(curStats.avg_monthly_price)}`;
+  document.getElementById('mem-kpi-monthly-price-gym').innerText = `${formatNIS(gymStats.avg_monthly_price)}`;
+  document.getElementById('mem-kpi-monthly-price-pilates').innerText = `${formatNIS(pilStats.avg_monthly_price)}`;
+
+  // Sales Refunds Summary
+  if (sales && sales.summary) {
+    const sSum = sales.summary;
+    document.getElementById('mem-kpi-refund-pending').innerText = formatNIS(sSum.approved_pending_refund_amount);
+    document.getElementById('mem-kpi-refund-pending-count').innerText = `${sSum.approved_pending_count || 0} פניות ממתינות`;
+    document.getElementById('mem-kpi-refund-approved').innerText = formatNIS(sSum.approved_pending_refund_amount);
+    document.getElementById('mem-kpi-refund-completed').innerText = formatNIS(sSum.completed_refund_amount);
+  }
+
+  // Render Charts & Tables
+  renderMembershipCharts(mem);
+  renderFutureCancellationsTable(mem.future_cancellations || []);
+  if (sales) {
+    renderSalesRefundsTable(sales.requests || []);
+  }
+}
+
+function renderMembershipCharts(mem) {
+  if (!mem || !mem.stats) return;
+  const gym = mem.stats.gym;
+  const pil = mem.stats.pilates;
+
+  // Chart 1: Distribution
+  const distEl = document.getElementById('mem-distribution-chart');
+  if (distEl) {
+    distEl.innerHTML = '';
+    const distOptions = {
+      series: [
+        { name: 'פעיל', data: [gym.active, pil.active] },
+        { name: 'הוקפא', data: [gym.frozen, pil.frozen] },
+        { name: 'ביטול עתידי', data: [gym.future_cancellations, pil.future_cancellations] }
+      ],
+      chart: {
+        type: 'bar',
+        height: 250,
+        stacked: true,
+        fontFamily: 'Heebo, sans-serif',
+        toolbar: { show: false }
+      },
+      colors: ['#10b981', '#f59e0b', '#f43f5e'],
+      plotOptions: {
+        bar: {
+          horizontal: false,
+          borderRadius: 6,
+          columnWidth: '45%'
+        }
+      },
+      xaxis: {
+        categories: ['מועדון A+', 'פילאטיס מכשירים'],
+        labels: { style: { colors: '#475569', fontWeight: 600 } }
+      },
+      yaxis: {
+        labels: { style: { colors: '#64748b' } }
+      },
+      legend: {
+        position: 'top',
+        horizontalAlign: 'right',
+        fontFamily: 'Heebo'
+      },
+      dataLabels: { enabled: true }
+    };
+    if (chartMemDist) {
+      try { chartMemDist.destroy(); } catch (e) {}
+    }
+    chartMemDist = new ApexCharts(distEl, distOptions);
+    chartMemDist.render();
+  }
+
+  // Chart 2: Timeline of Cancellations
+  const timeEl = document.getElementById('mem-cancellations-timeline-chart');
+  if (timeEl && mem.cancellations_by_month && mem.cancellations_by_month.length > 0) {
+    timeEl.innerHTML = '';
+    const categories = mem.cancellations_by_month.map(x => x.month);
+    const seriesData = mem.cancellations_by_month.map(x => x.count);
+
+    const timeOptions = {
+      series: [{ name: 'ביטולים מתוכננים', data: seriesData }],
+      chart: {
+        type: 'bar',
+        height: 250,
+        fontFamily: 'Heebo, sans-serif',
+        toolbar: { show: false }
+      },
+      plotOptions: {
+        bar: {
+          borderRadius: 6,
+          columnWidth: '40%'
+        }
+      },
+      colors: ['#e11d48'],
+      xaxis: {
+        categories: categories,
+        labels: { style: { colors: '#475569', fontWeight: 600 } }
+      },
+      yaxis: {
+        labels: { style: { colors: '#64748b' } }
+      },
+      dataLabels: { enabled: true, offsetY: -5 }
+    };
+    if (chartMemTimeline) {
+      try { chartMemTimeline.destroy(); } catch (e) {}
+    }
+    chartMemTimeline = new ApexCharts(timeEl, timeOptions);
+    chartMemTimeline.render();
+  }
+}
+
+function renderFutureCancellationsTable(list) {
+  const tbody = document.getElementById('mem-tbody-cancels');
+  const countSpan = document.getElementById('mem-table-cancels-count');
+  if (!tbody) return;
+
+  const filtered = list.filter(item => {
+    if (currentClub === 'gym' && item.branch_key !== 'gym') return false;
+    if (currentClub === 'pilates' && item.branch_key !== 'pilates') return false;
+    return true;
+  });
+
+  if (countSpan) countSpan.innerText = filtered.length;
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="text-center py-6 text-slate-400">לא נמצאו מנויים עם ביטול עתידי התואמים את הסינון</td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(item => {
+    const refundStatusBadge = item.refund_status
+      ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${item.refund_status.includes('אושר') ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">${item.refund_status}</span>`
+      : `<span class="text-slate-400 text-[11px]">-</span>`;
+
+    const refundAmountText = item.refund_amount
+      ? `<strong class="text-rose-600 font-bold">${formatNIS(item.refund_amount)}</strong>`
+      : `<span class="text-slate-400 text-[11px]">-</span>`;
+
+    return `
+      <tr class="hover:bg-slate-50 transition border-b border-slate-100 mem-row-cancel" data-search="${(item.name + ' ' + item.branch + ' ' + item.membership_type).toLowerCase()}">
+        <td class="py-2.5 px-3 font-bold text-slate-900">${item.name}</td>
+        <td class="py-2.5 px-3">
+          <span class="px-2 py-0.5 rounded-md text-[10px] font-bold ${item.branch_key === 'pilates' ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-800'}">
+            ${item.branch}
+          </span>
+        </td>
+        <td class="py-2.5 px-3 text-slate-600">${item.membership_type}</td>
+        <td class="py-2.5 px-3 text-center font-semibold text-rose-600">${item.end_date}</td>
+        <td class="py-2.5 px-3 text-left font-medium text-slate-700">${formatNIS(item.price)}</td>
+        <td class="py-2.5 px-3 text-left font-bold text-blue-600">${formatNIS(item.monthly_price)} / חודש</td>
+        <td class="py-2.5 px-3 text-center">${refundStatusBadge}</td>
+        <td class="py-2.5 px-3 text-left">${refundAmountText}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderSalesRefundsTable(list) {
+  const tbody = document.getElementById('mem-tbody-refunds');
+  const countSpan = document.getElementById('mem-table-refunds-count');
+  if (!tbody) return;
+
+  if (countSpan) countSpan.innerText = list.length;
+
+  if (list.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" class="text-center py-6 text-slate-400">אין בקשות זיכוי רשומות בקובץ המכירות</td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = list.map(item => {
+    let statusClass = 'bg-slate-100 text-slate-700';
+    if (item.status.includes('אושר') || item.status.includes('ממתין')) {
+      statusClass = 'bg-amber-100 text-amber-800';
+    } else if (item.status.includes('טופל')) {
+      statusClass = 'bg-emerald-100 text-emerald-800';
+    } else if (item.status.includes('לא אושר')) {
+      statusClass = 'bg-rose-100 text-rose-800';
+    }
+
+    return `
+      <tr class="hover:bg-slate-50 transition border-b border-slate-100 mem-row-refund" data-search="${(item.name + ' ' + item.type + ' ' + item.status + ' ' + item.notes).toLowerCase()}">
+        <td class="py-2.5 px-3 font-bold text-slate-900">${item.name}</td>
+        <td class="py-2.5 px-3 text-slate-600">${item.type}</td>
+        <td class="py-2.5 px-3 text-slate-500">${item.req_date || '-'}</td>
+        <td class="py-2.5 px-3">
+          <span class="px-2 py-0.5 rounded-md text-[10px] font-bold ${statusClass}">
+            ${item.status}
+          </span>
+        </td>
+        <td class="py-2.5 px-3 text-left font-bold text-slate-900">${formatNIS(item.refund_amount)}</td>
+        <td class="py-2.5 px-3 text-slate-500">${item.opener || '-'}</td>
+        <td class="py-2.5 px-3 text-slate-500 text-[11px] max-w-xs truncate" title="${item.notes}">${item.notes || '-'}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function filterMembershipsTables() {
+  const query = (document.getElementById('mem-search-input')?.value || '').toLowerCase().trim();
+
+  document.querySelectorAll('.mem-row-cancel').forEach(row => {
+    const text = row.getAttribute('data-search') || '';
+    row.style.display = text.includes(query) ? '' : 'none';
+  });
+
+  document.querySelectorAll('.mem-row-refund').forEach(row => {
+    const text = row.getAttribute('data-search') || '';
+    row.style.display = text.includes(query) ? '' : 'none';
+  });
 }
 
 document.addEventListener('keydown', (e) => {

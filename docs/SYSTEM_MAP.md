@@ -12,8 +12,9 @@ MONTHLY INPUTS DROP (input/)
    ├── Invoices (PDFs of Freelancers & Suppliers)
    ├── Hilan Payroll (פרויקטים ספא / חילנט .xlsx)
    ├── Arbox Held Classes Export (.csv / .xlsx)
+   ├── Arbox Memberships Report (דו״ח מנויים .xlsx)
    ├── General Ledger (כרטסת .xlsx)
-   └── Sales Report (מכירות .xlsx)
+   └── Sales Report (מכירות 2026 .xlsx)
          │
          ▼
 [1. PREFLIGHT & OCR WORKFLOWS]
@@ -43,10 +44,10 @@ MONTHLY INPUTS DROP (input/)
    └── output/runs/<run_id>/ (stores manifest, SHA256 hashes, and execution logs)
          │
          ▼
-[4. INTERACTIVE EXECUTIVE DASHBOARD]
-   ├── dashboard/backend/data_service.py (aggregates budget vs actual, billing, and trainer stats)
+[4. INTERACTIVE EXECUTIVE DASHBOARD & MEMBERSHIP MONITOR]
+   ├── dashboard/backend/data_service.py (aggregates BvA, billing, trainer stats, Arbox memberships & sales cancellations)
    ├── dashboard/backend/server.py (local HTTP REST API server on port 3000)
-   └── dashboard/public/ (modern Hebrew RTL executive web UI with live sync)
+   └── dashboard/public/ (modern Hebrew RTL executive web UI with cards, charts, 12-month matrix & memberships module)
 ```
 
 ---

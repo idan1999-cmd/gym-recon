@@ -12,6 +12,31 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 
 ---
 
+## 2026-08-24 — Live Memberships Status, Branch Breakdown, Future Cancellations & Refund Forecasting Module
+
+- **What changed:** 
+  - Added a complete **סטטוס מנויים וביטולים (Memberships & Cancellations Status)** executive module to the dashboard (`dashboard/public/index.html` & `dashboard/public/app.js`):
+    1. **Active Memberships Breakdown:** Displays 731 total active members (604 Main Gym / Club vs. 127 Pilates Reformer) with visual branch share comparison bars.
+    2. **Frozen Memberships Breakdown:** Displays 31 total frozen members (19 Main Gym vs. 12 Pilates Reformer) with percentage of total base.
+    3. **Future Cancellations Pipeline:** Displays 30 total members with upcoming cancellation dates (21 Main Gym vs. 9 Pilates Reformer) plus monthly target distribution timeline.
+    4. **Average Pricing Metrics:** Computes average full membership price (₪2,719 Gym vs. ₪4,073 Pilates) and average monthly price (₪263.5/mo Gym vs. ₪358.0/mo Pilates).
+    5. **Expected Refund Forecasting (צפי החזר כספי):** Directly syncs from the `הקפאותביטולים` table in `מכירות 2026.xlsx`, tracking ₪18,415 in approved refunds pending payment and ₪114,867 in completed refunds.
+    6. **Interactive Drilldown Tables:** Added searchable, filterable tables for upcoming member cancellations with matched refund amounts, plus a full log of cancellation/freeze requests.
+    7. **Multi-Snapshot Historical Selector:** Added dropdown allowing executive switching across all date tabs (e.g. `23.8`, `16.8`, `9.8`, `30.7`, `27.7`, `23.7`, `20.7`) to track changes across weeks.
+  - Implemented high-performance file parsing and timestamp-based in-memory caching (`_cache`) in `dashboard/backend/data_service.py` reducing repeat API latency to <20ms.
+  - Recorded memory note for future integration of historical past-cancellations reports.
+- **Why (what Idan asked for, in his words if given):** 
+  - *"יש כמה דברים שאני ארצה להוסיף כאן לדשבורד, אחד מהם זה סטטוס על המנויים שלי... מס׳ מנויים פעילים בחלוקה לפי סניפים (פילאטיס מכשירים ומועדון), מס׳ מנויים בסטטוס הקפאה... מס׳ מנויים בסטטוס ביטול עתידי והתייחסות לתאריך הביטול העתידי + הצפי להחזר כספי... חישוב של מחיר מנוי ממוצע לפי סניף... וחישוב של מחיר ממוצע לחודש לפי סניף... בהמשך אולי אכניס לך דו״ח ביטולי עבר, תרשום לנו בזיכרון."*
+- **What it touches:** 
+  - `dashboard/backend/data_service.py`, `dashboard/backend/server.py`, `dashboard/public/index.html`, `dashboard/public/app.js`, `docs/BUILDER_LOG.md`, `docs/SYSTEM_MAP.md`.
+- **How it was verified:** 
+  - Verified API endpoint `GET /api/data` returns all membership statistics, snapshot list, future cancellation list, and refund forecasts.
+  - Tested branch filtering (All / Gym / Pilates) and snapshot tab switching across dates.
+  - Verified sub-20ms cached response times over HTTP.
+  - Ran the complete test suite (all 94 automated tests passed).
+
+---
+
 ## 2026-08-21 — Top Metric Rows Stripping, Dynamic YTD Summary & Per-Month Variance Highlighting
 
 - **What changed:** 
