@@ -18,6 +18,9 @@ echo "מפעיל את השרת המקומי בכתובת: http://localhost:3000"
 echo "לסגירה: לחץ Ctrl+C"
 echo ""
 
+# Free port 3000 if already occupied
+lsof -ti:3000 | xargs kill -9 2>/dev/null || true
+
 # Open browser automatically on macOS
 if [[ "$OSTYPE" == "darwin"* ]]; then
   (sleep 1.5 && open "http://localhost:3000") &
