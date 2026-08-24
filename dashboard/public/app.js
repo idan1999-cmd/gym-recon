@@ -950,6 +950,8 @@ document.getElementById('drilldown-modal').addEventListener('click', (e) => {
   if (e.target.id === 'drilldown-modal') closeModal();
 });
 
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', fetchDashboardData);
+} else {
   fetchDashboardData();
-});
+}
