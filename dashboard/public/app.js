@@ -547,7 +547,10 @@ function renderAnnualCharts(trends) {
 function renderFinancialMatrix(incomes, varExp, fixExp) {
   const thead = document.getElementById('matrix-thead');
   const tbody = document.getElementById('matrix-tbody');
+  const tfoot = document.getElementById('matrix-tfoot');
   if (!tbody) return;
+
+  const monthsRange = [1, 2, 3, 4, 5, 6, 7];
 
   if (thead) {
     thead.innerHTML = `
@@ -555,11 +558,12 @@ function renderFinancialMatrix(incomes, varExp, fixExp) {
         <th class="py-2.5 px-3">סעיף תקציבי</th>
         <th class="py-2.5 px-2">סוג</th>
         <th class="py-2.5 px-2">תקציב חודשי</th>
-        ${MONTH_NAMES.slice(0, 7).map((mName, idx) => {
-          const mNum = idx + 1;
+        ${monthsRange.map(mNum => {
+          const mName = MONTH_NAMES[mNum - 1];
           const isSelected = (mNum === currentMonth);
           return `<th class="py-2.5 px-2 text-center ${isSelected ? 'bg-blue-600 text-white font-black rounded-t-xl' : ''}">${mName}${isSelected ? ' (פעיל)' : ''}</th>`;
         }).join('')}
+        <th class="py-2.5 px-3 text-center bg-slate-900 text-white font-black rounded-t-xl">סה״כ מצטבר (YTD)</th>
       </tr>
     `;
   }
@@ -574,19 +578,115 @@ function renderFinancialMatrix(incomes, varExp, fixExp) {
 
   tbody.innerHTML = allItems.map(item => {
     const months = item.all_months || {};
+    const rowYTD = monthsRange.reduce((acc, mNum) => acc + (months[mNum]?.actual || 0), 0);
+
     return `
       <tr class="hover:bg-slate-50 transition cursor-pointer" onclick='openDrilldownModal(${JSON.stringify(item)})'>
         <td class="py-2.5 px-3 font-bold text-slate-900">${item.name}</td>
         <td class="py-2.5 px-2"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${item.groupClass}">${item.group}</span></td>
         <td class="py-2.5 px-2 font-medium text-slate-500">${formatNIS(item.budget)}</td>
-        ${[1, 2, 3, 4, 5, 6, 7].map(mNum => {
+        ${monthsRange.map(mNum => {
           const isSelected = (mNum === currentMonth);
           const val = months[mNum]?.actual || 0;
           return `<td class="py-2.5 px-2 text-center ${isSelected ? 'bg-blue-50/80 font-black text-blue-700' : (mNum > currentMonth ? 'text-slate-400' : '')}">${formatNIS(val)}</td>`;
         }).join('')}
+        <td class="py-2.5 px-3 text-center font-bold text-slate-900 bg-slate-50/80">${formatNIS(rowYTD)}</td>
       </tr>
     `;
   }).join('');
+
+  if (tfoot) {
+    // 1. Incomes Sums
+    const incBudget = incomes.reduce((acc, x) => acc + (x.budget || 0), 0);
+    const incMonthly = monthsRange.map(mNum => incomes.reduce((acc, x) => acc + (x.all_months?.[mNum]?.actual || 0), 0));
+    const incYTD = incMonthly.reduce((acc, v) => acc + v, 0);
+
+    // 2. Variable Expenses Sums
+    const varBudget = varExp.reduce((acc, x) => acc + (x.budget || 0), 0);
+    const varMonthly = monthsRange.map(mNum => varExp.reduce((acc, x) => acc + (x.all_months?.[mNum]?.actual || 0), 0));
+    const varYTD = varMonthly.reduce((acc, v) => acc + v, 0);
+
+    // 3. Fixed Expenses Sums
+    const fixBudget = fixExp.reduce((acc, x) => acc + (x.budget || 0), 0);
+    const fixMonthly = monthsRange.map(mNum => fixExp.reduce((acc, x) => acc + (x.all_months?.[mNum]?.actual || 0), 0));
+    const fixYTD = fixMonthly.reduce((acc, v) => acc + v, 0);
+
+    // 4. Total Expenses Sums
+    const totalExpBudget = varBudget + fixBudget;
+    const totalExpMonthly = monthsRange.map((mNum, idx) => varMonthly[idx] + fixMonthly[idx]);
+    const totalExpYTD = varYTD + fixYTD;
+
+    // 5. Operating Profit Sums
+    const profitBudget = incBudget - totalExpBudget;
+    const profitMonthly = monthsRange.map((mNum, idx) => incMonthly[idx] - totalExpMonthly[idx]);
+    const profitYTD = incYTD - totalExpYTD;
+
+    tfoot.innerHTML = `
+      <!-- Total Incomes -->
+      <tr class="bg-emerald-50 text-emerald-950 font-black border-t-2 border-emerald-300">
+        <td class="py-3 px-3 text-sm">🟢 סה״כ הכנסות</td>
+        <td class="py-3 px-2 text-[11px]"><span class="px-2 py-0.5 rounded bg-emerald-200 text-emerald-900 font-bold">הכנסה</span></td>
+        <td class="py-3 px-2 text-left">${formatNIS(incBudget)}</td>
+        ${incMonthly.map((val, idx) => {
+          const isSelected = ((idx + 1) === currentMonth);
+          return `<td class="py-3 px-2 text-center ${isSelected ? 'bg-emerald-200/80 font-black text-emerald-950 text-sm' : ''}">${formatNIS(val)}</td>`;
+        }).join('')}
+        <td class="py-3 px-3 text-center bg-emerald-100/80 text-sm">${formatNIS(incYTD)}</td>
+      </tr>
+
+      <!-- Total Variable Expenses -->
+      <tr class="bg-blue-50/70 text-blue-950 font-bold border-t border-slate-200">
+        <td class="py-2.5 px-3">🔵 סה״כ הוצאות משתנות</td>
+        <td class="py-2.5 px-2 text-[10px]"><span class="px-2 py-0.5 rounded bg-blue-200 text-blue-900 font-bold">משתנה</span></td>
+        <td class="py-2.5 px-2 text-left">${formatNIS(varBudget)}</td>
+        ${varMonthly.map((val, idx) => {
+          const isSelected = ((idx + 1) === currentMonth);
+          return `<td class="py-2.5 px-2 text-center ${isSelected ? 'bg-blue-200/70 font-bold' : ''}">${formatNIS(val)}</td>`;
+        }).join('')}
+        <td class="py-2.5 px-3 text-center bg-blue-100/60">${formatNIS(varYTD)}</td>
+      </tr>
+
+      <!-- Total Fixed Expenses -->
+      <tr class="bg-slate-100/80 text-slate-900 font-bold border-t border-slate-200">
+        <td class="py-2.5 px-3">🔘 סה״כ הוצאות קבועות</td>
+        <td class="py-2.5 px-2 text-[10px]"><span class="px-2 py-0.5 rounded bg-slate-200 text-slate-800 font-bold">קבוע</span></td>
+        <td class="py-2.5 px-2 text-left">${formatNIS(fixBudget)}</td>
+        ${fixMonthly.map((val, idx) => {
+          const isSelected = ((idx + 1) === currentMonth);
+          return `<td class="py-2.5 px-2 text-center ${isSelected ? 'bg-slate-300/70 font-bold' : ''}">${formatNIS(val)}</td>`;
+        }).join('')}
+        <td class="py-2.5 px-3 text-center bg-slate-200/70">${formatNIS(fixYTD)}</td>
+      </tr>
+
+      <!-- Total All Expenses -->
+      <tr class="bg-rose-50 text-rose-950 font-black border-t-2 border-rose-200">
+        <td class="py-3 px-3 text-sm">🔴 סה״כ כלל ההוצאות</td>
+        <td class="py-3 px-2 text-[11px]"><span class="px-2 py-0.5 rounded bg-rose-200 text-rose-900 font-bold">הוצאות</span></td>
+        <td class="py-3 px-2 text-left">${formatNIS(totalExpBudget)}</td>
+        ${totalExpMonthly.map((val, idx) => {
+          const isSelected = ((idx + 1) === currentMonth);
+          return `<td class="py-3 px-2 text-center ${isSelected ? 'bg-rose-200/80 font-black text-rose-950 text-sm' : ''}">${formatNIS(val)}</td>`;
+        }).join('')}
+        <td class="py-3 px-3 text-center bg-rose-100/80 text-sm">${formatNIS(totalExpYTD)}</td>
+      </tr>
+
+      <!-- Net Operating Profit -->
+      <tr class="bg-slate-900 text-white font-black text-xs border-t-2 border-slate-950">
+        <td class="py-3 px-3 text-sm flex items-center gap-1.5">
+          <span>💼</span>
+          <span>רווח תפעולי נקי (EBITDA)</span>
+        </td>
+        <td class="py-3 px-2 text-[10px]"><span class="px-2 py-0.5 rounded bg-slate-700 text-slate-200 font-bold">רווח</span></td>
+        <td class="py-3 px-2 text-left text-slate-200">${formatNIS(profitBudget)}</td>
+        ${profitMonthly.map((val, idx) => {
+          const isSelected = ((idx + 1) === currentMonth);
+          const isPositive = val >= 0;
+          return `<td class="py-3 px-2 text-center ${isSelected ? 'bg-blue-600 font-black text-sm' : (isPositive ? 'text-emerald-400' : 'text-rose-400')}">${formatNIS(val)}</td>`;
+        }).join('')}
+        <td class="py-3 px-3 text-center text-sm ${profitYTD >= 0 ? 'text-emerald-300' : 'text-rose-300'}">${formatNIS(profitYTD)}</td>
+      </tr>
+    `;
+  }
 }
 
 // =========================================================================
