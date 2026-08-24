@@ -8,7 +8,6 @@ let currentClub = 'all';
 let currentView = 'cards';
 let currentSnapshot = null;
 let currentMembershipsTableTab = 'cancels';
-let holidayMode = false;
 let dashboardData = null;
 let activeModalItem = null;
 
@@ -101,24 +100,6 @@ function navigateMonth(direction) {
   fetchDashboardData();
 }
 
-function toggleHolidayMode() {
-  holidayMode = !holidayMode;
-  const btn = document.getElementById('holiday-toggle-btn');
-  const text = document.getElementById('holiday-toggle-text');
-
-  if (holidayMode) {
-    btn.className = 'px-2.5 py-1.5 rounded-lg border text-xs font-bold transition flex items-center gap-1.5 bg-amber-500 border-amber-600 text-white shadow-xs';
-    text.innerText = 'חודש חגים (15%-)';
-    showToast('הופעל מקדם עונתיות לחודש חגים');
-  } else {
-    btn.className = 'px-2.5 py-1.5 rounded-lg border text-xs font-medium transition flex items-center gap-1.5 bg-white border-slate-200 text-slate-600 hover:bg-slate-50';
-    text.innerText = 'חודש רגיל';
-    showToast('חזרה לקצב עבודה רגיל');
-  }
-
-  fetchDashboardData();
-}
-
 function toggleFixedSection() {
   const content = document.getElementById('fixed-section-content');
   const icon = document.getElementById('fixed-chevron-icon');
@@ -152,7 +133,7 @@ async function syncData() {
 async function fetchDashboardData() {
   try {
     const snapParam = currentSnapshot ? `&snapshot=${encodeURIComponent(currentSnapshot)}` : '';
-    const res = await fetch(`/api/data?month=${currentMonth}&club=${currentClub}&holiday=${holidayMode}${snapParam}`);
+    const res = await fetch(`/api/data?month=${currentMonth}&club=${currentClub}${snapParam}`);
     dashboardData = await res.json();
     renderDashboard(dashboardData);
   } catch (err) {

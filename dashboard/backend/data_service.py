@@ -654,7 +654,7 @@ class DashboardDataService:
             print("Error parsing sales cancellations:", e)
             return {"summary": {}, "requests": []}
 
-    def get_dashboard_summary(self, month: int = 6, club_filter: str = "all", holiday_mode: bool = False, snapshot: str | None = None) -> dict:
+    def get_dashboard_summary(self, month: int = 6, club_filter: str = "all", snapshot: str | None = None) -> dict:
         gym_data = self.parse_budget_workbook(OUTPUT_DIR / "תקציב_מול_ביצוע_חדר_כושר.xlsx", "חדר כושר")
         pilates_data = self.parse_budget_workbook(OUTPUT_DIR / "תקציב_מול_ביצוע_פילאטיס.xlsx", "פילאטיס מכשירים")
 
@@ -676,7 +676,6 @@ class DashboardDataService:
         current_day = 22 if month == 6 else 15
         day_ratio = current_day / days_in_m
         run_rate_factor = 1.0 / max(day_ratio, 0.1)
-        holiday_factor = 0.85 if holiday_mode else 1.0
 
         processed_incomes = []
         total_rev_budget = 0.0
@@ -688,7 +687,7 @@ class DashboardDataService:
             b = m_info["budget"]
             a = m_info["actual"]
             
-            proj = round(a * run_rate_factor * holiday_factor, 2) if a > 0 else b
+            proj = round(a * run_rate_factor, 2) if a > 0 else b
             diff = a - b
             is_over = a >= b
             pct = (a / b * 100) if b > 0 else 100
@@ -734,7 +733,7 @@ class DashboardDataService:
             b = m_info["budget"]
             a = m_info["actual"]
 
-            proj = round(a * run_rate_factor * holiday_factor, 2) if a > 0 else b
+            proj = round(a * run_rate_factor, 2) if a > 0 else b
             diff = a - b
             is_over = a > b
             pct = (a / b * 100) if b > 0 else 0
@@ -828,7 +827,6 @@ class DashboardDataService:
                 "month_name": MONTH_NAMES_HE[month - 1],
                 "year": self.year,
                 "club_filter": club_filter,
-                "holiday_mode": holiday_mode,
                 "snapshot": memberships_data.get("active_tab"),
                 "last_synced": datetime.now().strftime("%d/%m/%Y %H:%M"),
                 "day_in_month": current_day,

@@ -41,10 +41,9 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         elif path == "/api/data":
             month = int(query.get("month", ["6"])[0])
             club = query.get("club", ["all"])[0]
-            holiday_mode = query.get("holiday", ["false"])[0].lower() == "true"
             snapshot = query.get("snapshot", [None])[0]
 
-            summary = data_service.get_dashboard_summary(month=month, club_filter=club, holiday_mode=holiday_mode, snapshot=snapshot)
+            summary = data_service.get_dashboard_summary(month=month, club_filter=club, snapshot=snapshot)
 
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
