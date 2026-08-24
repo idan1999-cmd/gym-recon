@@ -61,9 +61,18 @@ function switchView(viewName) {
   document.getElementById('view-container-matrix').classList.toggle('hidden', viewName !== 'matrix');
 
   if (viewName === 'charts' && dashboardData) {
-    renderAnnualCharts(dashboardData.annual_trends);
+    try {
+      renderAnnualCharts(dashboardData.annual_trends);
+    } catch (err) {
+      console.warn('Charts render warning:', err);
+    }
   } else if (viewName === 'memberships' && dashboardData) {
-    renderMemberships(dashboardData);
+    try {
+      renderMemberships(dashboardData);
+      renderMembershipCharts(dashboardData.memberships);
+    } catch (err) {
+      console.warn('Memberships render warning:', err);
+    }
   }
 }
 
@@ -189,7 +198,9 @@ function renderDashboard(data) {
   // 5. Render Matrix View (View 3)
   renderFinancialMatrix(data.incomes, data.variable_expenses, data.fixed_expenses);
 
-  lucide.createIcons();
+  try {
+    lucide.createIcons();
+  } catch (e) {}
 }
 
 function renderSmartInsights(tips) {
@@ -737,7 +748,13 @@ function renderMemberships(data) {
   }
 
   // Render Charts & Tables
-  renderMembershipCharts(mem);
+  if (currentView === 'memberships') {
+    try {
+      renderMembershipCharts(mem);
+    } catch (err) {
+      console.warn('Membership charts warning:', err);
+    }
+  }
   renderFutureCancellationsTable(mem.future_cancellations || []);
   if (sales) {
     renderSalesRefundsTable(sales.requests || []);
