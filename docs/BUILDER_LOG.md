@@ -57,7 +57,29 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
   - Verified variance highlighting on over-budget items.
   - Executed all 94 automated tests (0 failures).
 
+## 2026-08-24 — Revenue Target Editor, Projections Precision, and Enhanced Memberships Analytics
+
+- **What changed:** 
+  1. **Fixed Revenue & Expense Projections:** Removed artificial daily run-rate inflation for recorded months; projections now reflect true actuals cleanly.
+  2. **Monthly Sales Revenue Target Editor:** Added an interactive "🎯 ערוך יעד" button and modal allowing switching between original generic budget (תקציב 2026) and user-defined custom sales targets with instant recalculation.
+  3. **Fixed Expense Target Updates:** Added automatic cache invalidation (`self._cache.clear()`) on custom target saving so updates to fixed expense targets (e.g. מנהל חדר כושר) apply immediately everywhere.
+  4. **Correct Membership Monthly Price Calculation:** Enhanced detection of annual, multi-month, and summer plans to prevent artificial inflation caused by shortened cancellation dates in Arbox.
+  5. **Enhanced Memberships & Cancellations Analytics Grid:**
+     - **Top Membership Plans Breakdown (פילוח סוגי מנויים מובילים)** with member counts and percentages.
+     - **New Joins Timeline in 2026 (הצטרפויות חדשות לאורך השנה)** with area chart.
+     - **Cancellation & Freeze Reasons Breakdown (פילוח סיבות ביטול והקפאה)** with visual progress bars.
+     - **Sales Reps & Closers Performance (ביצועי נציגי מכירות וסגירות)** with closings count and total revenue per closer.
+- **Why (what Idan asked for, in his words if given):** 
+  - *"המספר שנמצא כאן, לא נשמע לי הגיוני. איך אתה מחשב אותו? ואני רוצה שתוסיף לי אופציה/כפתור - לערוך את היעד החודשי למכירות. שיהיה אחד ״גנרי״ ואחד שבו אני מגדיר. שים לב שברגע שאני מנסה לעדכן יעד של הוצאה קבועה כמו מנהל חדר כושר הוא לא מעדכן את היעד בהתאם... בתמונה השנייה מהי הכוונה למחיר לחודש? זה נראה שהוא לא מבצע חישוב נכון... תמונת מצב מנויים: פילוח סוגי מנויים, מצטרפים חדשים, צפי החזר כספי, סיבות ביטול/הקפאה, ביצועי נציגי מכירות, מחיר ממוצע."*
+- **What it touches:** 
+  - `dashboard/backend/data_service.py`, `dashboard/public/index.html`, `dashboard/public/app.js`, `docs/BUILDER_LOG.md`.
+- **How it was verified:** 
+  - Verified JavaScriptCore execution of `app.js` with 0 syntax errors.
+  - Verified monthly price calculations for cancellation rows (e.g. עמית סנטג שמואל: ₪243/mo, לירן כהן: ₪150/mo, נגה רחמילביץ: ₪300/mo).
+  - Executed all 94 automated tests (0 failures).
+
 ---
+
 
 ## 2026-08-16 — Versatile Multi-View Dashboard: Cards, Annual Trend Charts & Full Matrix
 

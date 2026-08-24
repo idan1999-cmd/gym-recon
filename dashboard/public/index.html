@@ -170,11 +170,17 @@
 
     <!-- Top Overview KPI Strip -->
     <section class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
-        <div class="text-[11px] font-medium text-slate-500">סה״כ הכנסות (MTD)</div>
+      <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs relative group">
+        <div class="flex items-center justify-between">
+          <div class="text-[11px] font-medium text-slate-500">סה״כ הכנסות (MTD)</div>
+          <button onclick="openRevenueTargetModal()" class="text-[10px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded-lg border border-blue-200 transition flex items-center gap-1" title="עריכת יעד מכירות חודשי">
+            <i data-lucide="target" class="w-3 h-3"></i>
+            <span>ערוך יעד</span>
+          </button>
+        </div>
         <div class="text-xl font-black text-slate-900 mt-0.5" id="strip-rev-actual">₪0</div>
-        <div class="text-[10px] text-slate-400 mt-0.5 flex justify-between">
-          <span>יעד: <strong id="strip-rev-budget" class="text-slate-600">₪0</strong></span>
+        <div class="text-[10px] text-slate-400 mt-0.5 flex justify-between items-center">
+          <span>יעד: <strong id="strip-rev-budget" class="text-slate-600">₪0</strong> <span id="strip-rev-custom-badge" class="hidden text-[9px] bg-amber-100 text-amber-800 px-1 py-0.5 rounded font-bold">מוגדר</span></span>
           <span id="strip-rev-pct" class="text-emerald-600 font-bold">0%</span>
         </div>
       </div>
@@ -513,6 +519,65 @@
         </div>
       </div>
 
+      <!-- 4-Card Analytics Grid: Membership Types, New Joins, Reasons, Sales Reps -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        <!-- Card 1: Top Active Membership Types -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <i data-lucide="layers" class="w-4 h-4 text-indigo-600"></i>
+              פילוח סוגי מנויים מובילים
+            </h3>
+            <span class="text-[11px] text-slate-400">לפי מנויים פעילים</span>
+          </div>
+          <div id="mem-types-list" class="space-y-2.5 max-h-60 overflow-y-auto custom-scrollbar pr-1">
+            <!-- Injected dynamically -->
+          </div>
+        </div>
+
+        <!-- Card 2: New Joins Timeline (2026) -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <i data-lucide="user-plus" class="w-4 h-4 text-emerald-600"></i>
+              הצטרפויות חדשות בשנת 2026
+            </h3>
+            <span class="text-[11px] text-slate-400">לפי חודש רכישה</span>
+          </div>
+          <div id="mem-joins-chart" class="w-full h-56"></div>
+        </div>
+
+        <!-- Card 3: Cancellation & Freeze Reasons Breakdown -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <i data-lucide="help-circle" class="w-4 h-4 text-amber-600"></i>
+              פילוח סיבות ביטול והקפאה
+            </h3>
+            <span class="text-[11px] text-slate-400">מתוך דו״ח מכירות והקפאות</span>
+          </div>
+          <div id="mem-reasons-list" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
+            <!-- Injected dynamically -->
+          </div>
+        </div>
+
+        <!-- Card 4: Sales Closers & Reps Performance -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <i data-lucide="award" class="w-4 h-4 text-blue-600"></i>
+              ביצועי נציגי מכירות וסגירות
+            </h3>
+            <span class="text-[11px] text-slate-400" id="sales-closers-month-label">חודש יוני 2026</span>
+          </div>
+          <div id="sales-closers-list" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
+            <!-- Injected dynamically -->
+          </div>
+        </div>
+
+      </div>
+
       <!-- Interactive Detailed Lists & Tables -->
       <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         
@@ -744,12 +809,57 @@
     </div>
   </div>
 
+  <!-- Revenue Target Editor Modal (יעד גנרי מול יעד מוגדר) -->
+  <div id="revenue-target-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs transition-opacity duration-200 hidden opacity-0">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-100 transform scale-95 transition-transform duration-200" id="revenue-modal-card">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-black">
+            <i data-lucide="target" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-black text-slate-900">הגדרת יעד מכירות חודשי</h3>
+            <p class="text-[11px] text-slate-400" id="revenue-modal-subtitle">חודש יוני 2026</p>
+          </div>
+        </div>
+        <button onclick="closeRevenueTargetModal()" class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <!-- Generic budget box -->
+        <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 flex items-center justify-between">
+          <div>
+            <div class="text-[11px] font-medium text-slate-500">יעד גנרי (מתקציב 2026)</div>
+            <div class="text-base font-black text-slate-800" id="generic-revenue-budget-display">₪ 0</div>
+          </div>
+          <button onclick="applyGenericRevenueTarget()" class="text-xs px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-xl border border-slate-300 shadow-2xs transition">
+            החל יעד גנרי
+          </button>
+        </div>
+
+        <!-- Custom target input box -->
+        <div class="space-y-1.5 pt-1">
+          <label class="text-xs font-bold text-slate-700">יעד מוגדר אישית (₪):</label>
+          <div class="flex items-center gap-2">
+            <input type="number" id="custom-revenue-input" placeholder="הזן סכום יעד..." class="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <button onclick="saveCustomRevenueTarget()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition">
+              שמור יעד
+            </button>
+          </div>
+          <p class="text-[10px] text-slate-400">היעד שתגדיר ישפיע ישירות על אחוז העמידה ביעד בלוח הבקרה.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Notification Toast -->
   <div id="toast" class="fixed bottom-5 left-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-semibold">
     <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
     <span id="toast-message">הנתונים סונכרנו בהצלחה!</span>
   </div>
 
-  <script src="app.js?v=2.5"></script>
+  <script src="app.js?v=2.6"></script>
 </body>
 </html>

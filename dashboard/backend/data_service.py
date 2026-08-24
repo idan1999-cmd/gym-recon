@@ -63,6 +63,7 @@ class DashboardDataService:
             CONFIG_DIR.mkdir(parents=True, exist_ok=True)
             with open(CUSTOM_TARGETS_FILE, "w", encoding="utf-8") as f:
                 json.dump(self.custom_targets, f, ensure_ascii=False, indent=2)
+            self._cache.clear()
             return True
         except Exception as e:
             print("Error saving target:", e)
@@ -470,21 +471,49 @@ class DashboardDataService:
                 end_d = get_val(r, ["תאריך סיום"])
                 price = safe_float(get_val(r, ["מחיר מכירה", "שולם", "מחיר"]))
 
-                # Monthly price
+                # Monthly price calculation (accurate detection of annual, multi-month, or full period)
+                m_type_str = str(m_type).strip()
                 explicit_monthly = get_val(r, ["מחיר לחודש"])
                 if explicit_monthly is not None:
                     m_price = safe_float(explicit_monthly)
                 else:
                     months = 12.0
-                    if start_d and end_d and hasattr(start_d, "year") and hasattr(end_d, "year"):
+                    if any(k in m_type_str for k in ["שנתי", "שנה", "12", "פרמיום", "נוער", "BASIC"]):
+                        months = 12.0
+                    elif any(k in m_type_str for k in ["6 חודש", "חצי שנתי"]):
+                        months = 6.0
+                    elif any(k in m_type_str for k in ["3 חודש", "רבעון"]):
+                        months = 3.0
+                    elif any(k in m_type_str for k in ["חודשי", "חודש 1"]):
+                        months = 1.0
+                    elif "קיץ" in m_type_str:
+                        months = 2.0
+                    elif start_d and end_d and hasattr(start_d, "year") and hasattr(end_d, "year"):
                         days = (end_d - start_d).days
-                        if days > 0:
-                            months = max(days / 30.4167, 1.0)
-                    m_price = round(price / months, 2) if months > 0 else price
+                        if days >= 300:
+                            months = 12.0
+                        elif days > 0:
+                            months = max(round(days / 30.4167), 1.0)
+                    m_price = round(price / months, 2) if (months > 0 and price > 0) else price
 
                 is_active = "פעיל" in st and "ביטול" not in st
                 is_frozen = "הוקפא" in st or "הקפאה" in st
                 is_future_cancel = "ביטול" in st
+
+                # Track active membership types
+                if is_active and m_type_str:
+                    membership_types_counter = getattr(self, "_temp_m_types", Counter())
+                    membership_types_counter[m_type_str] += 1
+                    self._temp_m_types = membership_types_counter
+
+                # Track new joins by purchase/start date in 2026
+                join_d = get_val(r, ["תאריך רכישה", "תאריך התחלה", "לקוח מתאריך"])
+                if join_d and hasattr(join_d, "strftime"):
+                    j_key = join_d.strftime("%Y-%m")
+                    if j_key.startswith("2026"):
+                        joins_counter = getattr(self, "_temp_joins", Counter())
+                        joins_counter[j_key] += 1
+                        self._temp_joins = joins_counter
 
                 target_keys = ["all", branch_key]
                 for tk in target_keys:
@@ -514,7 +543,7 @@ class DashboardDataService:
                         "name": str(name).strip() if name else "ללא שם",
                         "branch": "פילאטיס מכשירים" if branch_key == "pilates" else "מועדון A+",
                         "branch_key": branch_key,
-                        "membership_type": str(m_type).strip(),
+                        "membership_type": m_type_str,
                         "end_date": end_d_str,
                         "end_month": end_month_key,
                         "price": price,
@@ -529,13 +558,32 @@ class DashboardDataService:
                 del branches_stats[bk]["prices"]
                 del branches_stats[bk]["monthly_prices"]
 
+            # Membership types top list
+            m_types_counter = getattr(self, "_temp_m_types", Counter())
+            self._temp_m_types = Counter()
+            active_total = branches_stats["all"]["active"]
+            top_membership_types = [
+                {"name": name, "count": count, "pct": round(count / max(active_total, 1) * 100, 1)}
+                for name, count in m_types_counter.most_common(8)
+            ]
+
+            # Joins timeline
+            j_counter = getattr(self, "_temp_joins", Counter())
+            self._temp_joins = Counter()
+            new_joins_list = [
+                {"month": m, "count": j_counter.get(m, 0), "label": MONTH_SHORT_HE[int(m.split("-")[1]) - 1]}
+                for m in [f"2026-{i:02d}" for i in range(1, 9)]
+            ]
+
             res = {
                 "file_name": mem_file.name,
                 "active_tab": active_tab,
                 "available_snapshots": snapshots,
                 "stats": branches_stats,
                 "future_cancellations": future_cancel_members,
-                "cancellations_by_month": sorted([{"month": k, "count": v} for k, v in cancellations_by_month.items()], key=lambda x: x["month"])
+                "cancellations_by_month": sorted([{"month": k, "count": v} for k, v in cancellations_by_month.items()], key=lambda x: x["month"]),
+                "membership_types": top_membership_types,
+                "new_joins_timeline": new_joins_list
             }
             self._cache[cache_key] = res
             return res
@@ -550,10 +598,74 @@ class DashboardDataService:
                     "pilates": {"name": "פילאטיס מכשירים", "active": 0, "frozen": 0, "future_cancellations": 0, "total": 0, "avg_price": 0.0, "avg_monthly_price": 0.0}
                 },
                 "future_cancellations": [],
-                "cancellations_by_month": []
+                "cancellations_by_month": [],
+                "membership_types": [],
+                "new_joins_timeline": []
             }
 
-    def parse_sales_cancellations(self) -> dict:
+    def _categorize_reason(self, note: str) -> str:
+        if not note:
+            return "אחר / ללא סיבה"
+        note_s = str(note).lower()
+        if any(k in note_s for k in ["חול", "חו\"ל", "טיס", "טס", "חופש", "נופש"]):
+            return "חו״ל וחופשות"
+        if any(k in note_s for k in ["רפואי", "בריאות", "ניתוח", "כאב", "פציע", "רופא", "הריון", "לידה"]):
+            return "רפואי ובריאותי"
+        if any(k in note_s for k in ["מילואים", "צבא", "צו 8", "בסיס"]):
+            return "שירות צבאי ומילואים"
+        if any(k in note_s for k in ["מעבר", "עבר", "דירה", "עובר"]):
+            return "מעבר דירה ומגורים"
+        if any(k in note_s for k in ["לא מגיע", "לא מצליח", "עומס", "עבודה", "זמן", "לימודים"]):
+            return "חוסר זמן / עומס"
+        if any(k in note_s for k in ["מחיר", "יקר", "כסף", "כלכלי"]):
+            return "שיקול כלכלי ומחיר"
+        return "אחר / שונות"
+
+    def _get_sales_closers(self, wb, target_month: int = 6) -> list[dict]:
+        m_names = {1: "ינואר", 2: "פברואר", 3: "מרץ", 4: "אפריל", 5: "מאי", 6: "יוני", 7: "יולי", 8: "אוג", 9: "ספטמבר", 10: "אוקטובר", 11: "נובמבר", 12: "דצמבר"}
+        target_name = m_names.get(target_month, "")
+        sheet = None
+        for s in wb.sheetnames:
+            if target_name in s and "ישן" not in s and "דו״ח" not in s and "הקפאות" not in s:
+                sheet = s
+                break
+        if not sheet:
+            for s in ["יוני 26", "יולי 26", "מאי 26"]:
+                if s in wb.sheetnames:
+                    sheet = s
+                    break
+        if not sheet:
+            return []
+
+        ws = wb[sheet]
+        headers = {str(ws.cell(1, c).value).strip(): c for c in range(1, ws.max_column + 1) if ws.cell(1, c).value}
+        closer_col = headers.get("סוגר הליד", 7)
+        status_col = headers.get("סטטוס", 9)
+        amount_col = headers.get("מחיר סה״כ", 13)
+
+        stats = {}
+        for r in range(2, ws.max_row + 1):
+            closer = ws.cell(r, closer_col).value
+            st = str(ws.cell(r, status_col).value or "")
+            tot = ws.cell(r, amount_col).value
+            if not closer:
+                continue
+            c_name = str(closer).strip()
+            if c_name not in stats:
+                stats[c_name] = {"name": c_name, "closings": 0, "total_amount": 0.0, "leads": 0}
+            stats[c_name]["leads"] += 1
+            if any(k in st for k in ["נסגר", "סגירה", "שולם"]):
+                stats[c_name]["closings"] += 1
+                if tot:
+                    try:
+                        stats[c_name]["total_amount"] += float(str(tot).replace(",", "").strip())
+                    except Exception:
+                        pass
+
+        res = sorted(stats.values(), key=lambda x: x["closings"], reverse=True)
+        return res
+
+    def parse_sales_cancellations(self, month: int = 6) -> dict:
         sales_file = self.find_input_file("*מכירות*.xlsx")
         if not sales_file or not sales_file.exists():
             return {
@@ -565,18 +677,20 @@ class DashboardDataService:
                     "completed_count": 0,
                     "total_refund_amount": 0.0
                 },
-                "requests": []
+                "requests": [],
+                "reasons_breakdown": [],
+                "sales_closers": []
             }
 
         mtime = sales_file.stat().st_mtime
-        cache_key = f"sales_{sales_file}_{mtime}"
+        cache_key = f"sales_{sales_file}_{mtime}_{month}"
         if cache_key in self._cache:
             return self._cache[cache_key]
 
         try:
             wb = openpyxl.load_workbook(str(sales_file), data_only=True)
             if "הקפאותביטולים" not in wb.sheetnames:
-                return {"summary": {}, "requests": []}
+                return {"summary": {}, "requests": [], "reasons_breakdown": [], "sales_closers": []}
             ws = wb["הקפאותביטולים"]
 
             headers = {}
@@ -603,6 +717,7 @@ class DashboardDataService:
             }
 
             requests_list = []
+            reasons_counter = Counter()
 
             for r in range(2, ws.max_row + 1):
                 name = get_val(r, ["שם"])
@@ -629,6 +744,10 @@ class DashboardDataService:
 
                 req_d_str = req_date.strftime("%d/%m/%Y") if hasattr(req_date, "strftime") else (str(req_date)[:10] if req_date else "")
 
+                # Reason category
+                cat = self._categorize_reason(str(notes))
+                reasons_counter[cat] += 1
+
                 requests_list.append({
                     "name": str(name).strip() if name else "ללא שם",
                     "type": str(req_type).strip(),
@@ -636,17 +755,27 @@ class DashboardDataService:
                     "req_date": req_d_str,
                     "refund_amount": refund_amount,
                     "notes": str(notes).strip(),
-                    "opener": str(opener).strip()
+                    "opener": str(opener).strip(),
+                    "reason_category": cat
                 })
 
             summary["approved_pending_refund_amount"] = round(summary["approved_pending_refund_amount"], 2)
             summary["completed_refund_amount"] = round(summary["completed_refund_amount"], 2)
             summary["total_refund_amount"] = round(summary["total_refund_amount"], 2)
 
+            reasons_breakdown = [
+                {"reason": cat, "count": count, "pct": round(count / max(len(requests_list), 1) * 100, 1)}
+                for cat, count in reasons_counter.most_common()
+            ]
+
+            sales_closers = self._get_sales_closers(wb, target_month=month)
+
             res = {
                 "file_name": sales_file.name,
                 "summary": summary,
-                "requests": requests_list
+                "requests": requests_list,
+                "reasons_breakdown": reasons_breakdown,
+                "sales_closers": sales_closers
             }
             self._cache[cache_key] = res
             return res
@@ -798,13 +927,25 @@ class DashboardDataService:
                 "all_months": item["months"]
             })
 
+        # Support custom total revenue target if set by user
+        generic_rev_budget = total_rev_budget
+        is_custom_rev = False
+        rev_override_key = f"{club_filter}_total_revenue_{month}"
+        if rev_override_key in self.custom_targets:
+            total_rev_budget = float(self.custom_targets[rev_override_key])
+            is_custom_rev = True
+
+        # For closed/recorded months, projected equals actuals (accurate figures without artificial inflation)
+        total_rev_projected = total_rev_actual if total_rev_actual > 0 else total_rev_budget
+        total_exp_projected = total_exp_actual if total_exp_actual > 0 else total_exp_budget
+
         # Calculate annual trends & smart insights
         annual_trends = self.get_annual_trends(incomes_list, var_exp_list, fix_exp_list)
         smart_insights = self.generate_smart_insights(incomes_list, var_exp_list, fix_exp_list, month)
 
         # Parse memberships and sales cancellations reports
         memberships_data = self.parse_membership_data(selected_tab=snapshot)
-        sales_cancellations = self.parse_sales_cancellations()
+        sales_cancellations = self.parse_sales_cancellations(month=month)
 
         # Enrich future cancellations with sales refunds where name matches
         refund_map = {}
@@ -835,6 +976,8 @@ class DashboardDataService:
             "summary": {
                 "total_revenue": {
                     "budget": total_rev_budget,
+                    "generic_budget": generic_rev_budget,
+                    "is_custom": is_custom_rev,
                     "actual": total_rev_actual,
                     "projected": total_rev_projected,
                     "pct": round((total_rev_actual / total_rev_budget * 100), 1) if total_rev_budget > 0 else 0

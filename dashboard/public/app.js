@@ -16,6 +16,7 @@ let chartTrainer = null;
 let chartPT = null;
 let chartMemDist = null;
 let chartMemTimeline = null;
+let chartMemJoins = null;
 
 const MONTH_NAMES = [
   'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
@@ -141,6 +142,94 @@ async function fetchDashboardData() {
   }
 }
 
+function openRevenueTargetModal() {
+  if (!dashboardData || !dashboardData.summary) return;
+  const rev = dashboardData.summary.total_revenue;
+  const meta = dashboardData.metadata;
+
+  const clubName = (currentClub === 'gym') ? 'חדר כושר' : ((currentClub === 'pilates') ? 'פילאטיס' : 'כל המועדון');
+  document.getElementById('revenue-modal-subtitle').innerText = `${meta.month_name} ${meta.year} • ${clubName}`;
+  document.getElementById('generic-revenue-budget-display').innerText = formatNIS(rev.generic_budget || rev.budget);
+  document.getElementById('custom-revenue-input').value = Math.round(rev.budget);
+
+  const modal = document.getElementById('revenue-target-modal');
+  const card = document.getElementById('revenue-modal-card');
+  modal.classList.remove('hidden');
+  setTimeout(() => {
+    modal.classList.remove('opacity-0');
+    card.classList.remove('scale-95');
+    card.classList.add('scale-100');
+  }, 10);
+  try { lucide.createIcons(); } catch (e) {}
+}
+
+function closeRevenueTargetModal() {
+  const modal = document.getElementById('revenue-target-modal');
+  const card = document.getElementById('revenue-modal-card');
+  modal.classList.add('opacity-0');
+  card.classList.remove('scale-100');
+  card.classList.add('scale-95');
+  setTimeout(() => {
+    modal.classList.add('hidden');
+  }, 200);
+}
+
+async function saveCustomRevenueTarget() {
+  const inputVal = parseFloat(document.getElementById('custom-revenue-input').value);
+  if (isNaN(inputVal) || inputVal < 0) {
+    showToast('נא להזין סכום יעד תקין');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/target', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        club: currentClub,
+        code: 'total_revenue',
+        month: currentMonth,
+        target: inputVal
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('יעד המכירות עודכן בהצלחה!');
+      closeRevenueTargetModal();
+      await fetchDashboardData();
+    }
+  } catch (err) {
+    showToast('שגיאה בשמירת יעד מכירות');
+  }
+}
+
+async function applyGenericRevenueTarget() {
+  if (!dashboardData || !dashboardData.summary) return;
+  const genericVal = dashboardData.summary.total_revenue.generic_budget;
+  if (!genericVal) return;
+
+  try {
+    const res = await fetch('/api/target', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        club: currentClub,
+        code: 'total_revenue',
+        month: currentMonth,
+        target: genericVal
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('הוחל יעד גנרי מתקציב 2026!');
+      closeRevenueTargetModal();
+      await fetchDashboardData();
+    }
+  } catch (err) {
+    showToast('שגיאה בהחלת יעד גנרי');
+  }
+}
+
 function renderDashboard(data) {
   if (!data) return;
 
@@ -154,6 +243,11 @@ function renderDashboard(data) {
   document.getElementById('strip-rev-budget').innerText = formatNIS(sum.total_revenue.budget);
   document.getElementById('strip-rev-pct').innerText = `${sum.total_revenue.pct}%`;
   document.getElementById('strip-rev-proj').innerText = formatNIS(sum.total_revenue.projected);
+
+  const customBadge = document.getElementById('strip-rev-custom-badge');
+  if (customBadge) {
+    customBadge.classList.toggle('hidden', !sum.total_revenue.is_custom);
+  }
 
   document.getElementById('strip-exp-actual').innerText = formatNIS(sum.total_expenses.actual);
   document.getElementById('strip-exp-budget').innerText = formatNIS(sum.total_expenses.budget);
@@ -732,18 +826,151 @@ function renderMemberships(data) {
     homeRefund.innerText = formatNIS(sales.summary.approved_pending_refund_amount);
   }
 
-  // Render Charts & Tables
+  // Render Charts & Analytics
   if (currentView === 'memberships') {
     try {
       renderMembershipCharts(mem);
+      renderNewJoinsChart(mem.new_joins_timeline || []);
     } catch (err) {
       console.warn('Membership charts warning:', err);
     }
   }
+
+  // Render Analytics Cards
+  renderMembershipTypesList(mem.membership_types || []);
+  renderReasonsList(sales ? (sales.reasons_breakdown || []) : []);
+  renderSalesClosersList(sales ? (sales.sales_closers || []) : [], data.metadata ? data.metadata.month_name : 'יוני');
+
+  // Render Tables
   renderFutureCancellationsTable(mem.future_cancellations || []);
   if (sales) {
     renderSalesRefundsTable(sales.requests || []);
   }
+}
+
+function renderMembershipTypesList(types) {
+  const container = document.getElementById('mem-types-list');
+  if (!container) return;
+  if (!types || types.length === 0) {
+    container.innerHTML = '<div class="text-center py-4 text-slate-400 text-xs">אין נתוני מנויים</div>';
+    return;
+  }
+  container.innerHTML = types.map(t => `
+    <div class="space-y-1">
+      <div class="flex justify-between items-center text-xs">
+        <span class="font-medium text-slate-700 truncate max-w-[200px]" title="${t.name}">${t.name}</span>
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-slate-900">${t.count} מנויים</span>
+          <span class="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">${t.pct}%</span>
+        </div>
+      </div>
+      <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+        <div class="bg-indigo-600 h-full rounded-full transition-all duration-500" style="width: ${Math.min(t.pct * 2.5, 100)}%"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderNewJoinsChart(timeline) {
+  const el = document.getElementById('mem-joins-chart');
+  if (!el || !timeline || timeline.length === 0) return;
+  el.innerHTML = '';
+  const options = {
+    series: [{
+      name: 'מצטרפים חדשים',
+      data: timeline.map(x => x.count)
+    }],
+    chart: {
+      type: 'area',
+      height: 200,
+      fontFamily: 'Heebo, sans-serif',
+      toolbar: { show: false }
+    },
+    colors: ['#10b981'],
+    fill: {
+      type: 'gradient',
+      gradient: {
+        shadeIntensity: 1,
+        opacityFrom: 0.45,
+        opacityTo: 0.05,
+        stops: [20, 100]
+      }
+    },
+    stroke: { curve: 'smooth', width: 2.5 },
+    xaxis: {
+      categories: timeline.map(x => x.label),
+      labels: { style: { colors: '#64748b', fontWeight: 600 } }
+    },
+    yaxis: {
+      labels: { style: { colors: '#64748b' } }
+    },
+    dataLabels: { enabled: true, offsetY: -5, style: { fontSize: '10px', colors: ['#059669'] } }
+  };
+  if (chartMemJoins) {
+    try { chartMemJoins.destroy(); } catch (e) {}
+  }
+  chartMemJoins = new ApexCharts(el, options);
+  chartMemJoins.render();
+}
+
+function renderReasonsList(reasons) {
+  const container = document.getElementById('mem-reasons-list');
+  if (!container) return;
+  if (!reasons || reasons.length === 0) {
+    container.innerHTML = '<div class="text-center py-4 text-slate-400 text-xs">אין נתוני סיבות</div>';
+    return;
+  }
+  const colorMap = {
+    'חו״ל וחופשות': 'bg-blue-500',
+    'רפואי ובריאותי': 'bg-rose-500',
+    'חוסר זמן / עומס': 'bg-amber-500',
+    'מעבר דירה ומגורים': 'bg-purple-500',
+    'שירות צבאי ומילואים': 'bg-emerald-500',
+    'שיקול כלכלי ומחיר': 'bg-cyan-500',
+    'אחר / שונות': 'bg-slate-400'
+  };
+  container.innerHTML = reasons.map(r => `
+    <div class="space-y-1">
+      <div class="flex justify-between items-center text-xs">
+        <span class="font-medium text-slate-700">${r.reason}</span>
+        <div class="flex items-center gap-1.5">
+          <span class="font-bold text-slate-900">${r.count} פניות</span>
+          <span class="text-[10px] text-slate-400">(${r.pct}%)</span>
+        </div>
+      </div>
+      <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+        <div class="${colorMap[r.reason] || 'bg-blue-500'} h-full rounded-full transition-all duration-500" style="width: ${Math.min(r.pct * 2.2, 100)}%"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderSalesClosersList(closers, monthName) {
+  const container = document.getElementById('sales-closers-list');
+  const labelEl = document.getElementById('sales-closers-month-label');
+  if (labelEl) labelEl.innerText = `חודש ${monthName} 2026`;
+  if (!container) return;
+  if (!closers || closers.length === 0) {
+    container.innerHTML = '<div class="text-center py-4 text-slate-400 text-xs">אין נתוני סגירות לחודש זה</div>';
+    return;
+  }
+  container.innerHTML = closers.map((c, idx) => `
+    <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100">
+      <div class="flex items-center gap-2">
+        <div class="w-6 h-6 rounded-lg bg-blue-100 text-blue-800 font-black text-xs flex items-center justify-center">
+          ${idx + 1}
+        </div>
+        <div>
+          <div class="text-xs font-bold text-slate-900">${c.name}</div>
+          <div class="text-[10px] text-slate-400">${c.leads} לידים שטופלו</div>
+        </div>
+      </div>
+      <div class="text-left">
+        <div class="text-xs font-black text-emerald-600">${c.closings} סגירות</div>
+        <div class="text-[10px] font-bold text-slate-600">${formatNIS(c.total_amount)}</div>
+      </div>
+    </div>
+  `).join('');
 }
 
 function renderMembershipCharts(mem) {

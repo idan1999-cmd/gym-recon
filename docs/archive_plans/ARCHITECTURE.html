@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Gym Recon Architecture</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  body { background: #f5f5f5; font-family: sans-serif; padding: 20px; }
+  .container { max-width: 1200px; margin: auto; }
+  h1 { color: #333; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🏋️ Gym Recon — Architecture</h1>
+  <pre class="mermaid">
+flowchart TB
+    subgraph Input["📁 Input Folder (input/)"]
+        A1["כרטסת Ledger"]
+        A2["תקציב מול ביצוע Budget"]
+        A3['דו"ח שיעורים Arbox']
+        A4["דוח מרכז לאישור מנהל (per branch)"]
+        A5["invoices/ (PDFs or OCR JSON)"]
+    end
+
+    subgraph Core["🧠 Core Engine (core/)"]
+        B["inputs.py\nAuto-detect by content\nPreflight check"]
+        C["ocr.py\nAgent vision (default)\nGemini fallback (headless)"]
+        D["ledger.py\nParse ledger\nMonthly movement"]
+        E["arbox.py\nLoad sessions\nAlias resolution"]
+        F["common.py\nAliases, pay matrix\nTrainer resolution"]
+    end
+
+    subgraph Jobs["⚙️ Jobs (jobs/)"]
+        subgraph LedgerSync["Job 1: Ledger Sync"]
+            G["ledger_output.py\nMap accounts (180/181)\nTwo-layer safe writes"]
+        end
+
+        subgraph Billing["Job 2: Trainer Billing"]
+            H["job_billing.py\nPhase A: Validate invoices\nThree-way match"]
+            I["audit.py\nVerdict: OK / REVIEW / BLOCK"]
+            J["billing_output.py\nPhase B: Write & resolve\nProduce דגלים flags"]
+        end
+    end
+
+    subgraph Output["📤 Output (output/)"]
+        K["תקציב_מול_ביצוע_*.xlsx\nLedger-synced budget files"]
+        L["חיוב_*.xlsx\nBilling workbooks + דגלים"]
+        M["trainer_amounts_*.json\npending_trainers_*.json\naudit_log.json"]
+    end
+
+    subgraph Validate["🔍 Optional Post-Validate"]
+        N["officecli_bridge.py\nofficecli validate"]
+    end
+
+    Input --> B
+    B --> C & D & E & F
+    D --> LedgerSync
+    E --> Billing
+    F --> Billing
+    C --> Billing
+    B --> LedgerSync & Billing
+    LedgerSync --> K
+    Billing --> L
+    Billing --> M
+    K & L --> N
+
+    style Input fill:#e8f5e9,stroke:#2e7d32
+    style Core fill:#e3f2fd,stroke:#1565c0
+    style Jobs fill:#fff3e0,stroke:#e65100
+    style Output fill:#f3e5f5,stroke:#6a1b9a
+    style Validate fill:#fff8e1,stroke:#f9a825
+  </pre>
+
+  <h2>Trainer Gate (critical rule)</h2>
+  <ul>
+    <li><strong>Known trainer</strong> → amount lands in its row ✓</li>
+    <li><strong>Unknown trainer</strong> → <em>held out</em> of numbers → proposal in דגלים + pending_trainers.json</li>
+    <li>Nothing uncertain is silently placed</li>
+  </ul>
+
+  <p style="color:#666;font-size:12px">Open in browser. Print to PDF for offline use.</p>
+</div>
+</body>
+</html>
