@@ -840,12 +840,6 @@ function renderMemberships(data) {
   renderMembershipTypesList(mem.membership_types || []);
   renderReasonsList(sales ? (sales.reasons_breakdown || []) : []);
   renderSalesClosersList(sales ? (sales.sales_closers || []) : [], data.metadata ? data.metadata.month_name : 'יוני');
-
-  // Render Tables
-  renderFutureCancellationsTable(mem.future_cancellations || []);
-  if (sales) {
-    renderSalesRefundsTable(sales.requests || []);
-  }
 }
 
 function renderMembershipTypesList(types) {

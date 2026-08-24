@@ -578,70 +578,6 @@
 
       </div>
 
-      <!-- Interactive Detailed Lists & Tables -->
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        
-        <!-- Table Mode Switcher Header -->
-        <div class="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/50">
-          <div class="flex items-center gap-2">
-            <button id="mem-tab-btn-cancels" onclick="setMembershipsTableTab('cancels')" class="px-3.5 py-1.5 rounded-xl font-bold text-xs bg-slate-900 text-white shadow-xs transition">
-              רשימת מנויים עם ביטול עתידי (<span id="mem-table-cancels-count">0</span>)
-            </button>
-            <button id="mem-tab-btn-refunds" onclick="setMembershipsTableTab('refunds')" class="px-3.5 py-1.5 rounded-xl font-medium text-xs text-slate-600 hover:bg-slate-200 transition">
-              דו״ח בקשות זיכוי והקפאה ממכירות (<span id="mem-table-refunds-count">0</span>)
-            </button>
-          </div>
-
-          <!-- Search Input -->
-          <div class="relative w-full sm:w-64">
-            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute right-3 top-2.5"></i>
-            <input type="text" id="mem-search-input" oninput="filterMembershipsTables()" placeholder="חיפוש לפי שם, סניף או מנוי..." class="w-full pr-9 pl-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
-          </div>
-        </div>
-
-        <!-- Table 1: Future Cancellations List -->
-        <div id="mem-table-container-cancels" class="overflow-x-auto custom-scrollbar p-2">
-          <table class="w-full text-right text-xs divide-y divide-slate-100">
-            <thead class="bg-slate-50 text-slate-600 font-bold">
-              <tr>
-                <th class="py-2.5 px-3">שם המתאמן</th>
-                <th class="py-2.5 px-3">סניף</th>
-                <th class="py-2.5 px-3">סוג מנוי</th>
-                <th class="py-2.5 px-3 text-center">תאריך סיום ביטול</th>
-                <th class="py-2.5 px-3 text-left">מחיר מכירה</th>
-                <th class="py-2.5 px-3 text-left">מחיר לחודש</th>
-                <th class="py-2.5 px-3 text-center">סטטוס זיכוי במכירות</th>
-                <th class="py-2.5 px-3 text-left">צפי החזר כספי</th>
-              </tr>
-            </thead>
-            <tbody id="mem-tbody-cancels" class="divide-y divide-slate-100 text-slate-700">
-              <!-- Injected dynamically -->
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Table 2: Sales Cancellations / Freeze Requests -->
-        <div id="mem-table-container-refunds" class="overflow-x-auto custom-scrollbar p-2 hidden">
-          <table class="w-full text-right text-xs divide-y divide-slate-100">
-            <thead class="bg-slate-50 text-slate-600 font-bold">
-              <tr>
-                <th class="py-2.5 px-3">שם הלקוח</th>
-                <th class="py-2.5 px-3">סוג פנייה</th>
-                <th class="py-2.5 px-3">תאריך פנייה</th>
-                <th class="py-2.5 px-3">סטטוס טיפול</th>
-                <th class="py-2.5 px-3 text-left">סכום זיכוי</th>
-                <th class="py-2.5 px-3">פותח הפנייה</th>
-                <th class="py-2.5 px-3">הערות וסיבת ביטול</th>
-              </tr>
-            </thead>
-            <tbody id="mem-tbody-refunds" class="divide-y divide-slate-100 text-slate-700">
-              <!-- Injected dynamically -->
-            </tbody>
-          </table>
-        </div>
-
-      </div>
-
     </div>
 
     <!-- ========================================================================= -->
@@ -860,6 +796,6 @@
     <span id="toast-message">הנתונים סונכרנו בהצלחה!</span>
   </div>
 
-  <script src="app.js?v=2.6"></script>
+  <script src="app.js?v=2.7"></script>
 </body>
 </html>
