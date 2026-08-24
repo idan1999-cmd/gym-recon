@@ -545,8 +545,25 @@ function renderAnnualCharts(trends) {
 // FULL FINANCIAL MATRIX (VIEW 3)
 // =========================================================================
 function renderFinancialMatrix(incomes, varExp, fixExp) {
+  const thead = document.getElementById('matrix-thead');
   const tbody = document.getElementById('matrix-tbody');
   if (!tbody) return;
+
+  if (thead) {
+    thead.innerHTML = `
+      <tr>
+        <th class="py-2.5 px-3">סעיף תקציבי</th>
+        <th class="py-2.5 px-2">סוג</th>
+        <th class="py-2.5 px-2">תקציב חודשי</th>
+        ${MONTH_NAMES.slice(0, 7).map((mName, idx) => {
+          const mNum = idx + 1;
+          const isSelected = (mNum === currentMonth);
+          return `<th class="py-2.5 px-2 text-center ${isSelected ? 'bg-blue-600 text-white font-black rounded-t-xl' : ''}">${mName}${isSelected ? ' (פעיל)' : ''}</th>`;
+        }).join('')}
+      </tr>
+    `;
+  }
+
   tbody.innerHTML = '';
 
   const allItems = [
@@ -562,13 +579,11 @@ function renderFinancialMatrix(incomes, varExp, fixExp) {
         <td class="py-2.5 px-3 font-bold text-slate-900">${item.name}</td>
         <td class="py-2.5 px-2"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${item.groupClass}">${item.group}</span></td>
         <td class="py-2.5 px-2 font-medium text-slate-500">${formatNIS(item.budget)}</td>
-        <td class="py-2.5 px-2">${formatNIS(months[1]?.actual || 0)}</td>
-        <td class="py-2.5 px-2">${formatNIS(months[2]?.actual || 0)}</td>
-        <td class="py-2.5 px-2">${formatNIS(months[3]?.actual || 0)}</td>
-        <td class="py-2.5 px-2">${formatNIS(months[4]?.actual || 0)}</td>
-        <td class="py-2.5 px-2">${formatNIS(months[5]?.actual || 0)}</td>
-        <td class="py-2.5 px-2 bg-blue-50/60 font-bold text-blue-700">${formatNIS(months[6]?.actual || 0)}</td>
-        <td class="py-2.5 px-2 text-slate-400">${formatNIS(months[7]?.actual || 0)}</td>
+        ${[1, 2, 3, 4, 5, 6, 7].map(mNum => {
+          const isSelected = (mNum === currentMonth);
+          const val = months[mNum]?.actual || 0;
+          return `<td class="py-2.5 px-2 text-center ${isSelected ? 'bg-blue-50/80 font-black text-blue-700' : (mNum > currentMonth ? 'text-slate-400' : '')}">${formatNIS(val)}</td>`;
+        }).join('')}
       </tr>
     `;
   }).join('');

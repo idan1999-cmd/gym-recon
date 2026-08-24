@@ -322,14 +322,6 @@ class DashboardDataService:
                     "text": f"הכנסות ה-PT (₪{inc_val:,.0f}) מכסות את שכר המאמנים (₪{exp_val:,.0f}) ומותירות רווח תפעולי של ₪{inc_val - exp_val:,.0f}."
                 })
 
-        # 4. Seasonal forecast tip
-        tips.append({
-            "icon": "calendar",
-            "color": "slate",
-            "title": "המלצת היערכות לחודשי חגים",
-            "text": "באוגוסט וספטמבר מומלץ להפעיל את מתג 'חודש חגים' שמכייל את צפי ההכנסות מאימונים אישיים ב-15% בהתאם לעונתיות."
-        })
-
         return tips
 
     def get_annual_trends(self, incomes: list, var_exp: list, fix_exp: list) -> dict:

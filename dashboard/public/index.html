@@ -641,19 +641,8 @@
 
         <div class="overflow-x-auto custom-scrollbar">
           <table class="w-full text-right text-xs divide-y divide-slate-200">
-            <thead class="bg-slate-50 text-slate-600 font-bold">
-              <tr>
-                <th class="py-2.5 px-3">סעיף תקציבי</th>
-                <th class="py-2.5 px-2">סוג</th>
-                <th class="py-2.5 px-2">תקציב חודשי</th>
-                <th class="py-2.5 px-2">ינואר</th>
-                <th class="py-2.5 px-2">פברואר</th>
-                <th class="py-2.5 px-2">מרץ</th>
-                <th class="py-2.5 px-2">אפריל</th>
-                <th class="py-2.5 px-2">מאי</th>
-                <th class="py-2.5 px-2 bg-blue-50 text-blue-900">יוני (פעיל)</th>
-                <th class="py-2.5 px-2">יולי</th>
-              </tr>
+            <thead id="matrix-thead" class="bg-slate-50 text-slate-600 font-bold">
+              <!-- Rendered dynamically -->
             </thead>
             <tbody id="matrix-tbody" class="divide-y divide-slate-100 text-slate-700">
               <!-- Injected dynamically -->
@@ -796,6 +785,6 @@
     <span id="toast-message">הנתונים סונכרנו בהצלחה!</span>
   </div>
 
-  <script src="app.js?v=2.8"></script>
+  <script src="app.js?v=2.9"></script>
 </body>
 </html>
