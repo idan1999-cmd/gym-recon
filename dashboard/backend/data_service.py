@@ -357,12 +357,12 @@ class DashboardDataService:
             monthly_exp_budget.append(round(e_bud))
             monthly_profit.append(round(r_act - e_act))
 
-            # Trainer specifics
-            t_cost = sum(x["months"].get(m, {}).get("actual", 0) for x in var_exp if "מאמן" in x["name"] or "חוגים" in x["name"])
+            # Trainer specifics (comprehensive matching for trainers, studio classes, personal training)
+            t_cost = sum(x["months"].get(m, {}).get("actual", 0) for x in var_exp if any(k in x["name"] for k in ["מאמנ", "מדריכ", "חוג", "סטודיו"]))
             trainer_trend.append(round(t_cost))
 
-            pt_r = sum(x["months"].get(m, {}).get("actual", 0) for x in incomes if "אישיים" in x["name"])
-            pt_c = sum(x["months"].get(m, {}).get("actual", 0) for x in var_exp if "אישיים" in x["name"])
+            pt_r = sum(x["months"].get(m, {}).get("actual", 0) for x in incomes if any(k in x["name"] for k in ["אישי", "אימון אישי"]))
+            pt_c = sum(x["months"].get(m, {}).get("actual", 0) for x in var_exp if any(k in x["name"] for k in ["אישי", "אימון אישי"]))
             pt_rev_trend.append(round(pt_r))
             pt_cost_trend.append(round(pt_c))
 

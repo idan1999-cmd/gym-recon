@@ -462,6 +462,10 @@ function renderFixedCards(fixedItems) {
 function renderAnnualCharts(trends) {
   if (!trends) return;
 
+  const mainEl = document.querySelector("#annual-main-chart");
+  const trainerEl = document.querySelector("#trainer-trend-chart");
+  const ptEl = document.querySelector("#pt-trend-chart");
+
   // Chart 1: Revenue vs Expenses Full Year
   const mainOpts = {
     series: [
@@ -488,9 +492,10 @@ function renderAnnualCharts(trends) {
     tooltip: { y: { formatter: (val) => formatNIS(val) } }
   };
 
-  if (chartMain) chartMain.updateOptions(mainOpts);
-  else {
-    chartMain = new ApexCharts(document.querySelector("#annual-main-chart"), mainOpts);
+  if (chartMain) { try { chartMain.destroy(); } catch (e) {} }
+  if (mainEl) {
+    mainEl.innerHTML = '';
+    chartMain = new ApexCharts(mainEl, mainOpts);
     chartMain.render();
   }
 
@@ -507,9 +512,10 @@ function renderAnnualCharts(trends) {
     tooltip: { y: { formatter: (val) => formatNIS(val) } }
   };
 
-  if (chartTrainer) chartTrainer.updateOptions(trainerOpts);
-  else {
-    chartTrainer = new ApexCharts(document.querySelector("#trainer-trend-chart"), trainerOpts);
+  if (chartTrainer) { try { chartTrainer.destroy(); } catch (e) {} }
+  if (trainerEl) {
+    trainerEl.innerHTML = '';
+    chartTrainer = new ApexCharts(trainerEl, trainerOpts);
     chartTrainer.render();
   }
 
@@ -527,9 +533,10 @@ function renderAnnualCharts(trends) {
     tooltip: { y: { formatter: (val) => formatNIS(val) } }
   };
 
-  if (chartPT) chartPT.updateOptions(ptOpts);
-  else {
-    chartPT = new ApexCharts(document.querySelector("#pt-trend-chart"), ptOpts);
+  if (chartPT) { try { chartPT.destroy(); } catch (e) {} }
+  if (ptEl) {
+    ptEl.innerHTML = '';
+    chartPT = new ApexCharts(ptEl, ptOpts);
     chartPT.render();
   }
 }
