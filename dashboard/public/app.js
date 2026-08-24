@@ -44,14 +44,14 @@ function switchView(viewName) {
   currentView = viewName;
 
   document.querySelectorAll('.view-btn').forEach(btn => {
-    btn.classList.remove('bg-blue-600', 'text-white', 'shadow-xs');
-    btn.classList.add('text-blue-700', 'hover:bg-blue-100');
+    btn.classList.remove('bg-rose-600', 'text-white', 'shadow-2xs');
+    btn.classList.add('text-zinc-700', 'hover:bg-white');
   });
 
   const activeBtn = document.getElementById(`view-${viewName}`);
   if (activeBtn) {
-    activeBtn.classList.remove('text-blue-700', 'hover:bg-blue-100');
-    activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow-xs');
+    activeBtn.classList.remove('text-zinc-700', 'hover:bg-white');
+    activeBtn.classList.add('bg-rose-600', 'text-white', 'shadow-2xs');
   }
 
   // Toggle View Containers
@@ -286,21 +286,22 @@ function renderSmartInsights(tips) {
   }
 
   container.innerHTML = `
-    <div class="p-3.5 bg-gradient-to-r from-blue-50 to-indigo-50/60 rounded-2xl border border-blue-100 shadow-2xs space-y-2">
+    <div class="p-4 bg-gradient-to-r from-zinc-950 via-zinc-900 to-black rounded-2xl border border-zinc-800 shadow-sm space-y-2.5 text-white">
       <div class="flex items-center justify-between">
-        <span class="text-xs font-bold text-blue-950 flex items-center gap-1.5">
-          <i data-lucide="sparkles" class="w-4 h-4 text-blue-600"></i>
-          תובנות חכמות וניתוח שינויים (AI Pulse)
+        <span class="text-xs font-black text-white flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+          <i data-lucide="sparkles" class="w-4 h-4 text-rose-500"></i>
+          <span>תובנות חכמות וניתוח שינויים (AI Pulse)</span>
         </span>
-        <span class="text-[10px] bg-blue-600 text-white font-bold px-2 py-0.5 rounded-full">חי</span>
+        <span class="text-[10px] bg-rose-600 text-white font-black px-2.5 py-0.5 rounded-full shadow-2xs">LIVE</span>
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
         ${tips.map(t => `
-          <div class="p-2.5 bg-white/90 rounded-xl border border-blue-100/80 flex items-start gap-2.5 text-xs shadow-2xs">
-            <i data-lucide="${t.icon}" class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0"></i>
+          <div class="p-3 bg-zinc-900/90 rounded-xl border border-zinc-800 flex items-start gap-2.5 text-xs shadow-2xs">
+            <i data-lucide="${t.icon}" class="w-4 h-4 text-rose-500 mt-0.5 flex-shrink-0"></i>
             <div>
-              <strong class="font-bold text-slate-800 block">${t.title}</strong>
-              <p class="text-slate-500 mt-0.5 text-[11px] leading-relaxed">${t.text}</p>
+              <strong class="font-black text-zinc-100 block">${t.title}</strong>
+              <p class="text-zinc-400 mt-0.5 text-[11px] leading-relaxed">${t.text}</p>
             </div>
           </div>
         `).join('')}
@@ -314,7 +315,7 @@ function renderCategoryCards(items, containerId, type) {
   container.innerHTML = '';
 
   if (!items || items.length === 0) {
-    container.innerHTML = '<div class="text-xs text-slate-400 p-4 text-center">אין נתונים לחודש זה</div>';
+    container.innerHTML = '<div class="text-xs text-zinc-400 p-4 text-center">אין נתונים לחודש זה</div>';
     return;
   }
 
@@ -332,65 +333,67 @@ function renderCategoryCards(items, containerId, type) {
           עמידה ביעד בתוספת ₪${Math.round(a - b).toLocaleString('he-IL')}
         </span>`;
       } else {
-        statusHTML = `<span class="text-xs font-medium text-slate-500">נשאר לגבות ₪${Math.max(Math.round(b - a), 0).toLocaleString('he-IL')}</span>`;
+        statusHTML = `<span class="text-xs font-medium text-zinc-500">נשאר לגבות ₪${Math.max(Math.round(b - a), 0).toLocaleString('he-IL')}</span>`;
       }
     } else {
       if (a > b && b > 0) {
-        statusHTML = `<span class="text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full flex items-center gap-1">
-          <span class="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-black">!</span>
+        statusHTML = `<span class="text-xs font-black text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200 flex items-center gap-1">
+          <span class="w-3.5 h-3.5 rounded-full bg-rose-600 text-white flex items-center justify-center text-[9px] font-black">!</span>
           חריגה של ₪${Math.round(a - b).toLocaleString('he-IL')}
         </span>`;
       } else {
-        statusHTML = `<span class="text-xs font-medium text-slate-500">נשאר להוציא ₪${Math.max(Math.round(b - a), 0).toLocaleString('he-IL')}</span>`;
+        statusHTML = `<span class="text-xs font-medium text-zinc-500">נשאר להוציא ₪${Math.max(Math.round(b - a), 0).toLocaleString('he-IL')}</span>`;
       }
     }
 
     const card = document.createElement('div');
-    card.className = 'app-card p-4 sm:p-5 flex flex-col justify-between cursor-pointer';
+    card.className = 'app-card p-4 sm:p-5 flex flex-col justify-between cursor-pointer border border-zinc-200/80 hover:border-zinc-300';
     card.onclick = (e) => {
       if (e.target.closest('.tx-drawer-btn') || e.target.closest('.tx-drawer-box')) return;
       openDrilldownModal(item);
     };
 
     const itemId = `card-tx-${type}-${idx}`;
+    const barColorClass = isIncome ? 'bg-emerald-500' : 'bg-rose-600';
+    const textAmountColor = isIncome ? 'text-zinc-900' : 'text-zinc-900';
 
     card.innerHTML = `
       <div>
         <div class="flex items-center justify-between mb-3">
           <div class="flex items-center gap-2">
-            <h3 class="text-base font-black text-slate-900">${item.name}</h3>
-            ${item.club ? `<span class="text-[10px] font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md">${item.club}</span>` : ''}
+            <h3 class="text-base font-black text-zinc-900">${item.name}</h3>
+            ${item.club ? `<span class="text-[10px] font-bold px-2 py-0.5 bg-zinc-100 text-zinc-700 rounded-md border border-zinc-200/60">${item.club}</span>` : ''}
           </div>
-          <button class="text-slate-400 hover:text-slate-700 p-1">
+          <button class="text-zinc-400 hover:text-zinc-700 p-1">
             <i data-lucide="more-vertical" class="w-4 h-4"></i>
           </button>
         </div>
 
         <div class="flex items-baseline justify-between mb-2">
           <div>
-            <span class="text-[11px] text-slate-400 block">${isIncome ? 'צפוי להכנס' : 'צפוי לצאת / יעד'}</span>
-            <span class="text-sm font-bold text-slate-700">${formatNIS(b)}</span>
+            <span class="text-[11px] text-zinc-400 block font-medium">${isIncome ? 'צפוי להכנס' : 'צפוי לצאת / יעד'}</span>
+            <span class="text-sm font-bold text-zinc-600">${formatNIS(b)}</span>
           </div>
           <div class="text-left">
-            <span class="text-[11px] text-slate-400 block">${isIncome ? 'נכנס בפועל' : 'יצא בפועל'}</span>
-            <span class="text-lg font-black text-blue-600">${formatNIS(a)}</span>
+            <span class="text-[11px] text-zinc-400 block font-medium">${isIncome ? 'נכנס בפועל' : 'יצא בפועל'}</span>
+            <span class="text-lg font-black ${textAmountColor}">${formatNIS(a)}</span>
           </div>
         </div>
 
-        <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden mb-2.5">
-          <div class="bg-blue-600 h-full rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+        <div class="w-full bg-zinc-100 h-2 rounded-full overflow-hidden mb-2.5">
+          <div class="${barColorClass} h-full rounded-full transition-all duration-500" style="width: ${pct}%"></div>
         </div>
 
         <div class="flex items-center justify-between pt-1">
           <div>${statusHTML}</div>
-          <button onclick="toggleCardTransactions('${itemId}')" class="tx-drawer-btn text-xs font-semibold text-slate-400 hover:text-slate-700 flex items-center gap-1 transition">
+          <button onclick="toggleCardTransactions('${itemId}')" class="tx-drawer-btn text-xs font-semibold text-zinc-500 hover:text-zinc-900 flex items-center gap-1 transition">
             <span>פירוט חודשי</span>
             <i data-lucide="chevron-down" id="icon-${itemId}" class="w-3.5 h-3.5 transition-transform"></i>
           </button>
         </div>
       </div>
 
-      <div id="${itemId}" class="tx-drawer-box hidden mt-3 pt-3 border-t border-slate-100 space-y-1.5">
+      <div id="${itemId}" class="tx-drawer-box hidden mt-3 pt-3 border-t border-zinc-100 space-y-1.5">
         ${renderCardTransactionsList(item.transactions)}
       </div>
     `;
@@ -479,13 +482,13 @@ function renderAnnualCharts(trends) {
       fontFamily: 'Heebo, sans-serif',
       toolbar: { show: false }
     },
-    colors: ['#16a34a', '#dc2626', '#2563eb'],
+    colors: ['#10b981', '#e11d48', '#18181b'],
     plotOptions: {
-      bar: { horizontal: false, columnWidth: '55%', borderRadius: 4 }
+      bar: { horizontal: false, columnWidth: '55%', borderRadius: 6 }
     },
     dataLabels: { enabled: false },
     stroke: { show: true, width: 2, colors: ['transparent'] },
-    xaxis: { categories: trends.months_labels },
+    xaxis: { categories: trends.months_labels, labels: { style: { fontWeight: 600 } } },
     yaxis: {
       labels: { formatter: (val) => '₪' + (val / 1000).toFixed(0) + 'k' }
     },
@@ -503,11 +506,11 @@ function renderAnnualCharts(trends) {
   const trainerOpts = {
     series: [{ name: 'עלות שכר מאמנים והדרכה', data: trends.trainers }],
     chart: { type: 'area', height: 240, fontFamily: 'Heebo, sans-serif', toolbar: { show: false } },
-    colors: ['#9333ea'],
+    colors: ['#e11d48'],
     dataLabels: { enabled: false },
     stroke: { curve: 'smooth', width: 3 },
-    fill: { type: 'gradient', gradient: { opacityFrom: 0.5, opacityTo: 0.05 } },
-    xaxis: { categories: trends.months_labels },
+    fill: { type: 'gradient', gradient: { opacityFrom: 0.55, opacityTo: 0.05 } },
+    xaxis: { categories: trends.months_labels, labels: { style: { fontWeight: 600 } } },
     yaxis: { labels: { formatter: (val) => '₪' + (val / 1000).toFixed(0) + 'k' } },
     tooltip: { y: { formatter: (val) => formatNIS(val) } }
   };
@@ -526,9 +529,9 @@ function renderAnnualCharts(trends) {
       { name: 'עלות מאמנים אישיים', data: trends.pt.cost }
     ],
     chart: { type: 'line', height: 240, fontFamily: 'Heebo, sans-serif', toolbar: { show: false } },
-    colors: ['#059669', '#e11d48'],
+    colors: ['#10b981', '#e11d48'],
     stroke: { width: [3, 3], curve: 'straight' },
-    xaxis: { categories: trends.months_labels },
+    xaxis: { categories: trends.months_labels, labels: { style: { fontWeight: 600 } } },
     yaxis: { labels: { formatter: (val) => '₪' + (val / 1000).toFixed(0) + 'k' } },
     tooltip: { y: { formatter: (val) => formatNIS(val) } }
   };
@@ -1067,23 +1070,23 @@ function renderSalesClosersList(closers, monthName) {
   if (labelEl) labelEl.innerText = `חודש ${monthName} 2026`;
   if (!container) return;
   if (!closers || closers.length === 0) {
-    container.innerHTML = '<div class="text-center py-4 text-slate-400 text-xs">אין נתוני סגירות לחודש זה</div>';
+    container.innerHTML = '<div class="text-center py-4 text-zinc-400 text-xs">אין נתוני סגירות לחודש זה</div>';
     return;
   }
   container.innerHTML = closers.map((c, idx) => `
-    <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100">
-      <div class="flex items-center gap-2">
-        <div class="w-6 h-6 rounded-lg bg-blue-100 text-blue-800 font-black text-xs flex items-center justify-center">
+    <div class="flex items-center justify-between p-2.5 rounded-xl bg-zinc-50 border border-zinc-200/70">
+      <div class="flex items-center gap-2.5">
+        <div class="w-6 h-6 rounded-lg ${idx === 0 ? 'bg-rose-600 text-white' : 'bg-zinc-200 text-zinc-800'} font-black text-xs flex items-center justify-center shadow-2xs">
           ${idx + 1}
         </div>
         <div>
-          <div class="text-xs font-bold text-slate-900">${c.name}</div>
-          <div class="text-[10px] text-slate-400">${c.leads} לידים שטופלו</div>
+          <div class="text-xs font-bold text-zinc-900">${c.name}</div>
+          <div class="text-[10px] text-zinc-400 font-medium">${c.leads} לידים שטופלו</div>
         </div>
       </div>
       <div class="text-left">
         <div class="text-xs font-black text-emerald-600">${c.closings} סגירות</div>
-        <div class="text-[10px] font-bold text-slate-600">${formatNIS(c.total_amount)}</div>
+        <div class="text-[10px] font-black text-zinc-700">${formatNIS(c.total_amount)}</div>
       </div>
     </div>
   `).join('');
@@ -1111,7 +1114,7 @@ function renderMembershipCharts(mem) {
         fontFamily: 'Heebo, sans-serif',
         toolbar: { show: false }
       },
-      colors: ['#10b981', '#f59e0b', '#f43f5e'],
+      colors: ['#10b981', '#f59e0b', '#e11d48'],
       plotOptions: {
         bar: {
           horizontal: false,
@@ -1121,10 +1124,10 @@ function renderMembershipCharts(mem) {
       },
       xaxis: {
         categories: ['מועדון A+', 'פילאטיס מכשירים'],
-        labels: { style: { colors: '#475569', fontWeight: 600 } }
+        labels: { style: { colors: '#27272a', fontWeight: 600 } }
       },
       yaxis: {
-        labels: { style: { colors: '#64748b' } }
+        labels: { style: { colors: '#71717a' } }
       },
       legend: {
         position: 'top',

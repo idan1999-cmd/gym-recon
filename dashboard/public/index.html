@@ -73,48 +73,48 @@
 <body class="min-h-screen antialiased bg-slate-50 text-slate-900 pb-16">
 
   <!-- Top App Navigation -->
-  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 lg:px-8 py-3 shadow-xs">
+  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-zinc-200 px-4 lg:px-8 py-3 shadow-2xs">
     <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
       
       <!-- Brand & Status -->
       <div class="flex items-center justify-between w-full md:w-auto">
         <div class="flex items-center gap-2.5">
-          <img src="logo.jpg" alt="A+ Street Mall" class="w-10 h-10 object-contain rounded-xl border border-slate-200 bg-white p-0.5 shadow-xs" />
+          <img src="logo.png" alt="A+ Street Mall" class="h-10 object-contain rounded-xl border border-zinc-200 bg-white px-2 py-0.5 shadow-2xs" />
           <div>
             <div class="flex items-center gap-1.5">
-              <h1 class="text-base font-bold tracking-tight text-slate-900">A+ Street Mall</h1>
-              <span class="px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md">חי</span>
+              <h1 class="text-base font-black tracking-tight text-zinc-900">A+ Street Mall</h1>
+              <span class="px-1.5 py-0.5 text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200 rounded-md">LIVE</span>
             </div>
-            <p class="text-[11px] text-slate-500">Premium Club by Ariel Properties • דשבורד מנהלים</p>
+            <p class="text-[11px] text-zinc-500 font-medium">Premium Club by Ariel Properties • דשבורד מנהלים</p>
           </div>
         </div>
 
         <!-- Mobile Sync Button -->
-        <button onclick="syncData()" class="md:hidden p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition">
+        <button onclick="syncData()" class="md:hidden p-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 transition">
           <i data-lucide="refresh-cw" class="w-4 h-4 sync-icon"></i>
         </button>
       </div>
 
       <!-- Center: Month Navigator with Arrows -->
-      <div class="flex items-center justify-center gap-3 bg-slate-100/80 px-3 py-1.5 rounded-full border border-slate-200/80">
-        <button onclick="navigateMonth(-1)" class="p-1 rounded-full hover:bg-white text-slate-600 transition">
+      <div class="flex items-center justify-center gap-3 bg-zinc-100 px-3 py-1.5 rounded-full border border-zinc-200">
+        <button onclick="navigateMonth(-1)" class="p-1 rounded-full hover:bg-white text-zinc-600 hover:text-zinc-900 transition">
           <i data-lucide="chevron-right" class="w-4 h-4"></i>
         </button>
         
-        <div class="flex items-center gap-1.5 text-xs font-bold text-slate-800">
-          <i data-lucide="calendar" class="w-3.5 h-3.5 text-blue-600"></i>
+        <div class="flex items-center gap-1.5 text-xs font-black text-zinc-900">
+          <i data-lucide="calendar" class="w-3.5 h-3.5 text-rose-600"></i>
           <span id="current-month-display">יוני 2026</span>
         </div>
 
-        <button onclick="navigateMonth(1)" class="p-1 rounded-full hover:bg-white text-slate-600 transition">
+        <button onclick="navigateMonth(1)" class="p-1 rounded-full hover:bg-white text-zinc-600 hover:text-zinc-900 transition">
           <i data-lucide="chevron-left" class="w-4 h-4"></i>
         </button>
       </div>
 
       <!-- Right Controls: Sync -->
       <div class="flex items-center gap-2 w-full md:w-auto justify-end">
-        <button onclick="syncData()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition shadow-sm">
-          <i data-lucide="refresh-cw" class="w-3.5 h-3.5 sync-icon"></i>
+        <button onclick="syncData()" class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-zinc-900 hover:bg-black text-white text-xs font-bold transition shadow-xs">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5 sync-icon text-rose-500"></i>
           <span>סנכרן</span>
         </button>
       </div>
@@ -122,37 +122,37 @@
     </div>
 
     <!-- Secondary Navigation Bar: Club Tabs & VIEW SWITCHER (ורסטיליות) -->
-    <div class="max-w-5xl mx-auto mt-2.5 pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+    <div class="max-w-5xl mx-auto mt-2.5 pt-2 border-t border-zinc-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
       
       <!-- Club Switcher Pills -->
-      <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
-        <button id="club-all" onclick="setClub('all')" class="club-tab-btn px-3.5 py-1 rounded-lg transition font-bold bg-slate-900 text-white shadow-xs">
+      <div class="flex items-center gap-1.5 bg-zinc-100 p-1 rounded-xl border border-zinc-200/60">
+        <button id="club-all" onclick="setClub('all')" class="club-tab-btn px-3.5 py-1.5 rounded-lg transition font-bold bg-zinc-900 text-white shadow-2xs">
           כל המועדון (מאוחד)
         </button>
-        <button id="club-gym" onclick="setClub('gym')" class="club-tab-btn px-3.5 py-1 rounded-lg transition font-medium text-slate-600 hover:bg-slate-200">
+        <button id="club-gym" onclick="setClub('gym')" class="club-tab-btn px-3.5 py-1.5 rounded-lg transition font-medium text-zinc-600 hover:bg-zinc-200">
           חדר כושר
         </button>
-        <button id="club-pilates" onclick="setClub('pilates')" class="club-tab-btn px-3.5 py-1 rounded-lg transition font-medium text-slate-600 hover:bg-slate-200">
+        <button id="club-pilates" onclick="setClub('pilates')" class="club-tab-btn px-3.5 py-1.5 rounded-lg transition font-medium text-zinc-600 hover:bg-zinc-200">
           פילאטיס מכשירים
         </button>
       </div>
 
       <!-- Versatile Views Mode Switcher -->
-      <div class="flex items-center gap-1 bg-blue-50/80 p-1 rounded-xl border border-blue-200/60 font-semibold text-blue-900">
-        <button id="view-cards" onclick="switchView('cards')" class="view-btn px-3 py-1 rounded-lg transition flex items-center gap-1.5 bg-blue-600 text-white shadow-xs">
+      <div class="flex items-center gap-1 bg-zinc-100 p-1 rounded-xl border border-zinc-200/80 font-bold text-zinc-700">
+        <button id="view-cards" onclick="switchView('cards')" class="view-btn px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 bg-rose-600 text-white shadow-2xs">
           <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
           <span>כרטיסיות ויעדים</span>
         </button>
-        <button id="view-memberships" onclick="switchView('memberships')" class="view-btn px-3 py-1 rounded-lg transition flex items-center gap-1.5 text-blue-700 hover:bg-blue-100">
-          <i data-lucide="users" class="w-3.5 h-3.5"></i>
+        <button id="view-memberships" onclick="switchView('memberships')" class="view-btn px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-zinc-700 hover:bg-white">
+          <i data-lucide="users" class="w-3.5 h-3.5 text-rose-600"></i>
           <span>סטטוס מנויים וביטולים</span>
         </button>
-        <button id="view-charts" onclick="switchView('charts')" class="view-btn px-3 py-1 rounded-lg transition flex items-center gap-1.5 text-blue-700 hover:bg-blue-100">
-          <i data-lucide="line-chart" class="w-3.5 h-3.5"></i>
+        <button id="view-charts" onclick="switchView('charts')" class="view-btn px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-zinc-700 hover:bg-white">
+          <i data-lucide="line-chart" class="w-3.5 h-3.5 text-rose-600"></i>
           <span>גרפים ומגמות שנתיות</span>
         </button>
-        <button id="view-matrix" onclick="switchView('matrix')" class="view-btn px-3 py-1 rounded-lg transition flex items-center gap-1.5 text-blue-700 hover:bg-blue-100">
-          <i data-lucide="table-2" class="w-3.5 h-3.5"></i>
+        <button id="view-matrix" onclick="switchView('matrix')" class="view-btn px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-zinc-700 hover:bg-white">
+          <i data-lucide="table-2" class="w-3.5 h-3.5 text-rose-600"></i>
           <span>טבלה שנתית מלאה</span>
         </button>
       </div>
@@ -170,40 +170,40 @@
 
     <!-- Top Overview KPI Strip -->
     <section class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs relative group">
+      <div class="bg-white p-4 rounded-2xl border border-zinc-200/80 shadow-2xs relative group">
         <div class="flex items-center justify-between">
-          <div class="text-[11px] font-medium text-slate-500">סה״כ הכנסות (MTD)</div>
-          <button onclick="openRevenueTargetModal()" class="text-[10px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded-lg border border-blue-200 transition flex items-center gap-1" title="עריכת יעד מכירות חודשי">
-            <i data-lucide="target" class="w-3 h-3"></i>
+          <div class="text-[11px] font-bold text-zinc-500">סה״כ הכנסות (MTD)</div>
+          <button onclick="openRevenueTargetModal()" class="text-[10px] font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 px-2 py-0.5 rounded-lg border border-rose-200 transition flex items-center gap-1" title="עריכת יעד מכירות חודשי">
+            <i data-lucide="target" class="w-3 h-3 text-rose-600"></i>
             <span>ערוך יעד</span>
           </button>
         </div>
-        <div class="text-xl font-black text-slate-900 mt-0.5" id="strip-rev-actual">₪0</div>
-        <div class="text-[10px] text-slate-400 mt-0.5 flex justify-between items-center">
-          <span>יעד: <strong id="strip-rev-budget" class="text-slate-600">₪0</strong> <span id="strip-rev-custom-badge" class="hidden text-[9px] bg-amber-100 text-amber-800 px-1 py-0.5 rounded font-bold">מוגדר</span></span>
-          <span id="strip-rev-pct" class="text-emerald-600 font-bold">0%</span>
+        <div class="text-2xl font-black text-zinc-900 mt-1" id="strip-rev-actual">₪0</div>
+        <div class="text-[10px] text-zinc-400 mt-1 flex justify-between items-center">
+          <span>יעד: <strong id="strip-rev-budget" class="text-zinc-700 font-bold">₪0</strong> <span id="strip-rev-custom-badge" class="hidden text-[9px] bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded-md font-black">מוגדר</span></span>
+          <span id="strip-rev-pct" class="text-emerald-600 font-black">0%</span>
         </div>
       </div>
 
-      <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
-        <div class="text-[11px] font-medium text-slate-500">סה״כ הוצאות (MTD)</div>
-        <div class="text-xl font-black text-slate-900 mt-0.5" id="strip-exp-actual">₪0</div>
-        <div class="text-[10px] text-slate-400 mt-0.5 flex justify-between">
-          <span>תקציב: <strong id="strip-exp-budget" class="text-slate-600">₪0</strong></span>
-          <span id="strip-exp-pct" class="text-blue-600 font-bold">0%</span>
+      <div class="bg-white p-4 rounded-2xl border border-zinc-200/80 shadow-2xs">
+        <div class="text-[11px] font-bold text-zinc-500">סה״כ הוצאות (MTD)</div>
+        <div class="text-2xl font-black text-zinc-900 mt-1" id="strip-exp-actual">₪0</div>
+        <div class="text-[10px] text-zinc-400 mt-1 flex justify-between">
+          <span>תקציב: <strong id="strip-exp-budget" class="text-zinc-700 font-bold">₪0</strong></span>
+          <span id="strip-exp-pct" class="text-rose-600 font-black">0%</span>
         </div>
       </div>
 
-      <div class="bg-blue-50/60 p-3.5 rounded-2xl border border-blue-100 shadow-xs">
-        <div class="text-[11px] font-medium text-blue-900">תחזית הכנסות לסוף חודש</div>
-        <div class="text-xl font-black text-blue-700 mt-0.5" id="strip-rev-proj">₪0</div>
-        <div class="text-[10px] text-blue-600/80 mt-0.5">מבוסס קצב יומי ועונתיות</div>
+      <div class="bg-zinc-900 text-white p-4 rounded-2xl border border-zinc-800 shadow-2xs">
+        <div class="text-[11px] font-medium text-zinc-400">תחזית הכנסות לסוף חודש</div>
+        <div class="text-2xl font-black text-white mt-1" id="strip-rev-proj">₪0</div>
+        <div class="text-[10px] text-rose-400 font-semibold mt-1">מבוסס קצב יומי ועונתיות</div>
       </div>
 
-      <div class="bg-amber-50/60 p-3.5 rounded-2xl border border-amber-100 shadow-xs">
-        <div class="text-[11px] font-medium text-amber-900">תחזית הוצאות לסוף חודש</div>
-        <div class="text-xl font-black text-amber-700 mt-0.5" id="strip-exp-proj">₪0</div>
-        <div class="text-[10px] text-amber-600/80 mt-0.5">משקלל שיעורי ארבוקס וחילנט</div>
+      <div class="bg-zinc-50 p-4 rounded-2xl border border-zinc-200 shadow-2xs">
+        <div class="text-[11px] font-bold text-zinc-600">תחזית הוצאות לסוף חודש</div>
+        <div class="text-2xl font-black text-zinc-900 mt-1" id="strip-exp-proj">₪0</div>
+        <div class="text-[10px] text-zinc-500 mt-1">משקלל שיעורי ארבוקס וחילנט</div>
       </div>
     </section>
 
@@ -213,21 +213,21 @@
     <div id="view-container-cards" class="space-y-6">
       
       <!-- Live Memberships & Cancellations Summary Card (Banner) -->
-      <section class="bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 text-white rounded-3xl p-5 shadow-xs space-y-4 border border-slate-800">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
+      <section class="bg-gradient-to-r from-zinc-950 via-zinc-900 to-black text-white rounded-3xl p-5 shadow-xs space-y-4 border border-zinc-800">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
           <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-xl bg-blue-600/30 text-blue-300 flex items-center justify-center font-black border border-blue-400/20">
+            <div class="w-9 h-9 rounded-xl bg-rose-600/20 text-rose-400 flex items-center justify-center font-black border border-rose-500/30">
               <i data-lucide="users" class="w-5 h-5"></i>
             </div>
             <div>
               <h3 class="text-sm font-black flex items-center gap-2">
                 <span>מצבת מנויים פעילה ובקרת ביטולים</span>
-                <span class="px-2 py-0.5 text-[10px] font-bold bg-blue-500/30 text-blue-200 border border-blue-400/30 rounded-full" id="home-mem-snapshot-badge">Snapshot</span>
+                <span class="px-2 py-0.5 text-[10px] font-bold bg-zinc-800 text-zinc-300 border border-zinc-700 rounded-full" id="home-mem-snapshot-badge">Snapshot</span>
               </h3>
-              <p class="text-[11px] text-blue-200/70">סנכרון אוטומטי מתוך דו״ח ארבוקס וטבלת הקפאות/ביטולים בדו״ח מכירות</p>
+              <p class="text-[11px] text-zinc-400">סנכרון אוטומטי מתוך דו״ח ארבוקס וטבלת הקפאות/ביטולים בדו״ח מכירות</p>
             </div>
           </div>
-          <button onclick="switchView('memberships')" class="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition flex items-center gap-1.5 self-start sm:self-auto shadow-sm">
+          <button onclick="switchView('memberships')" class="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition flex items-center gap-1.5 self-start sm:self-auto shadow-2xs">
             <span>לדשבורד מנויים וביטולים מלא</span>
             <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
           </button>
@@ -235,27 +235,27 @@
 
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
           <div class="bg-white/5 rounded-2xl p-3 border border-white/10">
-            <div class="text-[11px] text-slate-300 font-medium">מנויים פעילים</div>
+            <div class="text-[11px] text-zinc-400 font-medium">מנויים פעילים</div>
             <div class="text-2xl font-black text-emerald-400 mt-0.5" id="home-mem-active">0</div>
-            <div class="text-[10px] text-slate-400 mt-0.5" id="home-mem-active-sub">מועדון • פילאטיס</div>
+            <div class="text-[10px] text-zinc-400 mt-0.5" id="home-mem-active-sub">מועדון • פילאטיס</div>
           </div>
 
           <div class="bg-white/5 rounded-2xl p-3 border border-white/10">
-            <div class="text-[11px] text-slate-300 font-medium">מנויים בהקפאה</div>
+            <div class="text-[11px] text-zinc-400 font-medium">מנויים בהקפאה</div>
             <div class="text-2xl font-black text-amber-400 mt-0.5" id="home-mem-frozen">0</div>
-            <div class="text-[10px] text-slate-400 mt-0.5" id="home-mem-frozen-sub">מועדון • פילאטיס</div>
+            <div class="text-[10px] text-zinc-400 mt-0.5" id="home-mem-frozen-sub">מועדון • פילאטיס</div>
           </div>
 
           <div class="bg-white/5 rounded-2xl p-3 border border-white/10">
-            <div class="text-[11px] text-slate-300 font-medium">ביטולים עתידיים</div>
-            <div class="text-2xl font-black text-rose-400 mt-0.5" id="home-mem-cancels">0</div>
-            <div class="text-[10px] text-slate-400 mt-0.5" id="home-mem-cancels-sub">מועדון • פילאטיס</div>
+            <div class="text-[11px] text-zinc-400 font-medium">ביטולים עתידיים</div>
+            <div class="text-2xl font-black text-rose-500 mt-0.5" id="home-mem-cancels">0</div>
+            <div class="text-[10px] text-zinc-400 mt-0.5" id="home-mem-cancels-sub">מועדון • פילאטיס</div>
           </div>
 
           <div class="bg-white/5 rounded-2xl p-3 border border-white/10">
-            <div class="text-[11px] text-slate-300 font-medium">צפי החזר כספי</div>
-            <div class="text-2xl font-black text-purple-300 mt-0.5" id="home-mem-refund">₪ 0</div>
-            <div class="text-[10px] text-slate-400 mt-0.5">מאושר וממתין לזיכוי</div>
+            <div class="text-[11px] text-zinc-400 font-medium">צפי החזר כספי</div>
+            <div class="text-2xl font-black text-purple-400 mt-0.5" id="home-mem-refund">₪ 0</div>
+            <div class="text-[10px] text-zinc-400 mt-0.5">מאושר וממתין לזיכוי</div>
           </div>
         </div>
       </section>
@@ -263,11 +263,11 @@
       <!-- Incomes Category Cards -->
       <section class="space-y-3">
         <div class="flex items-center justify-between px-1">
-          <h2 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+          <h2 class="text-sm font-black text-zinc-900 flex items-center gap-1.5">
             <i data-lucide="coins" class="w-4 h-4 text-emerald-600"></i>
-            הכנסות ויעדי מכירה
+            <span>הכנסות ויעדי מכירה</span>
           </h2>
-          <span class="text-xs text-slate-400 font-medium">לחץ על כרטיס לפירוט היסטורי</span>
+          <span class="text-xs text-zinc-400 font-medium">לחץ על כרטיס לפירוט היסטורי</span>
         </div>
         <div class="space-y-3" id="incomes-cards-container"></div>
       </section>
@@ -275,35 +275,35 @@
       <!-- Variable Operational Expenses Cards -->
       <section class="space-y-3 pt-2">
         <div class="flex items-center justify-between px-1">
-          <h2 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-            <i data-lucide="pie-chart" class="w-4 h-4 text-blue-600"></i>
-            הוצאות משתנות ובקרת שכר
+          <h2 class="text-sm font-black text-zinc-900 flex items-center gap-1.5">
+            <i data-lucide="pie-chart" class="w-4 h-4 text-rose-600"></i>
+            <span>הוצאות משתנות ובקרת שכר</span>
           </h2>
-          <span class="text-xs text-slate-400 font-medium">מאמנים, שיעורים, שיווק ותפעול</span>
+          <span class="text-xs text-zinc-400 font-medium">מאמנים, שיעורים, שיווק ותפעול</span>
         </div>
         <div class="space-y-3" id="expenses-cards-container"></div>
       </section>
 
       <!-- Fixed Expenses Collapsible Drawer -->
       <section class="pt-2">
-        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-          <button onclick="toggleFixedSection()" class="w-full p-4 flex items-center justify-between hover:bg-slate-50/80 transition text-right">
+        <div class="bg-white rounded-2xl border border-zinc-200/80 overflow-hidden shadow-2xs">
+          <button onclick="toggleFixedSection()" class="w-full p-4 flex items-center justify-between hover:bg-zinc-50 transition text-right">
             <div class="flex items-center gap-2.5">
-              <div class="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500">
+              <div class="w-8 h-8 rounded-xl bg-zinc-100 flex items-center justify-center text-zinc-600">
                 <i data-lucide="building-2" class="w-4 h-4"></i>
               </div>
               <div>
-                <h3 class="text-sm font-bold text-slate-800">הוצאות קבועות ומבנה (שכירות, חשמל, מים, ארנונה)</h3>
-                <p class="text-[11px] text-slate-500">הוצאות רקע קבועות בחוזה — לחץ לצפייה</p>
+                <h3 class="text-sm font-bold text-zinc-900">הוצאות קבועות ומבנה (שכירות, חשמל, מים, ארנונה)</h3>
+                <p class="text-[11px] text-zinc-500 font-medium">הוצאות רקע קבועות בחוזה — לחץ לצפייה</p>
               </div>
             </div>
             <div class="flex items-center gap-2">
-              <span class="text-xs font-bold text-slate-700" id="fixed-total-header">₪0</span>
-              <i data-lucide="chevron-down" id="fixed-chevron-icon" class="w-4 h-4 text-slate-400 transition-transform"></i>
+              <span class="text-xs font-bold text-zinc-900" id="fixed-total-header">₪0</span>
+              <i data-lucide="chevron-down" id="fixed-chevron-icon" class="w-4 h-4 text-zinc-400 transition-transform"></i>
             </div>
           </button>
 
-          <div id="fixed-section-content" class="hidden border-t border-slate-100 p-4 space-y-3 bg-slate-50/50">
+          <div id="fixed-section-content" class="hidden border-t border-zinc-100 p-4 space-y-3 bg-zinc-50/50">
             <div class="space-y-2.5" id="fixed-cards-container"></div>
           </div>
         </div>
@@ -317,25 +317,25 @@
     <div id="view-container-memberships" class="space-y-6 hidden">
       
       <!-- Top Control Header: Snapshot Selector & Source Info -->
-      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="bg-white p-4 rounded-2xl border border-zinc-200/80 shadow-2xs flex flex-col md:flex-row items-center justify-between gap-4">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black">
+          <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-black border border-rose-100">
             <i data-lucide="users-round" class="w-5 h-5"></i>
           </div>
           <div>
-            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+            <h2 class="text-base font-black text-zinc-900 flex items-center gap-2">
               <span>תמונת מצב מנויים, הקפאות וביטולים</span>
-              <span class="px-2 py-0.5 text-[11px] font-semibold bg-blue-100 text-blue-800 rounded-full" id="mem-source-badge">ארבוקס + מכירות</span>
+              <span class="px-2.5 py-0.5 text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200 rounded-full" id="mem-source-badge">ארבוקס + מכירות</span>
             </h2>
-            <p class="text-xs text-slate-400 mt-0.5">סנכרון אוטומטי מתוך קובצי הקלט בתיקייה (ארבוקס וקובץ מכירות 2026)</p>
+            <p class="text-xs text-zinc-400 font-medium mt-0.5">סנכרון אוטומטי מתוך קובצי הקלט (דו״ח ארבוקס וקובץ מכירות 2026)</p>
           </div>
         </div>
 
         <div class="flex items-center gap-3 w-full md:w-auto justify-end">
-          <div class="flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
-            <i data-lucide="history" class="w-4 h-4 text-blue-600"></i>
+          <div class="flex items-center gap-1.5 text-xs font-semibold text-zinc-700 bg-zinc-100 px-3 py-1.5 rounded-xl border border-zinc-200">
+            <i data-lucide="history" class="w-4 h-4 text-rose-600"></i>
             <span>לשונית תאריך (Snapshot):</span>
-            <select id="mem-snapshot-select" onchange="changeMembershipSnapshot(this.value)" class="bg-white text-slate-900 font-bold px-2 py-1 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs">
+            <select id="mem-snapshot-select" onchange="changeMembershipSnapshot(this.value)" class="bg-white text-zinc-900 font-bold px-2 py-1 rounded-lg border border-zinc-300 focus:outline-none focus:ring-2 focus:ring-rose-500 text-xs">
               <!-- Dynamically populated -->
             </select>
           </div>
@@ -687,47 +687,47 @@
           היעד שקבעת לחודש <span id="modal-month-name" class="font-bold">יוני</span> הוא: 
           <strong class="font-black text-slate-900" id="modal-target-amount">₪ 2,107</strong>
         </div>
-        <div class="text-xs text-blue-600 font-semibold" id="modal-forecast-amount">
+        <div class="text-xs text-rose-600 font-semibold" id="modal-forecast-amount">
           תחזית חכמה לסוף חודש: ₪ 2,350 (משקלל שיעורים)
         </div>
       </div>
 
       <!-- Collapsible Explanation -->
-      <div class="border-t border-b border-slate-100 py-3">
-        <button onclick="toggleExplanation()" class="w-full flex items-center justify-between text-xs font-semibold text-slate-700 text-right">
+      <div class="border-t border-b border-zinc-100 py-3">
+        <button onclick="toggleExplanation()" class="w-full flex items-center justify-between text-xs font-semibold text-zinc-700 text-right">
           <span>למה הקטגוריה מופיעה אצלך?</span>
-          <i data-lucide="chevron-down" id="explanation-chevron" class="w-3.5 h-3.5 text-slate-400 transition-transform"></i>
+          <i data-lucide="chevron-down" id="explanation-chevron" class="w-3.5 h-3.5 text-zinc-400 transition-transform"></i>
         </button>
-        <p id="modal-explanation-text" class="hidden text-xs text-slate-500 mt-2 leading-relaxed bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+        <p id="modal-explanation-text" class="hidden text-xs text-zinc-500 mt-2 leading-relaxed bg-zinc-50 p-2.5 rounded-xl border border-zinc-100 font-medium">
           הסבר על מהות הסעיף התקציבי ואופן חישובו מתוך מערכות המועדון.
         </p>
       </div>
 
       <!-- Inline Target Editor (Hidden by default) -->
-      <div id="target-editor-box" class="hidden bg-blue-50 p-3.5 rounded-2xl border border-blue-200 space-y-2">
-        <label class="block text-xs font-bold text-blue-900">עריכת סכום היעד לחודש זה:</label>
+      <div id="target-editor-box" class="hidden bg-rose-50 p-3.5 rounded-2xl border border-rose-200 space-y-2">
+        <label class="block text-xs font-bold text-rose-900">עריכת סכום היעד לחודש זה:</label>
         <div class="flex gap-2">
-          <input type="number" id="target-edit-input" class="w-full text-xs font-bold px-3 py-2 rounded-xl border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white" placeholder="הקלד סכום בשקלים">
-          <button onclick="saveNewTarget()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition">שמור</button>
+          <input type="number" id="target-edit-input" class="w-full text-xs font-bold px-3 py-2 rounded-xl border border-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-600 bg-white" placeholder="הקלד סכום בשקלים">
+          <button onclick="saveNewTarget()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition">שמור</button>
         </div>
       </div>
 
       <!-- Action Buttons (Like Image 2) -->
       <div class="space-y-2 pt-1">
-        <button onclick="openTargetEditor()" id="btn-edit-target" class="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-sm transition">
+        <button onclick="openTargetEditor()" id="btn-edit-target" class="w-full py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-xs transition">
           לעריכת היעד
         </button>
 
-        <button onclick="closeModal()" class="w-full py-2.5 px-4 rounded-xl text-slate-500 hover:text-slate-800 font-medium text-xs transition">
+        <button onclick="closeModal()" class="w-full py-2.5 px-4 rounded-xl text-zinc-500 hover:text-zinc-900 font-bold text-xs transition">
           הבנתי, תודה
         </button>
       </div>
 
       <!-- Detailed Transactions Feed (פירוט חודשי) -->
-      <div class="border-t border-slate-100 pt-3">
-        <h4 class="text-xs font-bold text-slate-800 mb-2.5 flex items-center justify-between">
+      <div class="border-t border-zinc-100 pt-3">
+        <h4 class="text-xs font-bold text-zinc-900 mb-2.5 flex items-center justify-between">
           <span>פירוט עסקאות ושעות החודש</span>
-          <span class="text-[10px] text-slate-400 font-normal">לפי דוחות מערכת</span>
+          <span class="text-[10px] text-zinc-400 font-normal">לפי דוחות מערכת</span>
         </h4>
         <div class="space-y-2 max-h-40 overflow-y-auto custom-scrollbar pr-1" id="modal-transactions-list">
           <!-- Injected dynamically -->
@@ -738,45 +738,45 @@
   </div>
 
   <!-- Revenue Target Editor Modal (יעד גנרי מול יעד מוגדר) -->
-  <div id="revenue-target-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs transition-opacity duration-200 hidden opacity-0">
-    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-slate-100 transform scale-95 transition-transform duration-200" id="revenue-modal-card">
-      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+  <div id="revenue-target-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/70 backdrop-blur-xs transition-opacity duration-200 hidden opacity-0">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-zinc-200 transform scale-95 transition-transform duration-200" id="revenue-modal-card">
+      <div class="flex items-center justify-between border-b border-zinc-100 pb-3">
         <div class="flex items-center gap-2.5">
-          <div class="w-9 h-9 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-black">
+          <div class="w-9 h-9 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-black border border-rose-100">
             <i data-lucide="target" class="w-5 h-5"></i>
           </div>
           <div>
-            <h3 class="text-sm font-black text-slate-900">הגדרת יעד מכירות חודשי</h3>
-            <p class="text-[11px] text-slate-400" id="revenue-modal-subtitle">חודש יוני 2026</p>
+            <h3 class="text-sm font-black text-zinc-900">הגדרת יעד מכירות חודשי</h3>
+            <p class="text-[11px] text-zinc-400 font-medium" id="revenue-modal-subtitle">חודש יוני 2026</p>
           </div>
         </div>
-        <button onclick="closeRevenueTargetModal()" class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center transition">
+        <button onclick="closeRevenueTargetModal()" class="w-7 h-7 rounded-full bg-zinc-100 text-zinc-500 hover:bg-zinc-200 flex items-center justify-center transition">
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
 
       <div class="space-y-3">
         <!-- Generic budget box -->
-        <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 flex items-center justify-between">
+        <div class="bg-zinc-50 p-3.5 rounded-2xl border border-zinc-200/80 flex items-center justify-between">
           <div>
-            <div class="text-[11px] font-medium text-slate-500">יעד גנרי (מתקציב 2026)</div>
-            <div class="text-base font-black text-slate-800" id="generic-revenue-budget-display">₪ 0</div>
+            <div class="text-[11px] font-bold text-zinc-500">יעד גנרי (מתקציב 2026)</div>
+            <div class="text-base font-black text-zinc-900" id="generic-revenue-budget-display">₪ 0</div>
           </div>
-          <button onclick="applyGenericRevenueTarget()" class="text-xs px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-xl border border-slate-300 shadow-2xs transition">
+          <button onclick="applyGenericRevenueTarget()" class="text-xs px-3.5 py-1.5 bg-white hover:bg-zinc-100 text-zinc-800 font-bold rounded-xl border border-zinc-300 shadow-2xs transition">
             החל יעד גנרי
           </button>
         </div>
 
         <!-- Custom target input box -->
         <div class="space-y-1.5 pt-1">
-          <label class="text-xs font-bold text-slate-700">יעד מוגדר אישית (₪):</label>
+          <label class="text-xs font-bold text-zinc-800">יעד מוגדר אישית (₪):</label>
           <div class="flex items-center gap-2">
-            <input type="number" id="custom-revenue-input" placeholder="הזן סכום יעד..." class="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            <button onclick="saveCustomRevenueTarget()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition">
+            <input type="number" id="custom-revenue-input" placeholder="הזן סכום יעד..." class="flex-1 px-3.5 py-2.5 rounded-xl border border-zinc-300 text-sm font-bold text-zinc-900 focus:outline-none focus:ring-2 focus:ring-rose-500" />
+            <button onclick="saveCustomRevenueTarget()" class="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-2xs transition">
               שמור יעד
             </button>
           </div>
-          <p class="text-[10px] text-slate-400">היעד שתגדיר ישפיע ישירות על אחוז העמידה ביעד בלוח הבקרה.</p>
+          <p class="text-[10px] text-zinc-400">היעד שתגדיר ישפיע ישירות על אחוז העמידה ביעד בלוח הבקרה.</p>
         </div>
       </div>
     </div>
@@ -788,6 +788,6 @@
     <span id="toast-message">הנתונים סונכרנו בהצלחה!</span>
   </div>
 
-  <script src="app.js?v=3.0"></script>
+  <script src="app.js?v=3.1"></script>
 </body>
 </html>

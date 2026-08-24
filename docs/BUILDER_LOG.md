@@ -10,6 +10,24 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
 
+## 2026-08-24 — Brand Identity System Redesign (A+ Street Mall / Premium Club by Ariel Properties)
+
+- **What changed:** 
+  - Overhauled the entire UI theme and design system based on the official A+ Premium Club logo:
+    1. **Brand Palette:** Deep Executive Obsidian Carbon (`#18181B` / `#09090B`), Signature Vivid Crimson Red (`#E51937` / `#E11D48`), Restrained Emerald (`#10B981`), and Crisp Ice White/Zinc surfaces.
+    2. **Official Logo Integration:** Rendered and integrated the official high-resolution A+ Premium Club vector logo (`dashboard/public/logo.png`) into the header.
+    3. **Executive Visuals:** Replaced generic blue elements across navigation tabs, view switchers, KPI cards, AI pulse banner, and action buttons with sleek carbon/crimson styling.
+    4. **ApexCharts Color Harmonization:** Harmonized annual trend charts, distribution bar charts, and timeline charts to the Crimson, Emerald, and Dark Carbon palette.
+    5. **YTD Matrix Totals & Dynamic Highlighting:** Fully integrated YTD totals column and multi-layer summary footer in the financial matrix table.
+- **Why (what Idan asked for, in his words if given):** 
+  - *"עכשיו בוא נעבוד קצת על העיצוב. אני רוצה שתיקח את הצבעים של הלוגו המעודכן שלנו - מעלה לך אותו כאן. תבסס את כל הצבעים של הדף שלנו עליו. תעשה אותו מקצועי ויפה - לא מצועצע. סומך עליך."*
+- **What it touches:** 
+  - `dashboard/public/index.html`, `dashboard/public/app.js`, `dashboard/public/logo.png`, `docs/BUILDER_LOG.md`.
+- **How it was verified:** 
+  - Verified clean rendering of logo.png in the sticky navigation header.
+  - Verified ApexCharts re-rendering with new brand palette.
+  - Validated syntax with `jsc` and ran full automated test suite (all 94 tests passed).
+
 ---
 
 ## 2026-08-24 — Live Memberships Status, Branch Breakdown, Future Cancellations & Refund Forecasting Module
