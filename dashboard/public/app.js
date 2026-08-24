@@ -712,8 +712,28 @@ function renderMemberships(data) {
     const sSum = sales.summary;
     document.getElementById('mem-kpi-refund-pending').innerText = formatNIS(sSum.approved_pending_refund_amount);
     document.getElementById('mem-kpi-refund-pending-count').innerText = `${sSum.approved_pending_count || 0} פניות ממתינות`;
-    document.getElementById('mem-kpi-refund-approved').innerText = formatNIS(sSum.approved_pending_refund_amount);
-    document.getElementById('mem-kpi-refund-completed').innerText = formatNIS(sSum.completed_refund_amount);
+  // Update Home View Banner Elements (View 1)
+  const homeBadge = document.getElementById('home-mem-snapshot-badge');
+  if (homeBadge) homeBadge.innerText = `Snapshot ${mem.active_tab || ''}`;
+
+  const homeActive = document.getElementById('home-mem-active');
+  const homeActiveSub = document.getElementById('home-mem-active-sub');
+  if (homeActive) homeActive.innerText = curStats.active.toLocaleString('he-IL');
+  if (homeActiveSub) homeActiveSub.innerText = `${gymStats.active} מועדון • ${pilStats.active} פילאטיס`;
+
+  const homeFrozen = document.getElementById('home-mem-frozen');
+  const homeFrozenSub = document.getElementById('home-mem-frozen-sub');
+  if (homeFrozen) homeFrozen.innerText = curStats.frozen.toLocaleString('he-IL');
+  if (homeFrozenSub) homeFrozenSub.innerText = `${gymStats.frozen} מועדון • ${pilStats.frozen} פילאטיס`;
+
+  const homeCancels = document.getElementById('home-mem-cancels');
+  const homeCancelsSub = document.getElementById('home-mem-cancels-sub');
+  if (homeCancels) homeCancels.innerText = curStats.future_cancellations.toLocaleString('he-IL');
+  if (homeCancelsSub) homeCancelsSub.innerText = `${gymStats.future_cancellations} מועדון • ${pilStats.future_cancellations} פילאטיס`;
+
+  const homeRefund = document.getElementById('home-mem-refund');
+  if (homeRefund && sales && sales.summary) {
+    homeRefund.innerText = formatNIS(sales.summary.approved_pending_refund_amount);
   }
 
   // Render Charts & Tables

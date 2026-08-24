@@ -181,29 +181,53 @@ class DashboardDataService:
                     item_data["explanation"] = "השכרת סטודיו לחברות ואירועים מיוחדים."
                 incomes.append(item_data)
             else:
-                is_variable = any(k in desc_str for k in [
-                    "מאמן", "מדריך", "אימונים אישיים", "חוגים", "סטודיו", "מכירות (עמלות)", 
-                    "שיווק", "פרסום", "ציוד", "אחזקה", "ניקיון", "ביגוד"
+                # Fixed codes according to Idan's explicit rules:
+                # 1. מנהל חדר כושר (22601), מנהל מקצועי (22655), שכר ניהול אריאל (90101)
+                # 4. תוכנות ומיחשוב (ארבוקס 20634, טכנוג'ים 10117, אינטרנט 22622, מוזיקה 22638)
+                # 5. שכירות (22645), דמי ניהול (10106, 90201), ביטוח (22606)
+                # 6. הנהלת חשבונות (10325), רואה חשבון (10324), בצ"מ (22634)
+                fixed_codes = {
+                    "22601", "22655", "90101",
+                    "20634", "10117", "22622", "22638",
+                    "22645", "10106", "90201", "22606",
+                    "10325", "10324", "22634"
+                }
+
+                is_explicit_fixed = (code_str in fixed_codes) or any(k in desc_str for k in [
+                    "מנהל חדר כושר", "תוספת למנהל", "מנהל מקצועי", "שכר ניהול אריאל",
+                    "ארבוקס", "טכנוג'ים אפליקציה", "אינטרנט וטלפון", "מוזיקה ותמלוגים",
+                    "שכירות", "דמי ניהול קניון", "ביטוח",
+                    "הנהלת חשבונות", "רואה חשבון", "בצמ"
                 ])
-                if is_variable:
+
+                if not is_explicit_fixed:
                     item_data["expense_type"] = "variable"
-                    if "מאמן" in desc_str or "חוגים" in desc_str or "אימונים אישיים" in desc_str:
-                        item_data["category_he"] = "שכר מאמנים והדרכה"
-                        item_data["explanation"] = "תשלום חודשי למדריכי חדר כושר, שיעורי סטודיו ואימונים אישיים (ארבוקס + חילנט)."
-                    elif "מכירות" in desc_str:
+                    if any(k in desc_str for k in ["מאמן", "מאמנ", "מדריך", "מדריכ", "אישי", "חוג", "הדרכ", "קורס", "השתלמות", "השתלמויות", "קבל"]):
+                        item_data["category_he"] = "שכר הדרכה, מאמנים ומשמרות"
+                        item_data["explanation"] = "שכר מדריכים, מאמנים אישיים, שיעורי סטודיו ומשמרות קבלה (ארבוקס + חילנט)."
+                    elif "מכירות" in desc_str or "מכירה" in desc_str:
                         item_data["category_he"] = "עמלות מכירות"
-                        item_data["explanation"] = "עמלות לנציגי מכירות על סגירת מנויים חדשים."
-                    elif "שיווק" in desc_str:
+                        item_data["explanation"] = "עמלות לנציגי מכירות על סגירת מנויים ושדרוגים."
+                    elif "שיווק" in desc_str or "פרסום" in desc_str:
                         item_data["category_he"] = "שיווק ופרסום"
-                        item_data["explanation"] = "קמפיינים דיגיטליים, מיתוג ופרסום ברשתות."
+                        item_data["explanation"] = "קמפיינים דיגיטליים, קידום ממומן ומיתוג המועדון."
+                    elif any(k in desc_str for k in ["חשמל", "מים", "ארנונה", "אגרות", "אגרה"]):
+                        item_data["category_he"] = "חשמל, מים, ארנונה ואגרות"
+                        item_data["explanation"] = "צריכת אנרגיה חודשית שוטפת, תשלומי מים, ארנונה לעירייה ואגרות."
+                    elif any(k in desc_str for k in ["עמלות", "עמלת", "ריבית", "אשראי", "בנק"]):
+                        item_data["category_he"] = "עמלות סליקה ופיננסי"
+                        item_data["explanation"] = "עמלות סליקת אשראי של חברי המועדון וריביות בנקאיות."
+                    elif "משרד" in desc_str:
+                        item_data["category_he"] = "הוצאות משרדיות"
+                        item_data["explanation"] = "ציוד משרדי שוטף, הדפסות ודפוס."
                     else:
-                        item_data["category_he"] = "תפעול שוטף ואחזקה"
-                        item_data["explanation"] = "חומרי ניקיון, טואלטיקה, ביגוד צוות ותחזוקת מכשירים."
+                        item_data["category_he"] = "תפעול שוטף, אחזקה וניקיון"
+                        item_data["explanation"] = "חומרי ניקיון, טואלטיקה, אחזקת מכשירים, מיזוג אוויר וספרינקלרים."
                     variable_expenses.append(item_data)
                 else:
                     item_data["expense_type"] = "fixed"
                     item_data["category_he"] = "הוצאות קבועות ומבנה"
-                    item_data["explanation"] = "הוצאות תשתית קבועות בחוזה (שכירות, חשמל, מים, ארנונה, תוכנות ניהול)."
+                    item_data["explanation"] = "הוצאות תשתית והסכמים קבועים בחוזה (שכירות, דמי ניהול, הנה״ח, שכר ניהול, ביטוח ותוכנות ניהול)."
                     fixed_expenses.append(item_data)
 
         res = {
