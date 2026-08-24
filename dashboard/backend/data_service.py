@@ -470,7 +470,7 @@ class DashboardDataService:
 
                 start_d = get_val(r, ["תאריך התחלה"])
                 end_d = get_val(r, ["תאריך סיום"])
-                price = safe_float(get_val(r, ["מחיר מכירה", "שולם", "מחיר"]))
+                price = safe_float(get_val(r, ["שולם", "מחיר מכירה", "מחיר"]))
 
                 # Monthly price calculation (accurate detection of annual, multi-month, or full period)
                 m_type_str = str(m_type).strip()
