@@ -10,6 +10,24 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
 
+## 2026-08-30 — Universal Ingestion for CSV Memberships Reports & Dynamic Sales Workbooks
+
+- **What changed:** 
+  - Enhanced `data_service.py` to seamlessly detect, parse, and ingest both **`.csv` and `.xlsx`** input files across all naming conventions:
+    1. **Memberships CSV & XLSX Support:** Detects Arbox raw CSV exports (`דו״ח מנויים.csv`, `דוח מנויים.csv`, `*מנוי*.csv`, `*memberships*.csv`) with automated encoding fallbacks (`utf-8-sig`, `utf-8`, `cp1255`), correctly parsing all 781 subscriber records, 726 active members, 27 frozen, and 28 upcoming cancellations.
+    2. **Sales & Cancellations Flexibility:** Supports spaces and varied sheet names in the CRM sales workbook (`הקפאות וביטולים`, `הקפאותביטולים`, `לידים אוגוסט 2026`, etc.) with intelligent multi-row header detection across rows 1 to 5.
+    3. **Automated Search Scope:** Searches `input/dropzone/`, `📥_לגרור_לכאן_את_קבצי_החודש/`, `input/`, and root folders, prioritizing the newest modified file timestamp.
+- **Why (what Idan asked for, in his words if given):** 
+  - *"הכנסתי לך לתיקייה דו״ח מכירות (שבתוכו יש הקפאות וביטולים) ודו״ח מנויים. תעדכן לי את הדשבורד - לדעתי הוא לא קלט אותו כי הם לא בשמות הנכונים."*
+- **What it touches:** 
+  - `dashboard/backend/data_service.py`, `docs/BUILDER_LOG.md`.
+- **How it was verified:** 
+  - Verified `parse_membership_data` parses `input/dropzone/דו״ח מנויים.csv` (726 active members, 596 Gym, 130 Pilates, active snapshot 28.8).
+  - Verified `parse_sales_cancellations` parses `input/dropzone/מכירות 2026.xlsx` (383 requests, ₪19,403.32 in refunds, 4 sales closers).
+  - Verified HTTP API returns 200 OK and live browser refresh shows updated metrics.
+
+---
+
 ## 2026-08-24 — Custom Revenue & Expense Forecast Editor (Per Club & Unified)
 
 - **What changed:** 
