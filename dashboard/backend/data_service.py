@@ -38,7 +38,7 @@ def safe_float(val) -> float:
         return 0.0
     try:
         if isinstance(val, str):
-            val = val.replace(",", "").strip()
+            val = val.replace("₪", "").replace("$", "").replace("€", "").replace("NIS", "").replace(",", "").strip()
         return float(val)
     except (ValueError, TypeError):
         return 0.0
@@ -861,7 +861,9 @@ class DashboardDataService:
         return res
 
     def parse_sales_cancellations(self, month: int = 6) -> dict:
+        # Prioritize dedicated cancellations supplement CSV if available, then general sales workbooks
         sales_file = self.find_input_file([
+            "*תוספת*למכירות*.csv", "*תוספת*.csv", "*הקפא*.csv", "*ביטול*.csv",
             "*מכירות*.xlsx", "*מכירות*.csv", "*sales*.xlsx", "*sales*.csv",
             "*הקפא*.xlsx", "*ביטול*.xlsx", "*לידים*.xlsx"
         ])
@@ -886,6 +888,117 @@ class DashboardDataService:
             return self._cache[cache_key]
 
         try:
+            # Handle CSV cancellations file format
+            if sales_file.suffix.lower() == ".csv":
+                rows = []
+                for enc in ["utf-8-sig", "utf-8", "cp1255", "iso-8859-8"]:
+                    try:
+                        with open(sales_file, encoding=enc) as f:
+                            reader = csv.reader(f)
+                            rows = list(reader)
+                        if rows:
+                            break
+                    except Exception:
+                        continue
+
+                if not rows:
+                    raise ValueError("Empty or unreadable CSV cancellations file")
+
+                header = [h.strip() for h in rows[0]]
+                headers = {name: i for i, name in enumerate(header)}
+
+                def get_csv_c_val(row, header_names, default=None):
+                    for name in header_names:
+                        if name in headers and headers[name] < len(row):
+                            v = row[headers[name]].strip()
+                            if v:
+                                return v
+                    return default
+
+                summary = {
+                    "total_requests": 0,
+                    "approved_pending_refund_amount": 0.0,
+                    "approved_pending_count": 0,
+                    "completed_refund_amount": 0.0,
+                    "completed_count": 0,
+                    "total_refund_amount": 0.0
+                }
+
+                requests_list = []
+                reasons_counter = Counter()
+
+                for r in rows[1:]:
+                    if not r or len(r) == 0:
+                        continue
+                    name = get_csv_c_val(r, ["שם", "שם הלקוח", "לקוח"])
+                    req_type = get_csv_c_val(r, ["סוג", "סוג בקשה"]) or ""
+                    status = get_csv_c_val(r, ["סטטוס", "סטטוס טיפול מנהל"]) or ""
+                    req_date = get_csv_c_val(r, ["תאריך פנייה", "תאריך"]) or ""
+                    notes = get_csv_c_val(r, ["הערות", "סיבת הפנייה והערות הנציג"]) or ""
+                    opener = get_csv_c_val(r, ["פותח הפנייה", "נציג פותח פנייה"]) or ""
+
+                    refund1 = safe_float(get_csv_c_val(r, ["סה״כ זיכוי", "סכום החזר כולל (₪)"]))
+                    refund2 = safe_float(get_csv_c_val(r, ["סכום זיכוי", "סכום החזר"]))
+                    refund_amount = refund1 if refund1 > 0 else refund2
+
+                    if not name and not req_type and not status and refund_amount == 0:
+                        continue
+
+                    summary["total_requests"] += 1
+                    summary["total_refund_amount"] += refund_amount
+
+                    st_clean = str(status).strip()
+                    if any(k in st_clean for k in ["אושר ובוצע", "טופל", "בוצע"]):
+                        summary["completed_refund_amount"] += refund_amount
+                        summary["completed_count"] += 1
+                    elif any(k in st_clean for k in ["אושר", "ממתין", "לטיפול", "פתוח", "בטיפול"]):
+                        summary["approved_pending_refund_amount"] += refund_amount
+                        summary["approved_pending_count"] += 1
+
+                    cat = self._categorize_reason(str(notes))
+                    reasons_counter[cat] += 1
+
+                    requests_list.append({
+                        "name": str(name).strip() if name else "ללא שם",
+                        "type": str(req_type).strip(),
+                        "status": st_clean or "ללא סטטוס",
+                        "req_date": str(req_date).strip(),
+                        "refund_amount": refund_amount,
+                        "notes": str(notes).strip(),
+                        "opener": str(opener).strip(),
+                        "reason_category": cat
+                    })
+
+                summary["approved_pending_refund_amount"] = round(summary["approved_pending_refund_amount"], 2)
+                summary["completed_refund_amount"] = round(summary["completed_refund_amount"], 2)
+                summary["total_refund_amount"] = round(summary["total_refund_amount"], 2)
+
+                reasons_breakdown = [
+                    {"reason": cat, "count": count, "pct": round(count / max(len(requests_list), 1) * 100, 1)}
+                    for cat, count in reasons_counter.most_common()
+                ]
+
+                # Look up sales closers from main sales workbook if available
+                sales_closers = []
+                main_sales_file = self.find_input_file(["*מכירות*.xlsx", "*sales*.xlsx", "*לידים*.xlsx"])
+                if main_sales_file and main_sales_file.exists():
+                    try:
+                        wb = openpyxl.load_workbook(str(main_sales_file), data_only=True)
+                        sales_closers = self._get_sales_closers(wb, target_month=month)
+                    except Exception:
+                        pass
+
+                res = {
+                    "file_name": sales_file.name,
+                    "summary": summary,
+                    "requests": requests_list,
+                    "reasons_breakdown": reasons_breakdown,
+                    "sales_closers": sales_closers
+                }
+                self._cache[cache_key] = res
+                return res
+
+            # Handle XLSX sales workbook
             wb = openpyxl.load_workbook(str(sales_file), data_only=True)
             target_sheet = None
             for s in wb.sheetnames:
@@ -954,7 +1067,7 @@ class DashboardDataService:
                 if any(k in st_clean for k in ["אושר ובוצע", "טופל", "בוצע"]):
                     summary["completed_refund_amount"] += refund_amount
                     summary["completed_count"] += 1
-                elif any(k in st_clean for k in ["אושר", "ממתין", "לטיפול"]):
+                elif any(k in st_clean for k in ["אושר", "ממתין", "לטיפול", "פתוח", "בטיפול"]):
                     summary["approved_pending_refund_amount"] += refund_amount
                     summary["approved_pending_count"] += 1
 

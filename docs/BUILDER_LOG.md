@@ -10,6 +10,27 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
 
+## 2026-08-30 — Ingestion of Updated Cancellations & Freeze Supplement CSV
+
+- **What changed:** 
+  - Connected and prioritized the updated cancellations file: `תוספת למכירות 2026 - לצורך עדכון צפי ביטולים והקפאות.csv`.
+  - Updated `safe_float` in `data_service.py` to strip currency symbols (`₪`, `$`, `€`, `NIS`), ensuring exact refund amount calculation across formatted currency cells.
+  - Correctly parsed:
+    - **Total Requests Tracked:** 383 cancellations / freeze requests.
+    - **Approved & Pending Refunds:** 46 requests totaling **₪15,105.00**.
+    - **Completed Refunds:** 311 requests totaling **₪119,227.36**.
+    - **Total Tracked Refunds:** **₪135,702.36**.
+    - Linked sales closers from `מכירות 2026.xlsx` to maintain live performance metrics.
+- **Why (what Idan asked for, in his words if given):** 
+  - *"הקובץ שצרפתי לא היה מספיק מעודכן. תשתמש בדו״ח מכירות שצרפתי לך כרגע לטובת דשבורד הביטולים וההקפאות העתידי קוראים לו ״תוספת למכירות 2026 - לצורך עדכון צפי ביטולים והקפאות״."*
+- **What it touches:** 
+  - `dashboard/backend/data_service.py`, `docs/BUILDER_LOG.md`.
+- **How it was verified:** 
+  - Verified API payload returns `תוספת למכירות 2026 - לצורך עדכון צפי ביטולים והקפאות.csv` with ₪15,105.00 pending and ₪119,227.36 completed refunds.
+  - Verified live frontend updates in Chrome.
+
+---
+
 ## 2026-08-30 — Universal Ingestion for CSV Memberships Reports & Dynamic Sales Workbooks
 
 - **What changed:** 
