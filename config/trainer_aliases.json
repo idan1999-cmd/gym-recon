@@ -99,7 +99,7 @@
       "aliases": [
         "נעמה חיון"
       ],
-      "employment": "unknown"
+      "employment": "salaried"
     },
     {
       "trainer_id": "t_vaxer",
@@ -117,17 +117,16 @@
         "נועה רביד גבריאל",
         "נועה רביד"
       ],
-      "employment": "unknown"
+      "employment": "freelancer"
     },
     {
       "trainer_id": "t_kasif",
       "canonical_name": "נועה כסיף",
       "aliases": [
         "נועה כסיף",
-        "נעה כסיף",
-        "נועה כסיף"
+        "נעה כסיף"
       ],
-      "employment": "unknown"
+      "employment": "freelancer"
     },
     {
       "trainer_id": "t_shapira",
@@ -136,7 +135,7 @@
         "נעמה גלילי שפירא",
         "נעמה שפירא"
       ],
-      "employment": "unknown"
+      "employment": "freelancer"
     },
     {
       "trainer_id": "t_eisenbach",
@@ -292,6 +291,24 @@
         "שליו נועם"
       ],
       "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_hadad",
+      "canonical_name": "עדן חדד",
+      "aliases": [
+        "עדן חדד",
+        "חדד עדן"
+      ],
+      "employment": "freelancer"
+    },
+    {
+      "trainer_id": "t_mayoni",
+      "canonical_name": "אופל מיוני",
+      "aliases": [
+        "אופל מיוני",
+        "מיוני אופל"
+      ],
+      "employment": "salaried"
     }
   ],
   "_unconfirmed_roster": [

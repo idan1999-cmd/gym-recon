@@ -189,6 +189,25 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 
 ---
 
+## 2026-08-31 — Invoices Standardization & Missing Invoices Cross-Check vs Arbox Lessons Report
+
+- **What changed:**
+  1. **Standardized Invoice File Naming:** Renamed all received supplier/trainer invoices to the standardized convention: `החשבונית של [שם המאמן/ספק] [מספר חשבונית].pdf`.
+  2. **Automated Renaming Tool (`tools/rename_invoices.py`):** Added a utility tool to inspect OCR/text and standardize invoice PDF names automatically across input drops.
+  3. **Arbox Lessons vs Invoices Cross-Check & Missing Invoice Alerts:**
+     - Confirmed employment status in `config/trainer_aliases.json`: `נעמה חיון` and `אופל מיוני` as salaried (`salaried`), `נועה כסיף`, `נועה רביד`, `נעמה גלילי שפירא`, and `עדן חדד` as external/freelancers (`freelancer`).
+     - Conducted a full cross-check of August 2026 Arbox lessons against submitted invoices.
+     - Identified freelance trainers with held sessions who have **not yet submitted invoices**: `ניר אייזנבך` (32 שיעורים), `עידו גליקו` (13 שיעורים), `לנה ברואון` (3 שיעורים), `נוי פרוינד` (3 שיעורים), `עידן וקסר` (2 שיעורים).
+- **Why (what Idan asked for, in his words if given):**
+  - *"אני צריך שתיקח את כל החשבוניות שנמצאות בתיקייה ״חשבוניות ספקים אוגוסט 2026״ ותשנה את שמן לשם מי שעל החשבונית + מס׳ החשבונית... תכניס את זה כהוראות לדו״ח שלנו, בכל פעם שאנחנו מבצעים את סיכומי החודש שתכף נבצע. במקביל - אני רוצה שהדו״ח יריץ ויתריע לי מי טרם הגיש חשבוניות אל מול דו״ח השיעורים."*
+- **What it touches:**
+  - `config/trainer_aliases.json`, `tools/rename_invoices.py`, `docs/BUILDER_LOG.md`, `docs/SYSTEM_MAP.md`.
+- **How it was verified:**
+  - Verified renaming of all 15 files in `חשבוניות ספקים אוגוסט 2026`.
+  - Ran full test suite: 94 tests passed (0 failed).
+
+---
+
 ## 2026-08-21 — Top Metric Rows Stripping, Dynamic YTD Summary & Per-Month Variance Highlighting
 
 - **What changed:** 
