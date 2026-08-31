@@ -106,9 +106,11 @@ def _resolve_year(y, fallback):
     y = int(y)
     if y >= 100:
         return y
-    # two-digit year: 2020.. dropped; a bare '12' here would be an instalment,
-    # not a year, so only map to 19xx if < 20 is implausible -> force 20xx.
-    return 2000 + y
+    # Plausible 2-digit year in current business lifecycle (2020..2030)
+    if 20 <= y <= 30:
+        return 2000 + y
+    # If typo like 36 for 26, fall back to fallback year
+    return fallback
 
 def parse_memo_month(text, default_year=None):
     """

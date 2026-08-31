@@ -13,10 +13,11 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 ## 2026-08-31 — Real Accounting Ledger Drilldown Transactions & Forecast Precision
 
 - **What changed:** 
-  - Overhauled the modal drill-down breakdown system to display **100% genuine accounting transactions** from `כרטסת` instead of mock/placeholder trainer lines:
-    1. **Real General Ledger Transactions:** Extracted exact transaction date, supplier/counter-account name, invoice memo, and amount from `כרטסת 31.8.26.xlsx` (e.g. for Pilates equipment maintenance in July: *אוניספורט בע"מ (₪284.83)*, *קופה קטנה (₪447.46)*, *אלי לבן (₪81.36)*).
-    2. **Closed vs. Live Month Forecasts:** Aligned smart forecasts so past closed months (June, July) display their exact finalized actuals (`ביצוע סופי - חודש סגור`), avoiding daily run-rate extrapolation multipliers on past months.
-    3. **Live UI Refresh:** Updated `data_service.py`, `app.js`, and `core/ledger.py` with automatic deduplication.
+  - Overhauled the modal drill-down breakdown system to display **100% genuine accounting transactions** from `כרטסת` across all budget codes (such as `22614` - נקיון) and all months (January–August):
+    1. **Real General Ledger Transactions:** Extracted exact transaction date, supplier/counter-account name, invoice memo, and amount from `כרטסת 31.8.26.xlsx` across all 12 months for every income and expense line.
+    2. **Typo Resilience in Memos:** Clamped 2-digit years in `_resolve_year` (`core/common.py`) to the plausible lifecycle (2020..2030) with fallback to default year (e.g. correctly resolving bookkeeper typo `2/36 נקיון` to February 2026).
+    3. **Closed vs. Live Month Forecasts:** Aligned smart forecasts so past closed months (months 1–7) display their exact finalized actuals (`ביצוע סופי - חודש סגור`), avoiding daily run-rate extrapolation multipliers on past months.
+    4. **Live UI Refresh:** Updated `data_service.py`, `app.js`, and `core/ledger.py` with automatic deduplication.
 - **Why (what Idan asked for, in his words if given):** 
   - User uploaded modal screenshot showing generic trainer shifts listed under *אחזקת מכשירים/מיטות פילאטיס* and inflated run-rate projection on a closed month.
 - **What it touches:** 
