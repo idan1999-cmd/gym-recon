@@ -478,9 +478,10 @@ function renderCategoryCards(items, containerId, type) {
     card.innerHTML = `
       <div>
         <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
             <h3 class="text-base font-black text-zinc-900">${item.name}</h3>
             ${item.club ? `<span class="text-[10px] font-bold px-2 py-0.5 bg-zinc-100 text-zinc-700 rounded-md border border-zinc-200/60">${item.club}</span>` : ''}
+            ${item.is_contract ? `<span class="text-[10px] font-bold px-2 py-0.5 bg-amber-50 text-amber-900 rounded-md border border-amber-200/80 flex items-center gap-1"><span>🏷️</span><span>${item.contract_tag}</span></span>` : ''}
           </div>
           <button class="text-zinc-400 hover:text-zinc-700 p-1">
             <i data-lucide="more-vertical" class="w-4 h-4"></i>
@@ -703,7 +704,10 @@ function renderFinancialMatrix(incomes, varExp, fixExp) {
 
     return `
       <tr class="hover:bg-slate-50 transition cursor-pointer" onclick='openDrilldownModal(${JSON.stringify(item)})'>
-        <td class="py-2.5 px-3 font-bold text-slate-900">${item.name}</td>
+        <td class="py-2.5 px-3 font-bold text-slate-900 flex items-center gap-1.5">
+          <span>${item.name}</span>
+          ${item.is_contract ? `<span class="text-[9px] px-1.5 py-0.2 rounded font-bold bg-amber-100/90 text-amber-900 border border-amber-300">הסכם</span>` : ''}
+        </td>
         <td class="py-2.5 px-2"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${item.groupClass}">${item.group}</span></td>
         <td class="py-2.5 px-2 font-medium text-slate-500">${formatNIS(item.budget)}</td>
         ${monthsRange.map(mNum => {
@@ -758,25 +762,25 @@ function renderFinancialMatrix(incomes, varExp, fixExp) {
       <!-- Total Variable Expenses -->
       <tr class="bg-blue-50/70 text-blue-950 font-bold border-t border-slate-200">
         <td class="py-2.5 px-3">🔵 סה״כ הוצאות משתנות</td>
-        <td class="py-2.5 px-2 text-[10px]"><span class="px-2 py-0.5 rounded bg-blue-200 text-blue-900 font-bold">משתנה</span></td>
+        <td class="py-2.5 px-2 text-[11px]"><span class="px-2 py-0.5 rounded bg-blue-200 text-blue-900 font-bold">משתנה</span></td>
         <td class="py-2.5 px-2 text-left">${formatNIS(varBudget)}</td>
         ${varMonthly.map((val, idx) => {
           const isSelected = ((idx + 1) === currentMonth);
-          return `<td class="py-2.5 px-2 text-center ${isSelected ? 'bg-blue-200/70 font-bold' : ''}">${formatNIS(val)}</td>`;
+          return `<td class="py-2.5 px-2 text-center ${isSelected ? 'bg-blue-200/80 font-black text-blue-950' : ''}">${formatNIS(val)}</td>`;
         }).join('')}
-        <td class="py-2.5 px-3 text-center bg-blue-100/60">${formatNIS(varYTD)}</td>
+        <td class="py-2.5 px-3 text-center bg-blue-100/80 font-bold">${formatNIS(varYTD)}</td>
       </tr>
 
       <!-- Total Fixed Expenses -->
       <tr class="bg-slate-100/80 text-slate-900 font-bold border-t border-slate-200">
-        <td class="py-2.5 px-3">🔘 סה״כ הוצאות קבועות</td>
-        <td class="py-2.5 px-2 text-[10px]"><span class="px-2 py-0.5 rounded bg-slate-200 text-slate-800 font-bold">קבוע</span></td>
+        <td class="py-2.5 px-3">⚪ סה״כ הוצאות קבועות</td>
+        <td class="py-2.5 px-2 text-[11px]"><span class="px-2 py-0.5 rounded bg-slate-300 text-slate-800 font-bold">קבוע</span></td>
         <td class="py-2.5 px-2 text-left">${formatNIS(fixBudget)}</td>
         ${fixMonthly.map((val, idx) => {
           const isSelected = ((idx + 1) === currentMonth);
-          return `<td class="py-2.5 px-2 text-center ${isSelected ? 'bg-slate-300/70 font-bold' : ''}">${formatNIS(val)}</td>`;
+          return `<td class="py-2.5 px-2 text-center ${isSelected ? 'bg-slate-300/80 font-black text-slate-950' : ''}">${formatNIS(val)}</td>`;
         }).join('')}
-        <td class="py-2.5 px-3 text-center bg-slate-200/70">${formatNIS(fixYTD)}</td>
+        <td class="py-2.5 px-3 text-center bg-slate-200 font-bold">${formatNIS(fixYTD)}</td>
       </tr>
 
       <!-- Total All Expenses -->
@@ -826,6 +830,18 @@ function openDrilldownModal(item) {
     : `תחזית חכמה לסוף חודש: ${formatNIS(item.projected)} (מבוסס קצב יומי)`;
   document.getElementById('modal-forecast-amount').innerText = forecastText;
   document.getElementById('modal-explanation-text').innerText = item.explanation || 'סעיף תקציבי שוטף מתוך פעילות המועדון.';
+
+  // Contract Info Box in modal
+  const contractBox = document.getElementById('modal-contract-box');
+  if (contractBox) {
+    if (item.is_contract) {
+      contractBox.classList.remove('hidden');
+      document.getElementById('modal-contract-tag').innerText = item.contract_tag;
+      document.getElementById('modal-contract-desc').innerText = item.contract_description;
+    } else {
+      contractBox.classList.add('hidden');
+    }
+  }
 
   render5MonthBars(item.history.history_bars, item.budget);
 

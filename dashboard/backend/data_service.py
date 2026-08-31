@@ -1274,6 +1274,27 @@ class DashboardDataService:
                 "all_months": item["months"]
             })
 
+        CONTRACTS_REGISTRY = {
+            "22618": {"tag": "הסכם שנתי / תשלומים", "badge_color": "amber", "description": "הסכם שירות שנתי (אגנטק / טלפייר) בפריסת תשלומים"},
+            "1222618": {"tag": "הסכם שנתי / תשלומים", "badge_color": "amber", "description": "הסכם שירות שנתי (אגנטק / טלפייר) בפריסת תשלומים"},
+            "22615": {"tag": "הסכם שנתי / רבעוני", "badge_color": "sky", "description": "הסכם שירות שנתי אלקטרה בחיובים רבעוניים שוטפים"},
+            "1222615": {"tag": "הסכם שנתי / רבעוני", "badge_color": "sky", "description": "הסכם שירות שנתי אלקטרה בחיובים רבעוניים שוטפים"},
+            "22606": {"tag": "פוליסה שנתית בפריסה", "badge_color": "indigo", "description": "פוליסת ביטוח שנתית בפריסת תשלומים חודשית"},
+            "1222606": {"tag": "פוליסה שנתית בפריסה", "badge_color": "indigo", "description": "פוליסת ביטוח שנתית בפריסת תשלומים חודשית"},
+        }
+
+        def _get_contract_info(code, name):
+            code_clean = str(code).strip()
+            if code_clean in CONTRACTS_REGISTRY:
+                return CONTRACTS_REGISTRY[code_clean]
+            if "אחזקת מכשירים" in name:
+                return CONTRACTS_REGISTRY["22618"]
+            if "מז\"א" in name or "מיזוג" in name:
+                return CONTRACTS_REGISTRY["22615"]
+            if "ביטוח" in name:
+                return CONTRACTS_REGISTRY["22606"]
+            return None
+
         processed_var_exp = []
         total_exp_budget = 0.0
         total_exp_actual = 0.0
@@ -1306,6 +1327,8 @@ class DashboardDataService:
             if not matched_txns and a > 0:
                 matched_txns = [{"date": f"01/{month:02d}/2026", "desc": item["name"], "amount": round(a, 2)}]
 
+            c_info = _get_contract_info(item["code"], item["name"])
+
             processed_var_exp.append({
                 "code": item["code"],
                 "name": item["name"],
@@ -1318,6 +1341,9 @@ class DashboardDataService:
                 "variance": diff,
                 "pct": round(pct, 1),
                 "is_over_budget": is_over,
+                "is_contract": bool(c_info),
+                "contract_tag": c_info["tag"] if c_info else None,
+                "contract_description": c_info["description"] if c_info else None,
                 "history": drilldown,
                 "transactions": matched_txns,
                 "all_months": item["months"]
@@ -1340,6 +1366,8 @@ class DashboardDataService:
             if not matched_txns and a > 0:
                 matched_txns = [{"date": f"01/{month:02d}/2026", "desc": item["name"], "amount": round(a, 2)}]
 
+            c_info = _get_contract_info(item["code"], item["name"])
+
             processed_fix_exp.append({
                 "code": item["code"],
                 "name": item["name"],
@@ -1352,6 +1380,9 @@ class DashboardDataService:
                 "variance": a - b,
                 "pct": round((a / b * 100) if b > 0 else 0, 1),
                 "is_over_budget": a > b,
+                "is_contract": bool(c_info),
+                "contract_tag": c_info["tag"] if c_info else None,
+                "contract_description": c_info["description"] if c_info else None,
                 "history": drilldown,
                 "transactions": matched_txns,
                 "all_months": item["months"]

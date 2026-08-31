@@ -10,6 +10,23 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
 
+## 2026-08-31 — Annual Supplier Contract Badging & Multi-Month Recognition
+
+- **What changed:** 
+  - Configured and deployed an automated **Annual / Multi-Month Supplier Contract Badging System** across the dashboard (excluding courses/workshops per Idan's direction):
+    1. **Contract Registry & Detection:** Automatically tagged supplier agreements (e.g. `22618` - Agentech / Telefire equipment service in 7/12 installments, `22615` - Electra HVAC quarterly contract, `22606` - Annual insurance amortization).
+    2. **Card & 12-Month Table Badges:** Added clean badges (🏷️ `הסכם שנתי / תשלומים`, `הסכם שנתי / רבעוני`, `פוליסה שנתית בפריסה`) next to category titles on main cards and in the 12-month summary matrix.
+    3. **Drilldown Modal Callout:** Integrated a banner callout in the item drilldown displaying contract description, payment cadence, and installment breakdown alongside genuine ledger receipts.
+- **Why (what Idan asked for, in his words if given):** 
+  - *"תבצע. לדעתי אין צורך אבל על קורסים והשתלמויות."*
+- **What it touches:** 
+  - `dashboard/backend/data_service.py`, `dashboard/public/app.js`, `dashboard/public/index.html`, `docs/BUILDER_LOG.md`.
+- **How it was verified:** 
+  - Verified API returns `is_contract: true` for Agentech equipment maintenance, Electra HVAC, and Insurance.
+  - Verified UI rendering of contract badges on cards, 12-month table, and modal callout box.
+
+---
+
 ## 2026-08-31 — Real Accounting Ledger Drilldown Transactions & Forecast Precision
 
 - **What changed:** 
