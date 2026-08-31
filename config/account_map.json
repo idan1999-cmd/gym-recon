@@ -10,9 +10,11 @@
     "109",
     "120",
     "18050",
-    "18090"
+    "18090",
+    "18150",
+    "18190"
   ],
-  "_exclude_note": "109/120 = holding; 18050 = bank interest/credit-card fees; 18090 = management-fee basket. Manager confirms whether 18050/18090 belong in budget.",
+  "_exclude_note": "109/120 = holding; 18050/18150 = bank interest/credit-card fees; 18090/18190 = management-fee basket. Manager confirms whether 18050/18090 belong in budget.",
   "accounts": {
     "10180001": {
       "budget_code": "80001",
@@ -49,6 +51,12 @@
       "sheet": "פילאטיס",
       "type": "income",
       "name": "הכנסות ממכירת מנויים"
+    },
+    "10181006": {
+      "budget_code": "81004",
+      "sheet": "פילאטיס",
+      "type": "income",
+      "name": "הכנסות אימונים אישיים"
     },
     "10181008": {
       "budget_code": "81008",

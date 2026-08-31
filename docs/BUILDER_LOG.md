@@ -10,6 +10,28 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
 
+## 2026-08-31 — Ingestion of Updated Ledger (31.8.2026) & Clean Deliverables Sync
+
+- **What changed:** 
+  - Synced the updated accounting ledger: `כרטסת 31.8.26.xlsx` across the pipeline and dashboard data service:
+    1. **Account Mapping Updates:** Added `10181006` (Pilates external PT income) to `config/account_map.json` and excluded non-operating holding prefixes (`18150`, `18190`), achieving 0 unmapped ledger accounts.
+    2. **Ledger Sync Run:** Ran `tools/ledger_sync.py` to regenerate the official `output/תקציב_מול_ביצוע_חדר_כושר.xlsx` and `output/תקציב_מול_ביצוע_פילאטיס.xlsx` workbooks.
+    3. **Clean Deliverables in Output:** Removed all temporary test files (`_t_*.xlsx`, scratch JSONs, lock files) from `output/` (`📤_דוחות_מוכנים_פלט/`), leaving exclusively the official deliverables:
+       - `תקציב_מול_ביצוע_חדר_כושר.xlsx`
+       - `תקציב_מול_ביצוע_פילאטיס.xlsx`
+       - `תקציב תזרים 2026.xlsx`
+    4. **Dashboard Synchronization:** Restarted dashboard backend server to reflect all synced figures.
+- **Why (what Idan asked for, in his words if given):** 
+  - *"אני הולך להעלות בפניך כרטסת עדכנית - בבקשה תעדכן לי את הדשבורד וגם את דו״ח תקציב תזרים ותעלה לי אותם בפלט. תמחק את הקבצים האחרים כרגע בפלט."*
+- **What it touches:** 
+  - `config/account_map.json`, `output/`, `📤_דוחות_מוכנים_פלט/`, `docs/BUILDER_LOG.md`.
+- **How it was verified:** 
+  - Verified `ledger_sync.py` exited with 0 errors and 0 unmapped accounts.
+  - Verified `output/` directory contains only the 3 official workbooks.
+  - Verified live dashboard responsiveness and data payload.
+
+---
+
 ## 2026-08-30 — Ingestion of Updated Cancellations & Freeze Supplement CSV
 
 - **What changed:** 
