@@ -586,16 +586,29 @@ def build(src_path, branch_key, movement, out_path, target_month_he="יוני",
     # Phase 1: strip pricing notes and top subscriber metric rows
     _strip_note_rows(ws)
     _strip_top_metric_rows(ws)
-    written, dc, rows, flipped = _sync(
-        ws, target_month_he, month_key, SHEET_KEY[branch_key], movement
-    )
-    # Phase 4: YTD through target month
+    
     n = _month_num_from_key(month_key)
     year_suffix = str(month_key).split("-")[0][-2:] if month_key else "26"
+    year_prefix = str(month_key).split("-")[0] if month_key else "2026"
+
+    total_written = 0
+    # Sync all months up to target month (e.g. 1..N) that have movement data
+    for i in range(1, n + 1):
+        m_he = MONTHS_HE[i - 1]
+        m_k = f"{year_prefix}-{i:02d}"
+        has_data = any(k[0] == SHEET_KEY[branch_key] and k[2] == m_k for k in movement.keys())
+        if i == n or has_data:
+            w, dc, rows, flipped = _sync(
+                ws, m_he, m_k, SHEET_KEY[branch_key], movement
+            )
+            total_written += w
+
+    rows = _code_rows(ws)
+    # Phase 4: YTD through target month
     _write_ytd(ws, rows, n, year_suffix=year_suffix)
     _format_variance(ws, rows, target_month_n=n)
     _apply_polish(ws)
     _write_engine_footer(ws)
     out.save(out_path)
     out.close()
-    return written
+    return total_written

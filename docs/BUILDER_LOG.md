@@ -10,6 +10,24 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
 
+## 2026-08-31 — Cumulative Multi-Month Ledger Sync (June, July, August Actuals)
+
+- **What changed:** 
+  - Enhanced `jobs/ledger_output.py` (`build`) to sync all historical and current ledger movements ($1 \dots N$) from `כרטסת 31.8.26.xlsx` into the output budget workbooks, instead of updating only the single target month:
+    1. **June & July Actuals Restored:** Ingested exact ledger transactions across all budget items for June (₪245.5k revenue, ₪265.1k expenses) and July (₪237.7k revenue, ₪244.8k expenses).
+    2. **Rollup & Sign Integrity:** Recalculated subtotal rollups (`סה"כ הכנסות`, `סה"כ הוצאות`, `רווח/הפסד`) and enforced income negativity ($\le 0$) across all months.
+    3. **YTD Recalculation:** Recomputed cumulative YTD figures through August (`סה"כ תקציב 1-8/26`, `סה"כ ביצוע 1-8/26`, `ביצוע מול תקציב`).
+    4. **Dashboard Synchronization:** Synchronized data service across months 1–8.
+- **Why (what Idan asked for, in his words if given):** 
+  - *"למה בתקציב מול ביצוע לא מופיע לי הביצוע של יוני ויולי?"*
+- **What it touches:** 
+  - `jobs/ledger_output.py`, `output/תקציב_מול_ביצוע_חדר_כושר.xlsx`, `output/תקציב_מול_ביצוע_פילאטיס.xlsx`, `docs/BUILDER_LOG.md`.
+- **How it was verified:** 
+  - Verified June actuals (₪200,994.06 club rev, ₪44,567.80 pilates rev) and July actuals (₪190,931.36 club rev, ₪46,758.47 pilates rev) in generated Excel sheets.
+  - Verified dashboard summary endpoints return full actuals for June, July, and August.
+
+---
+
 ## 2026-08-31 — Ingestion of Updated Ledger (31.8.2026) & Clean Deliverables Sync
 
 - **What changed:** 
