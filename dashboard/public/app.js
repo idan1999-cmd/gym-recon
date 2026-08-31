@@ -820,7 +820,11 @@ function openDrilldownModal(item) {
   document.getElementById('modal-club-badge').innerText = item.club || 'כל המועדון';
   document.getElementById('modal-month-name').innerText = dashboardData.metadata.month_name;
   document.getElementById('modal-target-amount').innerText = formatNIS(item.budget);
-  document.getElementById('modal-forecast-amount').innerText = `תחזית חכמה לסוף חודש: ${formatNIS(item.projected)} (מבוסס קצב יומי)`;
+  const isClosedMonth = currentMonth < 8;
+  const forecastText = isClosedMonth
+    ? `ביצוע סופי (חודש סגור): ${formatNIS(item.actual || item.projected)}`
+    : `תחזית חכמה לסוף חודש: ${formatNIS(item.projected)} (מבוסס קצב יומי)`;
+  document.getElementById('modal-forecast-amount').innerText = forecastText;
   document.getElementById('modal-explanation-text').innerText = item.explanation || 'סעיף תקציבי שוטף מתוך פעילות המועדון.';
 
   render5MonthBars(item.history.history_bars, item.budget);

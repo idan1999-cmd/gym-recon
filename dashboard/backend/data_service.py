@@ -5,6 +5,7 @@ smart AI financial insights, and flexible multi-view aggregation.
 """
 from __future__ import annotations
 import os
+import sys
 import re
 import csv
 import json
@@ -15,6 +16,8 @@ from collections import Counter
 import openpyxl
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(BASE_DIR / "core"))
+sys.path.insert(0, str(BASE_DIR))
 OUTPUT_DIR = BASE_DIR / "output"
 INPUT_DIR = BASE_DIR / "input"
 CONFIG_DIR = BASE_DIR / "config"
@@ -1123,6 +1126,77 @@ class DashboardDataService:
                 "sales_closers": []
             }
 
+    def _load_ledger_transactions_map(self) -> dict:
+        ledger_file = self.find_input_file(["*כרטסת*.xlsx", "*כרטסת*.xls", "*ledger*.xlsx"])
+        if not ledger_file or not ledger_file.exists():
+            return {}
+
+        mtime = ledger_file.stat().st_mtime
+        cache_key = f"ledger_txns_{ledger_file}_{mtime}"
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+
+        try:
+            from core.common import load_account_map
+            from core.ledger import parse_ledger
+
+            am = load_account_map()
+            txns, _ = parse_ledger(str(ledger_file))
+            accts = am.get("accounts", {})
+            excl = am.get("exclude_prefixes", [])
+
+            txns_by_key = {}
+            for t in txns:
+                acc = t["account"]
+                if any(acc.startswith(p) for p in excl):
+                    continue
+                meta = accts.get(acc)
+                if not meta:
+                    continue
+
+                sheet_name = meta["sheet"]
+                club_key = "חדר כושר" if sheet_name == "מועדון" else "פילאטיס מכשירים"
+                b_code = str(meta["budget_code"]).strip()
+                m_key = t["budget_month"]
+                m_num = int(m_key.split("-")[1]) if "-" in m_key else 0
+
+                amt = round(abs(t["debit"] - t["credit"]), 2)
+                if amt == 0:
+                    continue
+
+                date_val = t.get("date")
+                if date_val and hasattr(date_val, "strftime"):
+                    date_str = date_val.strftime("%d/%m/%Y")
+                elif date_val:
+                    date_str = str(date_val)[:10]
+                else:
+                    date_str = f"01/{m_num:02d}/2026"
+
+                memo_str = str(t.get("memo") or "").strip()
+                counter_str = str(t.get("counter_desc") or "").strip()
+                if counter_str and memo_str:
+                    desc = f"{counter_str} - {memo_str}"
+                elif counter_str:
+                    desc = counter_str
+                elif memo_str:
+                    desc = memo_str
+                else:
+                    desc = meta.get("name", "תנועת כרטסת")
+
+                # Store by multiple key variants for robust matching
+                variants = set([b_code, b_code.lstrip("0"), f"0{b_code}"])
+                for code_variant in variants:
+                    key = (club_key, code_variant, m_num)
+                    if key not in txns_by_key:
+                        txns_by_key[key] = []
+                    txns_by_key[key].append({"date": date_str, "desc": desc, "amount": amt})
+
+            self._cache[cache_key] = txns_by_key
+            return txns_by_key
+        except Exception as e:
+            print("Error loading ledger transactions map:", e)
+            return {}
+
     def get_dashboard_summary(self, month: int = 6, club_filter: str = "all", snapshot: str | None = None) -> dict:
         gym_data = self.parse_budget_workbook(OUTPUT_DIR / "תקציב_מול_ביצוע_חדר_כושר.xlsx", "חדר כושר")
         pilates_data = self.parse_budget_workbook(OUTPUT_DIR / "תקציב_מול_ביצוע_פילאטיס.xlsx", "פילאטיס מכשירים")
@@ -1141,10 +1215,13 @@ class DashboardDataService:
             var_exp_list.extend(pilates_data.get("variable_expenses", []))
             fix_exp_list.extend(pilates_data.get("fixed_expenses", []))
 
+        current_live_month = 8
         days_in_m = get_days_in_month(self.year, month)
-        current_day = 22 if month == 6 else 15
+        current_day = min(datetime.now().day, days_in_m)
         day_ratio = current_day / days_in_m
         run_rate_factor = 1.0 / max(day_ratio, 0.1)
+
+        ledger_txns = self._load_ledger_transactions_map()
 
         processed_incomes = []
         total_rev_budget = 0.0
@@ -1156,7 +1233,14 @@ class DashboardDataService:
             b = m_info["budget"]
             a = m_info["actual"]
             
-            proj = round(a * run_rate_factor, 2) if a > 0 else b
+            # Forecast: past closed months equal actual, current live month applies run rate
+            if month < current_live_month:
+                proj = a
+            elif month == current_live_month:
+                proj = round(a * run_rate_factor, 2) if a > 0 else b
+            else:
+                proj = b
+
             diff = a - b
             is_over = a >= b
             pct = (a / b * 100) if b > 0 else 100
@@ -1167,12 +1251,10 @@ class DashboardDataService:
 
             drilldown = self.get_drilldown_history(item["name"], item["months"], month)
 
-            transactions = [
-                {"date": f"03/{month:02d}/2026", "desc": "סליקת ארבוקס - מחזור שבועי 1", "amount": round(a * 0.28, 2)},
-                {"date": f"10/{month:02d}/2026", "desc": "סליקת ארבוקס - מחזור שבועי 2", "amount": round(a * 0.32, 2)},
-                {"date": f"17/{month:02d}/2026", "desc": "סליקת ארבוקס - מחזור שבועי 3", "amount": round(a * 0.25, 2)},
-                {"date": f"22/{month:02d}/2026", "desc": "תקבולים שוטפים והרשמות", "amount": round(a * 0.15, 2)},
-            ] if a > 0 else []
+            # Match real ledger transactions or provide clean breakdown
+            matched_txns = ledger_txns.get((item["club"], str(item["code"]).strip(), month), [])
+            if not matched_txns and a > 0:
+                matched_txns = [{"date": f"01/{month:02d}/2026", "desc": item["name"], "amount": round(a, 2)}]
 
             processed_incomes.append({
                 "code": item["code"],
@@ -1188,7 +1270,7 @@ class DashboardDataService:
                 "pct": round(pct, 1),
                 "is_achieved": is_over,
                 "history": drilldown,
-                "transactions": transactions,
+                "transactions": matched_txns,
                 "all_months": item["months"]
             })
 
@@ -1202,7 +1284,14 @@ class DashboardDataService:
             b = m_info["budget"]
             a = m_info["actual"]
 
-            proj = round(a * run_rate_factor, 2) if a > 0 else b
+            # Forecast: past closed months equal actual, current live month applies run rate
+            if month < current_live_month:
+                proj = a
+            elif month == current_live_month:
+                proj = round(a * run_rate_factor, 2) if a > 0 else b
+            else:
+                proj = b
+
             diff = a - b
             is_over = a > b
             pct = (a / b * 100) if b > 0 else 0
@@ -1213,11 +1302,9 @@ class DashboardDataService:
 
             drilldown = self.get_drilldown_history(item["name"], item["months"], month)
 
-            transactions = [
-                {"date": f"05/{month:02d}/2026", "desc": "שעות הדרכה ומשמרות - חילנט", "amount": round(a * 0.35, 2)},
-                {"date": f"12/{month:02d}/2026", "desc": "שיעורי סטודיו וחוגים - ארבוקס", "amount": round(a * 0.40, 2)},
-                {"date": f"20/{month:02d}/2026", "desc": "אימונים אישיים והדרכות מיוחדות", "amount": round(a * 0.25, 2)},
-            ] if a > 0 else []
+            matched_txns = ledger_txns.get((item["club"], str(item["code"]).strip(), month), [])
+            if not matched_txns and a > 0:
+                matched_txns = [{"date": f"01/{month:02d}/2026", "desc": item["name"], "amount": round(a, 2)}]
 
             processed_var_exp.append({
                 "code": item["code"],
@@ -1232,7 +1319,7 @@ class DashboardDataService:
                 "pct": round(pct, 1),
                 "is_over_budget": is_over,
                 "history": drilldown,
-                "transactions": transactions,
+                "transactions": matched_txns,
                 "all_months": item["months"]
             })
 
@@ -1241,13 +1328,18 @@ class DashboardDataService:
             m_info = item["months"].get(month, {"budget": 0.0, "actual": 0.0})
             b = m_info["budget"]
             a = m_info["actual"]
-            proj = b
+            proj = a if month < current_live_month else b
 
             total_exp_budget += b
             total_exp_actual += a
             total_exp_projected += proj
 
             drilldown = self.get_drilldown_history(item["name"], item["months"], month)
+
+            matched_txns = ledger_txns.get((item["club"], str(item["code"]).strip(), month), [])
+            if not matched_txns and a > 0:
+                matched_txns = [{"date": f"01/{month:02d}/2026", "desc": item["name"], "amount": round(a, 2)}]
+
             processed_fix_exp.append({
                 "code": item["code"],
                 "name": item["name"],
@@ -1261,9 +1353,7 @@ class DashboardDataService:
                 "pct": round((a / b * 100) if b > 0 else 0, 1),
                 "is_over_budget": a > b,
                 "history": drilldown,
-                "transactions": [
-                    {"date": f"01/{month:02d}/2026", "desc": "חיוב תקופתי קבוע בחוזה", "amount": round(a, 2)}
-                ] if a > 0 else [],
+                "transactions": matched_txns,
                 "all_months": item["months"]
             })
 

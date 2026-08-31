@@ -86,6 +86,7 @@ def parse_ledger(path, sheet=None, target_month=None):
     ci_credit, ci_debit = col(H_CREDIT), col(H_DEBIT)
     ci_bdate, ci_vdate = col(H_BALANCE_DATE), col(H_VALUE_DATE)
     ci_memo = col(H_MEMO)
+    ci_counter = col("תאור חשבון נגדי")
     if ci_credit is None or ci_debit is None:
         raise ValueError("ledger missing זכות/חובה columns: %s" % header)
     def cell(r, ci): return r[ci] if (ci is not None and len(r) > ci) else None
@@ -124,6 +125,8 @@ def parse_ledger(path, sheet=None, target_month=None):
             "debit": num(cell(r, ci_debit)), "credit": num(cell(r, ci_credit)),
             "month_source": month_source,
             "memo": cell(r, ci_memo) if ci_memo is not None else None,
+            "date": cell(r, ci_bdate) or cell(r, ci_vdate),
+            "counter_desc": cell(r, ci_counter) if ci_counter is not None else None,
         })
     return txns, subtotals
 

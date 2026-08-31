@@ -10,6 +10,23 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
 
+## 2026-08-31 — Real Accounting Ledger Drilldown Transactions & Forecast Precision
+
+- **What changed:** 
+  - Overhauled the modal drill-down breakdown system to display **100% genuine accounting transactions** from `כרטסת` instead of mock/placeholder trainer lines:
+    1. **Real General Ledger Transactions:** Extracted exact transaction date, supplier/counter-account name, invoice memo, and amount from `כרטסת 31.8.26.xlsx` (e.g. for Pilates equipment maintenance in July: *אוניספורט בע"מ (₪284.83)*, *קופה קטנה (₪447.46)*, *אלי לבן (₪81.36)*).
+    2. **Closed vs. Live Month Forecasts:** Aligned smart forecasts so past closed months (June, July) display their exact finalized actuals (`ביצוע סופי - חודש סגור`), avoiding daily run-rate extrapolation multipliers on past months.
+    3. **Live UI Refresh:** Updated `data_service.py`, `app.js`, and `core/ledger.py` with automatic deduplication.
+- **Why (what Idan asked for, in his words if given):** 
+  - User uploaded modal screenshot showing generic trainer shifts listed under *אחזקת מכשירים/מיטות פילאטיס* and inflated run-rate projection on a closed month.
+- **What it touches:** 
+  - `core/ledger.py`, `dashboard/backend/data_service.py`, `dashboard/public/app.js`, `dashboard/public/index.html`, `docs/BUILDER_LOG.md`.
+- **How it was verified:** 
+  - Verified drilldown for Pilates equipment maintenance returns 3 real ledger transactions totaling ₪813.65 for July.
+  - Verified closed-month forecast matches exact actuals.
+
+---
+
 ## 2026-08-31 — Cumulative Multi-Month Ledger Sync (June, July, August Actuals)
 
 - **What changed:** 
