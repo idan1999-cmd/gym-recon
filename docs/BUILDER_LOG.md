@@ -189,6 +189,28 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 
 ---
 
+## 2026-09-01 — August 2026 Monthly Close Execution (חיוב + דוח מרכז + תקציב מול ביצוע)
+
+- **What changed:**
+  1. **Processed August 2026 Invoices & Inputs:**
+     - Included Ido Glicko's newly uploaded invoice (`40011.pdf` -> `15,695.00 ₪` across PT, shifts, group classes, and bonuses).
+     - Processed all 15 freelancer invoices with 0 held invoices (`n_held: 0`).
+     - Parsed August Hilan projects report (`דו״ח חילנט אוגוסט 2026.xlsx`) for 9 salaried employees and cross-checked hours.
+     - Parsed August sales commissions (`ריכוז עמלות מכירה  אוגוסט 2026.xlsx`) including commission entries for Nicole, Leonid, Noam, Arad, Bar, and Gilad (`5,263.20 ₪` wages / `6,415.84 ₪` with social).
+  2. **Generated Official Deliverables for August 2026:**
+     - `חיוב_חדר_כושר.xlsx` (Grand total: `105,664.96 ₪`).
+     - `חיוב_פילאטיס.xlsx` (Grand total: `32,052.80 ₪`).
+     - `תקציב_מול_ביצוע_חדר_כושר.xlsx` & `תקציב_מול_ביצוע_פילאטיס.xlsx` synced from ledger snapshot `51928`.
+- **Why (what Idan asked for, in his words if given):**
+  - *"מעולה, הכל הועלה. לך על זה. שאל אותי שאלות אם צריך שנדייק הכל."*
+- **What it touches:**
+  - `jobs/job_billing.py`, `jobs/billing_output.py`, `tools/billing.py`, `config/invoices_ocr.json`, `docs/BUILDER_LOG.md`.
+- **How it was verified:**
+  - Executed all 94 automated tests (0 failures).
+  - Validated formula integrity and numeric values in `חיוב יזם` and `דוח מרכז לאישור מנהל`.
+
+---
+
 ## 2026-08-31 — Invoices Standardization & Missing Invoices Cross-Check vs Arbox Lessons Report
 
 - **What changed:**

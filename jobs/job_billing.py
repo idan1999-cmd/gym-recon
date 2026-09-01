@@ -53,7 +53,7 @@ def load_branches():
 
 
 # ---------------------------------------------------------------- Phase A ----
-def validate_invoices(invoices, branch_key, all_sessions, aliases, pay, log):
+def validate_invoices(invoices, branch_key, all_sessions, aliases, pay, log, target_month_key=None):
     """
     Run the three-way audit on the invoices belonging to `branch_key`.
     Returns:
@@ -71,6 +71,10 @@ def validate_invoices(invoices, branch_key, all_sessions, aliases, pay, log):
     for inv in invoices:
         b_inv = str(inv.get("branch") or "")
         if b_inv and not any(alt in b_inv for alt in branch_alt):
+            continue
+        smonth = service_month_from_dates(inv.get("session_dates")) \
+                 or month_key(inv.get("doc_date"))
+        if target_month_key and smonth and smonth != target_month_key:
             continue
         entries = []
         audit_invoice(inv, all_sessions, aliases, pay, entries)

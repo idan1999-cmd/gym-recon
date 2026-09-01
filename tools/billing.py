@@ -121,7 +121,7 @@ def main():
 
         log = []
         by_category, held, trainer_amounts = jb.validate_invoices(
-            invoices, bk, sessions, aliases, pay, log
+            invoices, bk, sessions, aliases, pay, log, target_month_key=month_key
         )
 
         branch_file_key = "פילאטיס" if bk == "פילאטיס" else "חדר_כושר"

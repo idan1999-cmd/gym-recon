@@ -211,16 +211,17 @@ def _parse_sales_data(sales_file, target_month=None, aliases=None):
                 current_section = 'pilates'
                 continue
 
-            if 'סך הכל' in row_str or 'סה"כ' in row_str:
-                nums = [float(ws.cell(r, c).value) for c in range(1, ws.max_column + 1)
-                        if isinstance(ws.cell(r, c).value, (int, float))]
-                if nums:
-                    if current_section == 'gym':
-                        sales_data['gym']['total_wage'] = nums[0]
-                        if len(nums) > 1: sales_data['gym']['total_with_social'] = nums[-1]
-                    elif current_section == 'pilates':
-                        sales_data['pilates']['total_wage'] = nums[0]
-                        if len(nums) > 1: sales_data['pilates']['total_with_social'] = nums[-1]
+        # Fallback: line-by-line rows if structured section header is absent
+        if sales_data['gym']['total_wage'] == 0 and sales_data['pilates']['total_wage'] == 0:
+            tot_w = 0.0
+            for r in range(1, ws.max_row + 1):
+                name_cell = ws.cell(r, 2).value
+                amt_cell = ws.cell(r, 3).value
+                if name_cell and isinstance(amt_cell, (int, float)) and amt_cell > 0:
+                    tot_w += float(amt_cell)
+            if tot_w > 0:
+                sales_data['gym']['total_wage'] = round(tot_w, 2)
+                sales_data['gym']['total_with_social'] = round(tot_w * 1.219, 2)
         wb_s.close()
     except Exception:
         pass
