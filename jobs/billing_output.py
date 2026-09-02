@@ -377,6 +377,27 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                         ws.cell(r, 15).value = round(rem, 2) if rem > 0 else None
                         ws.cell(r, 16).value = None
 
+            # Explicit dynamic summary formulas for Row 36 (orange summary row)
+            ws.cell(36, 1).value = "=SUM(B3:B19)"   # סטודיו חיצוניים
+            ws.cell(36, 2).value = "=SUM(B20:B28)"  # סטודיו פנימיים
+            ws.cell(36, 3).value = "=SUM(D3:D19)"   # מועדון חיצוניים במשמרת
+            ws.cell(36, 4).value = "=SUM(C3:C19)"   # מועדון חיצוניים לא במשמרת
+            ws.cell(36, 5).value = "=SUM(D20:D28)"  # קבוצתיים פנימיים במשמרת
+            ws.cell(36, 6).value = "=SUM(C20:C28)"  # קבוצתיים פנימיים לא במשמרת
+            ws.cell(36, 7).value = "=SUM(G20:G28)"  # אישיים לא במשמרת שכירים
+            ws.cell(36, 8).value = "=SUM(G3:G19)"   # אישיים לא במשמרת חיצוני
+            ws.cell(36, 9).value = "=SUM(H3:H19)"   # אישי קבוצתי לא במשמרת חיצוני
+            ws.cell(36, 10).value = "=SUM(H20:H28)" # אישיים במשמרת
+            ws.cell(36, 11).value = "=SUM(I3:I28)"  # אישיים קבוצתיים במשמרת
+            ws.cell(36, 12).value = "=SUM(J3:J28)"  # אישיים קבוצתיים לא במשמרת
+            ws.cell(36, 13).value = "=SUM(K3:K28)"  # אישיים סטודיו במשמרת
+            ws.cell(36, 14).value = "=SUM(L3:L28)"  # אישיים סטודיו לא במשמרת
+            ws.cell(36, 15).value = "=SUM(N3:N19)"  # משמרת חדר כושר חיצוניים
+            ws.cell(36, 16).value = "=SUM(O20:O28)" # משמרת חדר כושר פנימי משמרת
+            ws.cell(36, 17).value = "=SUM(P20:P28)" # פקידת קבלה/מכירות
+            ws.cell(36, 18).value = 0               # משמרת קבלה פנימי במשמרת
+            ws.cell(36, 19).value = "=SUM(A36:R36)" # סה"כ
+
         # Dynamically populate overtime & travel on 'דוח מרכז לאישור מנהל'
         if "דוח מרכז לאישור מנהל" in wb.sheetnames:
             ws_main = wb["דוח מרכז לאישור מנהל"]
@@ -384,6 +405,14 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
             ws_main.cell(6, 2).value = None
             ws_main.cell(6, 3).value = "='סיכום אמוני סטודיו וקבוצה'!P23"
             ws_main.cell(6, 4).value = "='סיכום אמוני סטודיו וקבוצה'!P22"
+
+            # Connect comparison section (Rows 47-58)
+            gym_hilan_tot = round(sum(
+                h.get("total_wage", 0) for c_name, h in hilan_data.items()
+                if c_name not in ["ניקול אדלמן", "ניקול איידלמן", "נעמה חיון"]
+            ), 2)
+            if gym_hilan_tot > 0:
+                ws_main.cell(47, 10).value = gym_hilan_tot
 
             for c in range(2, 13):
                 emp_name = ws_main.cell(4, c).value

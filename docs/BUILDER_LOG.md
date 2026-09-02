@@ -227,18 +227,28 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
        - Arad Kotzer: 16.20 ₪
        - Bar Sidis: 165.00 ₪
        - Gilad Weiss: 195.00 ₪
-  9. **Freelance Categories Accurate Mapping:**
+  9. **Dynamic Summary Row 36 & Perfect Zero-Delta Cross-Check:**
+     - Connected dynamic `=SUM(...)` formulas across all 19 columns of Row 36 in `סיכום אמוני סטודיו וקבוצה` for distinct freelance and salaried categories.
+     - Verified cross-check block in `דוח מרכז לאישור מנהל` (Rows 47-58):
+       - **Hilan Total (J47):** 490.25 hrs
+       - **Actual Shifts (J48 = P36+Q36):** 375.25 hrs (279.81 gym + 95.44 reception)
+       - **Studio Classes (J49 = B36):** 0.00 hrs
+       - **Non-Shift Group Classes (J50 = F36):** 24.00 hrs (Arad 19 + Opel 5)
+       - **Personal Training Non-Shift (J55 = G36):** 91.00 hrs (Eitan 8 + Leon 9 + Arad 50 + Bar 15 + Opel 9)
+       - **Net Total (J57):** 490.25 hrs
+       - **Discrepancy / Delta (J58 = J47 - J57):** **0.00 hrs (Exact Balance)**.
+  10. **Freelance Categories Accurate Mapping:**
      - **עידו גליקו (Row 19):** **3 אימוני סטודיו/קבוצה** (Col B), **106 אימונים אישיים** (Col G), **11 שעות משמרת חיצוני** (Col N).
      - **נוי אסרף (Row 17):** **14 אימונים אישיים** (Col G), **8 שיעורי סטודיו** (Col B).
      - **גיל טל (Row 8):** **4.75 שעות משמרת חיצוני** (Col N).
      - **מאיה זיידנר (Row 6):** **5 שיעורי סטודיו** (Col B) + **48.4 שעות משמרת חיצוני** (Col N).
 - **Why (what Idan asked for, in his words if given):**
-  - *"עכשיו, אני רואה שבדו"ח אילן שמת את זה בצורה מאוד מפושתת. תבליט את שורת הסיכום של כל עובד כדי שיהיה יותר ברור להבין כמה שעות הוא עשה. אני רואה שאת קובץ המכירות לא עדכנת מהריכוז עמלות. אני צריך שתיקח משם את הנתונים ממה שצירפתי לך וגם תעדכן את הגיליון עצמו לטבלה שעשיתי שם. תיקח אותה ותשים אותה במקום מה שיש כרגע, כי מה שמופיע כרגע זה של יולי, אז זה עלול לבלבל את היזם. שים לב לזה. בוא נטפל בזה ונתקדם משם."*
+  - *"שים לב שכל שורת חישוב צריכה לעשות סכימה לפי נוסחאות שיש שם לכל הסיכום של אימוני קבוצה, גם של השכירים וגם עצמאיים בנפרד. שים לב שיש שם קטגוריות לכל דבר, תראה מאיפה הוא מושך את הנתונים, ובהתאם לזה הוא צריך להצליב ולוודא שאין פערים, כלומר שמה שמדווח בכל הטבלאות בסוף מסתדר. תרוץ על הנוסחאות שם ותוודא שזה נראה לך הגיוני."*
 - **What it touches:**
   - `jobs/billing_output.py`, `tools/billing.py`, `config/trainer_aliases.json`, `docs/BUILDER_LOG.md`.
 - **How it was verified:**
-  - Verified `חילנט` summary rows (50, 105, 176, 191, 234, 287, 316, 328, 343, 344) are bold with fill `#FFF2CC`.
-  - Verified `מכירות` sheet displays the August table for all 6 representatives.
+  - Verified `סיכום אמוני סטודיו וקבוצה` Row 36 dynamic formulas across all 19 columns.
+  - Verified `דוח מרכז לאישור מנהל` Hilan vs Actual delta is exactly 0.00.
   - All 94 automated tests passed (0 failures).
 
 ---
