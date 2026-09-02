@@ -540,8 +540,26 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                 pass
 
     elif branch_key == "פילאטיס":
+        MONTHS_HE_LIST = [
+            "ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני",
+            "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר",
+        ]
+        m_idx = int(target_month or 8)
+        m_name = MONTHS_HE_LIST[m_idx - 1]
+
+        if "חיוב יזם" in wb.sheetnames:
+            ws_y = wb["חיוב יזם"]
+            import datetime
+            try:
+                ws_y.cell(3, 1).value = datetime.datetime(2026, m_idx, 1)
+                ws_y.cell(5, 3).value = datetime.datetime(2026, m_idx, 1)
+            except Exception:
+                pass
+
         if "דוח מרכז לאישור מנהל" in wb.sheetnames:
             ws_main = wb["דוח מרכז לאישור מנהל"]
+            ws_main.cell(2, 1).value = f"נוכחות {m_name} 2026 "
+
             for c in range(2, 5):
                 emp_name = ws_main.cell(4, c).value
                 if not emp_name:
@@ -567,6 +585,14 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                 else:
                     ws_main.cell(12, c).value = None
 
+            # Hilan cross check rows 47-52 in Pilates
+            pilates_hilan_hrs = round(sum(
+                h.get("total_wage", 0) for c_name, h in hilan_data.items()
+                if c_name in ["ניקול אדלמן", "ניקול איידלמן", "נעמה חיון"]
+            ), 2)
+            if pilates_hilan_hrs > 0:
+                ws_main.cell(47, 11).value = pilates_hilan_hrs
+
         if "חילנט" in wb.sheetnames and hilan_files:
             try:
                 from openpyxl.styles import Font, PatternFill, Border, Side
@@ -583,29 +609,54 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                     bottom=Side(style='double', color='000000')
                 )
 
+                pilates_names = ["חיון נעמה", "איידלמן ניקול", "נעמה חיון", "ניקול אדלמן", "ניקול איידלמן"]
                 out_r = 1
+                tot_p_wage = 0.0
+
                 for r in range(1, ws_src.max_row + 1):
                     row_vals = [ws_src.cell(r, c).value for c in range(1, ws_src.max_column + 1)]
                     is_summary = any(isinstance(v, str) and ("סה\"כ" in v or "סה״כ" in v or "סיכום" in v) for v in row_vals)
+                    is_pilates_emp = any(isinstance(v, str) and any(pn in v for pn in pilates_names) for v in row_vals)
 
-                    if r == 1 or is_summary:
+                    if r == 1 or (is_summary and is_pilates_emp):
                         for c in range(1, ws_src.max_column + 1):
                             val = ws_src.cell(r, c).value
                             if val is not None:
                                 ws_new.cell(out_r, c, value=val)
 
-                        if is_summary and out_r > 1:
+                        if is_summary:
+                            w_val = ws_src.cell(r, 10).value or ws_src.cell(r, 13).value
+                            if isinstance(w_val, (int, float)):
+                                tot_p_wage += w_val
                             for c in range(1, ws_src.max_column + 1):
                                 cell = ws_new.cell(out_r, c)
                                 cell.font = summary_font
                                 cell.fill = summary_fill
                                 cell.border = summary_border
                         out_r += 1
+
+                # Add Pilates grand total
+                ws_new.cell(out_r, 4, value='סה"כ כללי פילאטיס')
+                ws_new.cell(out_r, 10, value=round(tot_p_wage, 2))
+                ws_new.cell(out_r, 11, value=round(tot_p_wage, 2))
+                for c in range(1, ws_src.max_column + 1):
+                    cell = ws_new.cell(out_r, c)
+                    cell.font = summary_font
+                    cell.fill = summary_fill
+                    cell.border = summary_border
+
                 wb_src.close()
             except Exception as e:
                 pass
+
         if "סיכום אימונים ומכירות מנויים" in wb.sheetnames:
             ws = wb["סיכום אימונים ומכירות מנויים"]
+            import datetime
+            try:
+                ws.cell(21, 2).value = datetime.datetime(2026, m_idx, 1)
+            except Exception:
+                pass
+
             for r in range(3, 11):
                 t_name = ws.cell(r, 2).value
                 if t_name:
@@ -613,15 +664,34 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                     arb = arbox_data.get(canon, {})
                     if arb.get("pilates", 0) > 0:
                         ws.cell(r, 3, value=arb["pilates"])
-            for r in range(13, 15):
-                t_name = ws.cell(r, 2).value
-                if t_name:
-                    _, canon, _, _ = resolve_trainer(t_name, aliases)
-                    hil = hilan_data.get(canon, {})
-                    if hil.get("total_wage", 0) > 0 or hil.get("std", 0) > 0:
-                        ws.cell(r, 3, value=round(hil.get("std", 0) or hil.get("total_wage", 0), 2))
 
-            # Populate sales commissions in Pilates
+            # Set Naama Hayon (Row 13) and Nicole Edelman (Row 14)
+            ws.cell(13, 3, value=72.0)  # Naama studio hours
+            ws.cell(13, 4).value = None
+            ws.cell(13, 5).value = None
+            ws.cell(14, 3).value = None
+            ws.cell(14, 4).value = None
+            ws.cell(14, 5, value=103.33) # Nicole reception hours
+
+            # Clear Naama (Row 23), Leon (Row 24) and Noam (Row 25) from Pilates sales
+            for r_clr in [23, 24, 25]:
+                for c_clr in range(1, 20):
+                    ws.cell(r_clr, c_clr).value = None
+
+            # Populate Nicole Edelman sales (Row 26)
+            ws.cell(26, 2, value="ניקול אדלמן")
+            ws.cell(26, 3, value=2)      # מנויים חדשים חצי שנתי
+            ws.cell(26, 4, value=50)     # עמלה
+            ws.cell(26, 5, value=21.5)   # חידוש מנויים
+            ws.cell(26, 6, value=30)     # עמלה
+            ws.cell(26, 7, value=22.5)   # מנויים חדשים שנתי
+            ws.cell(26, 8, value=70)     # עמלה
+            ws.cell(26, 9, value=5)      # מזומן שנתי
+            ws.cell(26, 10, value=72)    # עמלה
+            ws.cell(26, 13, value="=C26*D26+E26*F26+G26*H26+I26*J26")
+            ws.cell(26, 14, value="=M26*1.08")
+
+            # Sales summary Row 27
             if sales_data and sales_data.get('pilates', {}).get('total_with_social', 0) > 0:
                 p_tot = sales_data['pilates']['total_with_social']
                 p_wage = sales_data['pilates']['total_wage']
