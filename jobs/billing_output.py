@@ -486,7 +486,7 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
             except Exception as e:
                 pass
 
-        # Populate / Replace 'מכירות' sheet with active August sales commissions
+        # Populate / Replace 'מכירות' sheet with active August sales commissions (Gym reps only)
         if "מכירות" in wb.sheetnames and sales_files:
             try:
                 from openpyxl.styles import Font, PatternFill, Border, Side
@@ -502,25 +502,35 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                 tot_fill = PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid")
                 tot_font = Font(name="Calibri", size=11, bold=True)
 
+                out_r = 1
                 for r in range(1, ws_src.max_row + 1):
+                    name_val = ws_src.cell(r, 2).value
+                    # Skip Nicole Edelman in Gym מכירות sheet
+                    if name_val and any(alt in str(name_val) for alt in ["ניקול אדלמן", "ניקול איידלמן", "ניקול"]):
+                        continue
+
+                    has_val = False
                     for c in range(1, ws_src.max_column + 1):
                         val = ws_src.cell(r, c).value
                         if val is not None:
-                            cell = ws_new.cell(r, c, value=val)
+                            cell = ws_new.cell(out_r, c, value=val)
+                            has_val = True
                             if r == 3:
                                 cell.font = header_font
                                 cell.fill = header_fill
                             elif r >= 4:
                                 cell.font = Font(name="Calibri", size=11)
+                    if has_val or r <= 3:
+                        out_r += 1
 
                 if sales_data and sales_data.get('gym', {}).get('total_with_social', 0) > 0:
                     g_tot = sales_data['gym']['total_with_social']
                     g_wage = sales_data['gym']['total_wage']
                     ws_new.cell(10, 14, value=round(g_tot, 2))
                     ws_new.cell(10, 13, value=round(g_wage, 2))
-                    ws_new.cell(10, 2, value='סך הכל חדר כושר').font = tot_font
-                    ws_new.cell(10, 3, value=round(g_tot, 2)).font = tot_font
-                    ws_new.cell(10, 3).fill = tot_fill
+                    ws_new.cell(out_r, 2, value='סך הכל חדר כושר').font = tot_font
+                    ws_new.cell(out_r, 3, value=round(g_tot, 2)).font = tot_font
+                    ws_new.cell(out_r, 3).fill = tot_fill
 
                 wb_src.close()
             except Exception as e:
@@ -644,6 +654,7 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
         g_tot = round(sales_data['gym']['total_with_social'], 2)
         ws_edit.cell(62, amt_col, value=g_tot)
         vals[(sheet, f"{amt_L}62")] = g_tot
+        vals[("מכירות", "N10")] = g_tot
     elif branch_key == "פילאטיס" and sales_data and sales_data.get('pilates', {}).get('total_with_social', 0) > 0:
         p_tot = round(sales_data['pilates']['total_with_social'], 2)
         ws_edit.cell(56, amt_col, value=p_tot)

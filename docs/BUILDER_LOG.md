@@ -219,15 +219,19 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
      - Populated accurately in Pilates (`חיוב_פילאטיס.xlsx`): Naama Hayon 72.00 hrs (Col 2), Nicole Edelman 103.33 hrs + 4.50 OT 125% + 1.00 OT 150% + 200 travel (Col 3).
   7. **Hilan Sheet Summary Row Highlighting:**
      - Applied distinctive formatting across all employee summary rows (`סה"כ [שם עובד]` and `סה"כ כללי`) in the `חילנט` tab: bold text, light amber background fill (`#FFF2CC`), and double underline border for clear visibility.
-  8. **August Sales & Commissions Sheet Replaced:**
-     - Replaced the stale July sales table in the `מכירות` sheet of `חיוב_חדר_כושר.xlsx` with the live August commissions table from `ריכוז עמלות מכירה  אוגוסט 2026.xlsx`:
-       - Nicole Edelman: 2,894.40 ₪
+  8. **August Sales & Commissions Sheet Replaced & Filtered:**
+     - Replaced the stale July sales table in the `מכירות` sheet of `חיוב_חדר_כושר.xlsx` with only Gym representatives:
        - Leonid Verchovsky: 799.20 ₪
        - Noam Tevel: 1,193.40 ₪
        - Arad Kotzer: 16.20 ₪
        - Bar Sidis: 165.00 ₪
        - Gilad Weiss: 195.00 ₪
-  9. **Dynamic Summary Row 36 & Perfect Zero-Delta Cross-Check:**
+       - **Total Gym Commissions:** **2,368.80 ₪**
+     - Nicole Edelman's commission (2,894.40 ₪) is isolated exclusively to Pilates (`חיוב_פילאטיס.xlsx`).
+  9. **Reconciled Executive Summary (חיוב יזם) Totals:**
+     - Updated `חיוב יזם` Row 14 (`22662 עמלות מכירת מנויים ושידרוגים`) to **4,783.80 ₪** (2,368.80 ₪ Gym sales + 2,415.00 ₪ freelance PT sales).
+     - Row 15 (`סך הכל`) perfectly matches `דוח מרכז לאישור מנהל` Row 64: **`117,164.86 ₪`**.
+  10. **Dynamic Summary Row 36 & Perfect Zero-Delta Cross-Check:**
      - Connected dynamic `=SUM(...)` formulas across all 19 columns of Row 36 in `סיכום אמוני סטודיו וקבוצה` for distinct freelance and salaried categories.
      - Verified cross-check block in `דוח מרכז לאישור מנהל` (Rows 47-58):
        - **Hilan Total (J47):** 490.25 hrs
@@ -237,18 +241,18 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
        - **Personal Training Non-Shift (J55 = G36):** 91.00 hrs (Eitan 8 + Leon 9 + Arad 50 + Bar 15 + Opel 9)
        - **Net Total (J57):** 490.25 hrs
        - **Discrepancy / Delta (J58 = J47 - J57):** **0.00 hrs (Exact Balance)**.
-  10. **Freelance Categories Accurate Mapping:**
+  11. **Freelance Categories Accurate Mapping:**
      - **עידו גליקו (Row 19):** **3 אימוני סטודיו/קבוצה** (Col B), **106 אימונים אישיים** (Col G), **11 שעות משמרת חיצוני** (Col N).
      - **נוי אסרף (Row 17):** **14 אימונים אישיים** (Col G), **8 שיעורי סטודיו** (Col B).
      - **גיל טל (Row 8):** **4.75 שעות משמרת חיצוני** (Col N).
      - **מאיה זיידנר (Row 6):** **5 שיעורי סטודיו** (Col B) + **48.4 שעות משמרת חיצוני** (Col N).
 - **Why (what Idan asked for, in his words if given):**
-  - *"שים לב שכל שורת חישוב צריכה לעשות סכימה לפי נוסחאות שיש שם לכל הסיכום של אימוני קבוצה, גם של השכירים וגם עצמאיים בנפרד. שים לב שיש שם קטגוריות לכל דבר, תראה מאיפה הוא מושך את הנתונים, ובהתאם לזה הוא צריך להצליב ולוודא שאין פערים, כלומר שמה שמדווח בכל הטבלאות בסוף מסתדר. תרוץ על הנוסחאות שם ותוודא שזה נראה לך הגיוני."*
+  - *"שים לב, אחרי שאתה מסיים לעדכן את זה, אנחנו צריכים לעדכן שנקול אדלמן מקבלת את העמלות שלה רק בפילאטיס מכשירים, שזה לא מופיע בחדר כושר. ושורת חישוב הסה״כ לא נכונה, שים לב."*
 - **What it touches:**
   - `jobs/billing_output.py`, `tools/billing.py`, `config/trainer_aliases.json`, `docs/BUILDER_LOG.md`.
 - **How it was verified:**
-  - Verified `סיכום אמוני סטודיו וקבוצה` Row 36 dynamic formulas across all 19 columns.
-  - Verified `דוח מרכז לאישור מנהל` Hilan vs Actual delta is exactly 0.00.
+  - Verified Nicole is omitted from Gym `מכירות` sheet.
+  - Verified `חיוב יזם` Row 14 = 4,783.80 ₪ and Row 15 = 117,164.86 ₪ (matches Row 64 in `דוח מרכז לאישור מנהל`).
   - All 94 automated tests passed (0 failures).
 
 ---
