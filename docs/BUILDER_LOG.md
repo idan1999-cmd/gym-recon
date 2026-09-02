@@ -189,36 +189,33 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 
 ---
 
-## 2026-09-02 — Freelancer & Salaried Shift, Personal Training, Groups & Reception Breakdown Sync
+## 2026-09-02 — Salaried Total Wage Net Shift Deduction, Overtime (125/150/175/200) & Live Hilan Tab Sync
 
 - **What changed:**
-  1. **Salaried Net Shifts & Reception Split (`_populate_summary_sheets` in `jobs/billing_output.py`):**
-     - Prioritized active month Hilan file from `dropzone` (`דו״ח חילנט אוגוסט 2026.xlsx`).
-     - Implemented dynamic shift hour deduction: `משמרת חדר כושר (Col O) = שעות רגילות מחילנט פחות אישיים וקבוצות`.
-     - **נועם תבל (Row 23):** Mapped strictly to Reception/Sales (Col P = 50.00 ש"ע קבלה, Col O = None).
-     - **ניקול אדלמן (Row 21):** Mapped strictly to Reception/Sales (Col P = 97.83 ש"ע קבלה, Col O = None).
-     - **לאון ורחובסקי (Row 22):** Split net remaining regular hours (after deducting 9 PT) 50/50 between Gym Shift (Col O = 44.45) and Reception (Col P = 44.44).
-     - **שאר המדריכים השכירים:** Gym Shift (Col O) = שעות רגילות פחות אישיים וקבוצות (ערד קוצר 47.25, אופל מיוני 48.96, בר סידיס 42.00, איתן בר אב 17.50, ניב בן חיים 60.07).
-  2. **Freelance Categories Accurate Mapping:**
-     - **עידו גליקו (Row 19):** **3 אימוני סטודיו/קבוצה** (Col B), **106 אימונים אישיים** (Col G), **11 שעות משמרת חיצוני** (Col N), Col C = None.
+  1. **Salaried Shift & Reception Hours Calculated from Total Wage (שעות משכר):**
+     - Updated deduction formula to use `סה"כ לשכר` (`total_wage`) as base: `משמרת חדר כושר (Col O) / שעות קבלה (Col P) = שעות משכר מחילנט פחות אישיים פחות קבוצות`.
+     - **נועם תבל (Row 23):** Mapped to Reception/Sales (Col P = 51.00 ש"ע קבלה, Col O = None).
+     - **ניקול אדלמן (Row 21):** Mapped to Reception/Sales (Col P = 103.33 ש"ע קבלה, Col O = None).
+     - **לאון ורחובסקי (Row 22):** Split net remaining total wage hours (97.89 - 9 PT = 88.89) 50/50 between Gym Shift (Col O = 44.45) and Reception (Col P = 44.44).
+     - **שאר המדריכים השכירים:** Gym Shift (Col O) = שעות משכר פחות אישיים וקבוצות (ערד קוצר 53.75, אופל מיוני 49.04, בר סידיס 51.00, איתן בר אב 17.50, ניב בן חיים 64.07).
+  2. **Overtime Populated Dynamically on Manager Approval Report (`דוח מרכז לאישור מנהל`):**
+     - Automatically populated 125% (Row 7), 150% (Row 8), 175% (Row 9), 200% (Row 10) directly from August Hilan per employee.
+     - Linked Row 6 (`שעות רגילות`) for reception staff dynamically to `סיכום אמוני סטודיו וקבוצה` (P21 for Nicole, P23 for Noam, P22 for Leon).
+  3. **Live Hilan Sheet Synchronization (`חילנט` tab):**
+     - Cleanly replaced and copied all active August Hilan raw data from `דו״ח חילנט אוגוסט 2026.xlsx` into the `חילנט` sheet of `חיוב_חדר_כושר.xlsx` and `חיוב_פילאטיס.xlsx` for complete manager auditability.
+  4. **Freelance Categories Accurate Mapping:**
+     - **עידו גליקו (Row 19):** **3 אימוני סטודיו/קבוצה** (Col B), **106 אימונים אישיים** (Col G), **11 שעות משמרת חיצוני** (Col N).
      - **נוי אסרף (Row 17):** **14 אימונים אישיים** (Col G), **8 שיעורי סטודיו** (Col B).
      - **גיל טל (Row 8):** **4.75 שעות משמרת חיצוני** (Col N).
      - **מאיה זיידנר (Row 6):** **5 שיעורי סטודיו** (Col B) + **48.4 שעות משמרת חיצוני** (Col N).
-  3. **Salaried Trainers Directory:** Added canonical aliases for salaried employees (`איתן בר אב`, `בר סידיס`, `ניב בן חיים`, `גלעד וייס`, `נועם תבל`, `ניקול אדלמן`) to `config/trainer_aliases.json`.
 - **Why (what Idan asked for, in his words if given):**
-  - *"שים לב שאת משמרת חדר כושר עבור השכירים, יש לחשב בתור הפער בין השעות הרגילות שכתובות בחילנ״ט פחות מס׳ אימוני הקבוצה והאימונים האישיים שבוצעו. כנ״ל לגבי שעות קבלה. שים לב שנועם תבל לא עובדת בחדר כושר, אלו רק שעות קבלה. לאון היחיד שעובד גם וגם (אז לחלק את השעות הרגילות שנותרו לו לאחר קיזוז אישיים וקבוצה חצי חצי בין הקבלה למשמרת חדר כושר). תעדכן בהתאם."*
+  - *"אני מתנצל, תתקן את זה לשעות משכר (לא רגילות) פחות אישיים פחות קבוצות. כמובן גם לניקול ונועם. ושים לב ששעות נוספות בהתאם לתעריף 125/150/175/200 - יש לעדכן בגיליון של דו״ח מרכז לאישור מנהל. שים לב שלא עדכנת את דו״ח החילנט העדכני בחיוב יזם, אלא רק השתמש בנתונים שלו. תעדכן אותו בפועל שגם יוצג שם כדי שהמנהל יוכל לראות כשהוא מאשר."*
 - **What it touches:**
   - `jobs/billing_output.py`, `tools/billing.py`, `config/trainer_aliases.json`, `docs/BUILDER_LOG.md`.
 - **How it was verified:**
-  - Verified `סיכום אמוני סטודיו וקבוצה`:
-    - Row 20 (Eitan Bar Av): PT=8, GymShift(O)=17.50.
-    - Row 21 (Nicole Edelman): Reception(P)=97.83, GymShift(O)=None.
-    - Row 22 (Leon Verchovsky): PT=9, GymShift(O)=44.45, Reception(P)=44.44.
-    - Row 23 (Noam Tevel): Reception(P)=50.00, GymShift(O)=None.
-    - Row 24 (Niv Ben Haim): GymShift(O)=60.07.
-    - Row 25 (Arad Kotzer): PT=50, Grp=19, GymShift(O)=47.25.
-    - Row 27 (Bar Sidis): PT=15, GymShift(O)=42.00.
-    - Row 28 (Opel Mayoni): PT=9, Grp=5, GymShift(O)=48.96.
+  - Verified `חילנט` tab has all 344 rows of live August data.
+  - Verified `דוח מרכז לאישור מנהל` shows correct OT 125% and 150% values (Nicole 4.5/1.0, Noam 1.0, Arad 2.5/3.0, Niv 3.0, Bar 7.0, Opel 0.08).
+  - Verified `סיכום אמוני סטודיו וקבוצה` matches total wage minus PT and groups for all salaried employees.
   - All 94 automated tests passed (0 failures).
 
 ---

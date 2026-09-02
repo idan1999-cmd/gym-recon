@@ -332,26 +332,26 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                     inv_sh = invoice_shifts.get(canon, 0)
                     ws.cell(r, 14).value = inv_sh if inv_sh > 0 else None
 
-            # Salaried trainers (rows 20 to 29) from Hilan
+            # Salaried trainers (rows 20 to 29) from Hilan - using total_wage (שעות משכר)
             for r in range(20, 30):
                 t_name = ws.cell(r, 1).value
                 if t_name:
                     _, canon, _, _ = resolve_trainer(t_name, aliases)
                     hil = hilan_data.get(canon, {})
-                    reg = hil.get("reg", 0) or hil.get("total_wage", 0)
+                    tot_wage = hil.get("total_wage", 0) or hil.get("reg", 0)
                     pers = hil.get("pers", 0)
                     grp = hil.get("grp", 0)
-                    rem = max(0.0, reg - pers - grp)
+                    rem = max(0.0, tot_wage - pers - grp)
 
                     ws.cell(r, 7).value = round(pers, 2) if pers > 0 else None
                     ws.cell(r, 4).value = round(grp, 2) if grp > 0 else None
 
                     if canon in ["ניקול אדלמן", "ניקול איידלמן"]:
                         ws.cell(r, 15).value = None
-                        ws.cell(r, 16).value = round(reg, 2) if reg > 0 else None
+                        ws.cell(r, 16).value = round(tot_wage, 2) if tot_wage > 0 else None
                     elif canon in ["נועם תבל", "נעם תבל"]:
                         ws.cell(r, 15).value = None
-                        ws.cell(r, 16).value = round(reg, 2) if reg > 0 else None
+                        ws.cell(r, 16).value = round(tot_wage, 2) if tot_wage > 0 else None
                     elif canon in ["לאון ורחובסקי", "לאוניד ורחובסקי"]:
                         half = round(rem / 2.0, 2)
                         ws.cell(r, 15).value = half if half > 0 else None
@@ -363,31 +363,53 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
         # Dynamically populate overtime & travel on 'דוח מרכז לאישור מנהל'
         if "דוח מרכז לאישור מנהל" in wb.sheetnames:
             ws_main = wb["דוח מרכז לאישור מנהל"]
+            # Connect Row 6 formulas to summary sheet for reception staff
+            ws_main.cell(6, 2).value = "='סיכום אמוני סטודיו וקבוצה'!P21"
+            ws_main.cell(6, 3).value = "='סיכום אמוני סטודיו וקבוצה'!P23"
+            ws_main.cell(6, 4).value = "='סיכום אמוני סטודיו וקבוצה'!P22"
+
             for c in range(2, 13):
                 emp_name = ws_main.cell(4, c).value
                 if not emp_name:
                     continue
                 _, canon, _, _ = resolve_trainer(emp_name, aliases)
                 hil = hilan_data.get(canon, {})
-                if hil:
-                    if hil.get("reg", 0) > 0:
-                        ws_main.cell(6, c, value=round(hil["reg"], 2))
-                    if hil.get("ot125", 0) > 0:
-                        ws_main.cell(7, c, value=round(hil["ot125"], 2))
-                    if hil.get("ot150", 0) > 0:
-                        ws_main.cell(8, c, value=round(hil["ot150"], 2))
-                    if hil.get("ot175", 0) > 0:
-                        ws_main.cell(9, c, value=round(hil["ot175"], 2))
-                    if hil.get("ot200", 0) > 0:
-                        ws_main.cell(10, c, value=round(hil["ot200"], 2))
-                    # Travel allowance rule: Leonid gets 208.50, <=90 hrs = 100, >90 hrs = 200
-                    tot_hrs = hil.get("total_wage", 0)
-                    if "לאון" in str(emp_name) or canon in ["לאון ורחובסקי", "לאוניד ורחובסקי"]:
-                        ws_main.cell(11, c, value=208.5)
-                    elif tot_hrs > 90:
-                        ws_main.cell(11, c, value=200)
-                    elif tot_hrs > 0:
-                        ws_main.cell(11, c, value=100)
+                ot125 = hil.get("ot125", 0) if hil else 0
+                ot150 = hil.get("ot150", 0) if hil else 0
+                ot175 = hil.get("ot175", 0) if hil else 0
+                ot200 = hil.get("ot200", 0) if hil else 0
+                tot_hrs = hil.get("total_wage", 0) if hil else 0
+
+                ws_main.cell(7, c).value = round(ot125, 2) if ot125 > 0 else None
+                ws_main.cell(8, c).value = round(ot150, 2) if ot150 > 0 else None
+                ws_main.cell(9, c).value = round(ot175, 2) if ot175 > 0 else None
+                ws_main.cell(10, c).value = round(ot200, 2) if ot200 > 0 else None
+
+                # Travel allowance rule: Leonid gets 208.50, <=90 hrs = 100, >90 hrs = 200
+                if "לאון" in str(emp_name) or canon in ["לאון ורחובסקי", "לאוניד ורחובסקי"]:
+                    ws_main.cell(11, c).value = 208.5
+                elif tot_hrs > 90:
+                    ws_main.cell(11, c).value = 200
+                elif tot_hrs > 0:
+                    ws_main.cell(11, c).value = 100
+                else:
+                    ws_main.cell(11, c).value = None
+
+        # Populate / Replace raw 'חילנט' sheet content with active Hilan file
+        if "חילנט" in wb.sheetnames and hilan_files:
+            try:
+                idx = wb.sheetnames.index("חילנט")
+                wb.remove(wb["חילנט"])
+                wb_src = openpyxl.load_workbook(hilan_files[0], data_only=True)
+                ws_src = wb_src.active
+                ws_new = wb.create_sheet(title="חילנט", index=idx)
+                for r in range(1, ws_src.max_row + 1):
+                    for c in range(1, ws_src.max_column + 1):
+                        val = ws_src.cell(r, c).value
+                        if val is not None:
+                            ws_new.cell(r, c).value = val
+            except Exception as e:
+                pass
 
         # Populate sales commissions in 'מכירות' sheet if present
         if "מכירות" in wb.sheetnames and sales_data and sales_data.get('gym', {}).get('total_with_social', 0) > 0:
@@ -406,16 +428,38 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                     continue
                 _, canon, _, _ = resolve_trainer(emp_name, aliases)
                 hil = hilan_data.get(canon, {})
-                if hil:
-                    if hil.get("reg", 0) > 0:
-                        ws_main.cell(6, c, value=round(hil["reg"], 2))
-                    if hil.get("ot125", 0) > 0:
-                        ws_main.cell(7, c, value=round(hil["ot125"], 2))
-                    tot_hrs = hil.get("total_wage", 0)
-                    if tot_hrs > 90:
-                        ws_main.cell(12, c, value=200)
-                    elif tot_hrs > 0:
-                        ws_main.cell(12, c, value=100)
+                ot125 = hil.get("ot125", 0) if hil else 0
+                ot150 = hil.get("ot150", 0) if hil else 0
+                ot175 = hil.get("ot175", 0) if hil else 0
+                ot200 = hil.get("ot200", 0) if hil else 0
+                tot_hrs = hil.get("total_wage", 0) if hil else 0
+
+                ws_main.cell(7, c).value = round(ot125, 2) if ot125 > 0 else None
+                ws_main.cell(8, c).value = round(ot150, 2) if ot150 > 0 else None
+                ws_main.cell(9, c).value = round(ot175, 2) if ot175 > 0 else None
+                ws_main.cell(10, c).value = round(ot200, 2) if ot200 > 0 else None
+
+                if tot_hrs > 90:
+                    ws_main.cell(12, c).value = 200
+                elif tot_hrs > 0:
+                    ws_main.cell(12, c).value = 100
+                else:
+                    ws_main.cell(12, c).value = None
+
+        if "חילנט" in wb.sheetnames and hilan_files:
+            try:
+                idx = wb.sheetnames.index("חילנט")
+                wb.remove(wb["חילנט"])
+                wb_src = openpyxl.load_workbook(hilan_files[0], data_only=True)
+                ws_src = wb_src.active
+                ws_new = wb.create_sheet(title="חילנט", index=idx)
+                for r in range(1, ws_src.max_row + 1):
+                    for c in range(1, ws_src.max_column + 1):
+                        val = ws_src.cell(r, c).value
+                        if val is not None:
+                            ws_new.cell(r, c).value = val
+            except Exception as e:
+                pass
         if "סיכום אימונים ומכירות מנויים" in wb.sheetnames:
             ws = wb["סיכום אימונים ומכירות מנויים"]
             for r in range(3, 11):
