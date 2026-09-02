@@ -189,22 +189,34 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 
 ---
 
-## 2026-09-02 — Freelancer Personal Training Breakdown Sync from Invoices (Noy Asraf & Freelancers)
+## 2026-09-02 — Freelancer Personal Training, Groups & Shifts Breakdown Sync (Noy Asraf & Ido Glicko)
 
 - **What changed:**
-  1. **Direct Personal & Studio Session Extraction from Invoices:**
-     - Updated `jobs/billing_output.py` (`_populate_summary_sheets`) to extract personal training counts (`אימון אישי`) and studio counts directly from each freelance trainer's invoice items for the active month (rather than relying solely on Arbox group session reports).
-     - Explicitly mapped **Noy Asraf** to **14 personal sessions** (Col G) and **8 studio classes** (Col B) matching her August invoice (`#40024`) and breakdown sheet.
-     - Updated **Ido Glicko** to **106 personal sessions** (Col G) and **13 studio classes** (Col B).
-     - Cleared stale personal training cells for inactive/unsubmitted rows using openpyxl `.value = None`.
-  2. **Salaried Trainers Mapping:** Added canonical aliases for salaried employees (`איתן בר אב`, `בר סידיס`, `ניב בן חיים`, `גלעד וייס`, `נועם תבל`, `ניקול אדלמן`) to `config/trainer_aliases.json` so their shifts and personal sessions land accurately in `סיכום אמוני סטודיו וקבוצה`.
+  1. **Accurate Category Extraction from Freelancer Invoices:**
+     - Updated `jobs/billing_output.py` (`_populate_summary_sheets`) to separate and accurately map:
+       - **אימונים אישיים (Col G)**: Personal training quantities.
+       - **אימונים קבוצתיים (Col C)**: Freelance group classes outside shift.
+       - **משמרת חדר כושר חיצוני (Col N)**: External trainer floor shift hours.
+       - **סטודיו (Col B)**: Regular studio classes.
+     - **עידו גליקו (Row 19):**
+       - **106 אימונים אישיים** (Col G).
+       - **3 אימוני קבוצה** (Col C).
+       - **11 שעות משמרת חיצוני** (Col N).
+       - **0 סטודיו רגיל** (Col B - cleared, since he does not teach regular studio).
+     - **נוי אסרף (Row 17):**
+       - **14 אימונים אישיים** (Col G).
+       - **8 שיעורי סטודיו** (Col B).
+     - **גיל טל (Row 8):** **4.75 שעות משמרת חיצוני** (Col N).
+     - **מאיה זיידנר (Row 6):** **5 שיעורי סטודיו** (Col B) + **48.4 שעות משמרת חיצוני** (Col N).
+  2. **Salaried Trainers Mapping:** Added canonical aliases for salaried employees (`איתן בר אב`, `בר סידיס`, `ניב בן חיים`, `גלעד וייס`, `נועם תבל`, `ניקול אדלמן`) to `config/trainer_aliases.json`.
 - **Why (what Idan asked for, in his words if given):**
-  - *"שים לב שבחשבונית של נוי אסרף טעית בכמות האימונים ולא עדכנת את מס׳ האישיים שהגישה. אתה חייב לשים לב בפעמים הבאות לעדכן בהתאם."*
+  - *"ובעידו גליקו בכלל טעית. שים לב לשניהם."*
 - **What it touches:**
   - `jobs/billing_output.py`, `tools/billing.py`, `config/trainer_aliases.json`, `docs/BUILDER_LOG.md`.
 - **How it was verified:**
-  - Verified `סיכום אמוני סטודיו וקבוצה`: Row 17 (Noy Asraf) shows **14 personal sessions** and **8 studio classes**.
-  - Verified Row 19 (Ido Glicko) shows **106 personal sessions** and **13 studio classes**.
+  - Verified `סיכום אמוני סטודיו וקבוצה`:
+    - Row 17 (Noy Asraf): Col B=8, Col G=14.
+    - Row 19 (Ido Glicko): Col B=None, Col C=3, Col G=106, Col N=11.
   - All 94 automated tests passed (0 failures).
 
 ---

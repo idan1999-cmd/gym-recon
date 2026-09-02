@@ -271,6 +271,8 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
     from common import service_month_from_dates, month_key
     invoice_pt = {}
     invoice_std = {}
+    invoice_grp = {}
+    invoice_shifts = {}
     target_m_key = f"2026-{int(target_month):02d}" if target_month else None
     if invoices:
         for inv in invoices:
@@ -286,6 +288,10 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                     continue
                 if "אישי" in desc:
                     invoice_pt[name_key] = invoice_pt.get(name_key, 0) + qty
+                elif "משמרת" in desc:
+                    invoice_shifts[name_key] = invoice_shifts.get(name_key, 0) + qty
+                elif "קבוצ" in desc:
+                    invoice_grp[name_key] = invoice_grp.get(name_key, 0) + qty
                 elif "סטודיו" in desc or "שיעור" in desc or "חוג" in desc or "מזרן" in desc:
                     invoice_std[name_key] = invoice_std.get(name_key, 0) + qty
 
@@ -300,13 +306,20 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                     arb = arbox_data.get(canon, {})
                     inv_s = invoice_std.get(canon, 0)
                     arb_s = arb.get("classes", 0)
-                    val_s = inv_s if inv_s > 0 else (arb_s if arb_s > 0 else 0)
+                    has_inv = (canon in invoice_std or canon in invoice_grp or canon in invoice_shifts or canon in invoice_pt)
+                    val_s = inv_s if inv_s > 0 else (arb_s if (arb_s > 0 and not has_inv) else 0)
                     ws.cell(r, 2).value = val_s if val_s > 0 else None
+
+                    inv_g = invoice_grp.get(canon, 0)
+                    ws.cell(r, 3).value = inv_g if inv_g > 0 else None
 
                     inv_p = invoice_pt.get(canon, 0)
                     arb_p = arb.get("personal", 0)
                     val_p = inv_p if inv_p > 0 else (arb_p if arb_p > 0 else 0)
                     ws.cell(r, 7).value = val_p if val_p > 0 else None
+
+                    inv_sh = invoice_shifts.get(canon, 0)
+                    ws.cell(r, 14).value = inv_sh if inv_sh > 0 else None
 
             # Salaried trainers (rows 20 to 29) from Hilan
             for r in range(20, 30):
