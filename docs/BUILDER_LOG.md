@@ -212,18 +212,23 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
        - `22650 אימונים אישיים`: 32,310 ₪ (includes Nir's 3,410 ₪)
        - Grand total in `חיוב_חדר_כושר.xlsx` updated to **118,797.46 ₪**.
      - Updated Row 10 in `סיכום אמוני סטודיו וקבוצה`: Studio (Col B) = 32, Personal (Col G) = 31.
-  5. **Freelance Categories Accurate Mapping:**
+  5. **Salaried Group Classes Allocated to Non-Shift Group Column C:**
+     - All salaried group training sessions from Hilan are routed to **Col C** (`לא במשמרת אימונים קבוצתיים`), keeping Col D (`במשמרת קבוצתיים מועדון`) empty (Arad Kotzer: 19 in Col C, Opel Mayoni: 5 in Col C).
+  6. **Branch Assignment Isolation (Nicole Edelman & Naama Hayon to Pilates ONLY):**
+     - Nicole Edelman and Naama Hayon were removed/cleared from Gym billing (`חיוב_חדר_כושר.xlsx`), clearing Row 21 in `סיכום אמוני סטודיו וקבוצה` and Col 2 in `דוח מרכז לאישור מנהל`.
+     - Populated accurately in Pilates (`חיוב_פילאטיס.xlsx`): Naama Hayon 72.00 hrs (Col 2), Nicole Edelman 103.33 hrs + 4.50 OT 125% + 1.00 OT 150% + 200 travel (Col 3).
+  7. **Freelance Categories Accurate Mapping:**
      - **עידו גליקו (Row 19):** **3 אימוני סטודיו/קבוצה** (Col B), **106 אימונים אישיים** (Col G), **11 שעות משמרת חיצוני** (Col N).
      - **נוי אסרף (Row 17):** **14 אימונים אישיים** (Col G), **8 שיעורי סטודיו** (Col B).
      - **גיל טל (Row 8):** **4.75 שעות משמרת חיצוני** (Col N).
      - **מאיה זיידנר (Row 6):** **5 שיעורי סטודיו** (Col B) + **48.4 שעות משמרת חיצוני** (Col N).
 - **Why (what Idan asked for, in his words if given):**
-  - *"ושים לב שצרפתי לך גם את החשבונית של ניר, תשנה את השם שלה כמו שקבענו ותעדכן את הנתונים בחיוב יזם בהתאם."*
+  - *"שים לב שכל השכירים, האימונים הקבוצתיים שמדווחים להם בחילאנט, צריכים להופיע לא במשמרת אימונים קבוצתיים. הם לא צריכים להופיע במשמרת קבוצת מועדון כי זה לא בזמן משמרת. במקביל, שים לב שניקול אדלמן לא צריכה להופיע בחיוב חדר כושר אלא רק בחיוב פילאטיס, כנל גם לגבי נעמה חיות."*
 - **What it touches:**
-  - `jobs/billing_output.py`, `jobs/job_billing.py`, `config/branches.json`, `config/invoices_ocr.json`, `docs/BUILDER_LOG.md`.
+  - `jobs/billing_output.py`, `tools/billing.py`, `config/trainer_aliases.json`, `docs/BUILDER_LOG.md`.
 - **How it was verified:**
-  - Verified `חיוב יזם` Grand Total = **118,797.46 ₪**.
-  - Verified `סיכום אמוני סטודיו וקבוצה` Row 10: Col B=32, Col G=31.
+  - Verified `חיוב_חדר_כושר.xlsx`: Row 25 (Arad) Col C=19, Col D=None; Row 28 (Opel) Col C=5, Col D=None; Row 21 (Nicole) all cells cleared.
+  - Verified `חיוב_פילאטיס.xlsx`: Naama Col 2 = 72 hrs; Nicole Col 3 = 103.33 hrs + OT (4.5 / 1.0).
   - All 94 automated tests passed (0 failures).
 
 ---
