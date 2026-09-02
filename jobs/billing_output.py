@@ -551,8 +551,11 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
             ws_y = wb["חיוב יזם"]
             import datetime
             try:
-                ws_y.cell(3, 1).value = datetime.datetime(2026, m_idx, 1)
-                ws_y.cell(5, 3).value = datetime.datetime(2026, m_idx, 1)
+                for c in range(1, 10):
+                    if isinstance(ws_y.cell(3, c).value, (datetime.datetime, datetime.date)):
+                        ws_y.cell(3, c).value = datetime.datetime(2026, m_idx, 1)
+                    if isinstance(ws_y.cell(5, c).value, (datetime.datetime, datetime.date)):
+                        ws_y.cell(5, c).value = datetime.datetime(2026, m_idx, 1)
             except Exception:
                 pass
 
@@ -740,7 +743,11 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
     row_amounts = {}
     for cat, amount in by_category.items():
         line = ext.get(cat)
-        if line: row_amounts[line["row"]] = row_amounts.get(line["row"], 0.0) + amount
+        if line:
+            if branch_key == "פילאטיס" and cat == "management":
+                row_amounts[line["row"]] = 2000.0 + amount
+            else:
+                row_amounts[line["row"]] = row_amounts.get(line["row"], 0.0) + amount
     for row, amount in row_amounts.items():
         ws_edit.cell(row, amt_col, value=round(amount, 2))
         vals[(sheet, f"{amt_L}{row}")] = round(amount, 2)
@@ -762,7 +769,10 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
     if target_month:
         import datetime
         try:
-            ws_ci.cell(3, 6).value = datetime.datetime(2026, int(target_month), 1)
+            for r in [1, 2, 3, 4, 5]:
+                for c in range(1, 15):
+                    if isinstance(ws_ci.cell(r, c).value, (datetime.datetime, datetime.date)):
+                        ws_ci.cell(r, c).value = datetime.datetime(2026, int(target_month), 1)
         except Exception:
             pass
 
@@ -804,6 +814,14 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
         for s_name in ["דגלים", "ריכוז שעות"]:
             if s_name in wb.sheetnames:
                 wb.remove(wb[s_name])
+
+    if target_month and "חיוב יזם" in wb.sheetnames:
+        import datetime
+        ws_ci_final = wb["חיוב יזם"]
+        for r in range(1, 10):
+            for c in range(1, 20):
+                if isinstance(ws_ci_final.cell(r, c).value, (datetime.datetime, datetime.date)):
+                    ws_ci_final.cell(r, c).value = datetime.datetime(2026, int(target_month), 1)
 
     wb.save(out_path)
     wb.close(); wbv.close()

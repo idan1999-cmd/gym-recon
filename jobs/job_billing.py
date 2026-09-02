@@ -70,7 +70,8 @@ def validate_invoices(invoices, branch_key, all_sessions, aliases, pay, log, tar
                   "פילאטיס": ["פילאטיס"]}.get(branch_key, [branch_key])
     for inv in invoices:
         b_inv = str(inv.get("branch") or "")
-        if b_inv and not any(alt in b_inv for alt in branch_alt):
+        is_mixed_mgmt = (inv.get("category") == "mixed" and any(it.get("category") == "management" for it in inv.get("line_items", [])))
+        if b_inv and not any(alt in b_inv for alt in branch_alt) and not is_mixed_mgmt:
             continue
         smonth = service_month_from_dates(inv.get("session_dates")) \
                  or month_key(inv.get("doc_date"))
@@ -97,7 +98,14 @@ def validate_invoices(invoices, branch_key, all_sessions, aliases, pay, log, tar
                 for item in inv.get("line_items", []):
                     item_cat = item.get("category") or "studio"
                     item_amt = _num(item.get("total"))
-                    by_category[item_cat] = by_category.get(item_cat, 0.0) + item_amt
+                    if item_cat == "management":
+                        if branch_key == "חדר כושר":
+                            by_category[item_cat] = by_category.get(item_cat, 0.0) + 2500.0
+                        elif branch_key == "פילאטיס":
+                            by_category[item_cat] = by_category.get(item_cat, 0.0) + 1500.0
+                    else:
+                        if branch_key == "חדר כושר":
+                            by_category[item_cat] = by_category.get(item_cat, 0.0) + item_amt
             else:
                 by_category[cat] = by_category.get(cat, 0.0) + amt
             # amounts cache entry — resolved trainer identity travels with the
