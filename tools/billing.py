@@ -199,7 +199,8 @@ def main():
         out_path = os.path.join(output_dir, f"חיוב_{branch_file_key}.xlsx")
         total = bo.build(bk, cfg, wb_path, by_category, held, new_trainers,
                          hilan, out_path, dynamic_target, missing_receipts=missing,
-                         all_sessions=sessions, aliases=aliases)
+                         all_sessions=sessions, aliases=aliases,
+                         invoices=invoices, target_month=args.month)
 
         status = "OK" if abs(total - dynamic_target) < 0.05 else "REVIEW"
         if hilan_suspect:

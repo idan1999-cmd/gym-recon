@@ -309,6 +309,67 @@
         "מיוני אופל"
       ],
       "employment": "salaried"
+    },
+    {
+      "trainer_id": "t_barav",
+      "canonical_name": "איתן בר אב",
+      "aliases": [
+        "איתן בר אב",
+        "איתן בראב",
+        "בראב איתן",
+        "בר אב איתן"
+      ],
+      "employment": "salaried"
+    },
+    {
+      "trainer_id": "t_sidis",
+      "canonical_name": "בר סידיס",
+      "aliases": [
+        "בר סידיס",
+        "בר סידס",
+        "סידס בר",
+        "סידיס בר"
+      ],
+      "employment": "salaried"
+    },
+    {
+      "trainer_id": "t_benhaim",
+      "canonical_name": "ניב בן חיים",
+      "aliases": [
+        "ניב בן חיים",
+        "בן חיים ניב"
+      ],
+      "employment": "salaried"
+    },
+    {
+      "trainer_id": "t_weiss",
+      "canonical_name": "גלעד וייס",
+      "aliases": [
+        "גלעד וייס",
+        "וייס גלעד"
+      ],
+      "employment": "salaried"
+    },
+    {
+      "trainer_id": "t_tevel",
+      "canonical_name": "נועם תבל",
+      "aliases": [
+        "נועם תבל",
+        "תבל נועם",
+        "נעם תבל"
+      ],
+      "employment": "salaried"
+    },
+    {
+      "trainer_id": "t_edelman",
+      "canonical_name": "ניקול אדלמן",
+      "aliases": [
+        "ניקול אדלמן",
+        "ניקול איידלמן",
+        "אדלמן ניקול",
+        "איידלמן ניקול"
+      ],
+      "employment": "salaried"
     }
   ],
   "_unconfirmed_roster": [

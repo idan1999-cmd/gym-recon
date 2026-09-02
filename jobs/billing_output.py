@@ -228,7 +228,7 @@ def _parse_sales_data(sales_file, target_month=None, aliases=None):
     return sales_data
 
 
-def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases, target_month=None):
+def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases, target_month=None, invoices=None):
     if not aliases:
         return
     import glob
@@ -268,19 +268,45 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
             else:
                 arbox_data[canon]["classes"] += 1
 
+    from common import service_month_from_dates, month_key
+    invoice_pt = {}
+    invoice_std = {}
+    target_m_key = f"2026-{int(target_month):02d}" if target_month else None
+    if invoices:
+        for inv in invoices:
+            smonth = service_month_from_dates(inv.get("session_dates")) or month_key(inv.get("doc_date"))
+            if target_m_key and smonth and smonth != target_m_key:
+                continue
+            _, canon, _, _ = resolve_trainer(inv.get("trainer"), aliases)
+            name_key = canon or inv.get("trainer")
+            for item in inv.get("line_items", []):
+                desc = str(item.get("desc", ""))
+                qty = item.get("qty", 0)
+                if not isinstance(qty, (int, float)):
+                    continue
+                if "אישי" in desc:
+                    invoice_pt[name_key] = invoice_pt.get(name_key, 0) + qty
+                elif "סטודיו" in desc or "שיעור" in desc or "חוג" in desc or "מזרן" in desc:
+                    invoice_std[name_key] = invoice_std.get(name_key, 0) + qty
+
     if branch_key == "חדר כושר":
         if "סיכום אמוני סטודיו וקבוצה" in wb.sheetnames:
             ws = wb["סיכום אמוני סטודיו וקבוצה"]
-            # Freelance trainers (rows 3 to 19) from Arbox
+            # Freelance trainers (rows 3 to 19) from Invoice and Arbox
             for r in range(3, 20):
                 t_name = ws.cell(r, 1).value
                 if t_name:
                     _, canon, _, _ = resolve_trainer(t_name, aliases)
                     arb = arbox_data.get(canon, {})
-                    if arb.get("classes", 0) > 0:
-                        ws.cell(r, 2, value=arb["classes"])
-                    if arb.get("personal", 0) > 0:
-                        ws.cell(r, 7, value=arb["personal"])
+                    inv_s = invoice_std.get(canon, 0)
+                    arb_s = arb.get("classes", 0)
+                    val_s = inv_s if inv_s > 0 else (arb_s if arb_s > 0 else 0)
+                    ws.cell(r, 2).value = val_s if val_s > 0 else None
+
+                    inv_p = invoice_pt.get(canon, 0)
+                    arb_p = arb.get("personal", 0)
+                    val_p = inv_p if inv_p > 0 else (arb_p if arb_p > 0 else 0)
+                    ws.cell(r, 7).value = val_p if val_p > 0 else None
 
             # Salaried trainers (rows 20 to 29) from Hilan
             for r in range(20, 30):
@@ -288,12 +314,10 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                 if t_name:
                     _, canon, _, _ = resolve_trainer(t_name, aliases)
                     hil = hilan_data.get(canon, {})
-                    if hil.get("total_wage", 0) > 0:
-                        ws.cell(r, 15, value=round(hil["total_wage"], 2))
-                    if hil.get("pers", 0) > 0:
-                        ws.cell(r, 7, value=round(hil["pers"], 2))
-                    if hil.get("grp", 0) > 0:
-                        ws.cell(r, 3, value=round(hil["grp"], 2))
+                    reg_w = round(hil["reg"], 2) if hil.get("reg", 0) > 0 else (round(hil["total_wage"], 2) if hil.get("total_wage", 0) > 0 else None)
+                    ws.cell(r, 15).value = reg_w
+                    ws.cell(r, 8).value = round(hil["pers"], 2) if hil.get("pers", 0) > 0 else None
+                    ws.cell(r, 4).value = round(hil["grp"], 2) if hil.get("grp", 0) > 0 else None
 
         # Dynamically populate overtime & travel on 'דוח מרכז לאישור מנהל'
         if "דוח מרכז לאישור מנהל" in wb.sheetnames:
@@ -377,12 +401,13 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
 
 
 def build(branch_key, cfg, source_path, by_category, held, new_trainers,
-          hilan, out_path, target, missing_receipts=None, all_sessions=None, aliases=None):
+          hilan, out_path, target, missing_receipts=None, all_sessions=None, aliases=None,
+          invoices=None, target_month=None):
     # formula workbook (to edit) + value workbook (to resolve refs)
     wb = openpyxl.load_workbook(source_path)
     wbv = openpyxl.load_workbook(source_path, data_only=True)
 
-    _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases)
+    _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases, target_month=target_month, invoices=invoices)
 
     ws_edit = wb[cfg["approval_sheet"]]
     ext = cfg["external_lines"]; amt_col = cfg["amount_col"]
