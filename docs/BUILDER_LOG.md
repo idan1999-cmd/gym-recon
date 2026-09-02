@@ -217,18 +217,28 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
   6. **Branch Assignment Isolation (Nicole Edelman & Naama Hayon to Pilates ONLY):**
      - Nicole Edelman and Naama Hayon were removed/cleared from Gym billing (`חיוב_חדר_כושר.xlsx`), clearing Row 21 in `סיכום אמוני סטודיו וקבוצה` and Col 2 in `דוח מרכז לאישור מנהל`.
      - Populated accurately in Pilates (`חיוב_פילאטיס.xlsx`): Naama Hayon 72.00 hrs (Col 2), Nicole Edelman 103.33 hrs + 4.50 OT 125% + 1.00 OT 150% + 200 travel (Col 3).
-  7. **Freelance Categories Accurate Mapping:**
+  7. **Hilan Sheet Summary Row Highlighting:**
+     - Applied distinctive formatting across all employee summary rows (`סה"כ [שם עובד]` and `סה"כ כללי`) in the `חילנט` tab: bold text, light amber background fill (`#FFF2CC`), and double underline border for clear visibility.
+  8. **August Sales & Commissions Sheet Replaced:**
+     - Replaced the stale July sales table in the `מכירות` sheet of `חיוב_חדר_כושר.xlsx` with the live August commissions table from `ריכוז עמלות מכירה  אוגוסט 2026.xlsx`:
+       - Nicole Edelman: 2,894.40 ₪
+       - Leonid Verchovsky: 799.20 ₪
+       - Noam Tevel: 1,193.40 ₪
+       - Arad Kotzer: 16.20 ₪
+       - Bar Sidis: 165.00 ₪
+       - Gilad Weiss: 195.00 ₪
+  9. **Freelance Categories Accurate Mapping:**
      - **עידו גליקו (Row 19):** **3 אימוני סטודיו/קבוצה** (Col B), **106 אימונים אישיים** (Col G), **11 שעות משמרת חיצוני** (Col N).
      - **נוי אסרף (Row 17):** **14 אימונים אישיים** (Col G), **8 שיעורי סטודיו** (Col B).
      - **גיל טל (Row 8):** **4.75 שעות משמרת חיצוני** (Col N).
      - **מאיה זיידנר (Row 6):** **5 שיעורי סטודיו** (Col B) + **48.4 שעות משמרת חיצוני** (Col N).
 - **Why (what Idan asked for, in his words if given):**
-  - *"שים לב שכל השכירים, האימונים הקבוצתיים שמדווחים להם בחילאנט, צריכים להופיע לא במשמרת אימונים קבוצתיים. הם לא צריכים להופיע במשמרת קבוצת מועדון כי זה לא בזמן משמרת. במקביל, שים לב שניקול אדלמן לא צריכה להופיע בחיוב חדר כושר אלא רק בחיוב פילאטיס, כנל גם לגבי נעמה חיות."*
+  - *"עכשיו, אני רואה שבדו"ח אילן שמת את זה בצורה מאוד מפושתת. תבליט את שורת הסיכום של כל עובד כדי שיהיה יותר ברור להבין כמה שעות הוא עשה. אני רואה שאת קובץ המכירות לא עדכנת מהריכוז עמלות. אני צריך שתיקח משם את הנתונים ממה שצירפתי לך וגם תעדכן את הגיליון עצמו לטבלה שעשיתי שם. תיקח אותה ותשים אותה במקום מה שיש כרגע, כי מה שמופיע כרגע זה של יולי, אז זה עלול לבלבל את היזם. שים לב לזה. בוא נטפל בזה ונתקדם משם."*
 - **What it touches:**
   - `jobs/billing_output.py`, `tools/billing.py`, `config/trainer_aliases.json`, `docs/BUILDER_LOG.md`.
 - **How it was verified:**
-  - Verified `חיוב_חדר_כושר.xlsx`: Row 25 (Arad) Col C=19, Col D=None; Row 28 (Opel) Col C=5, Col D=None; Row 21 (Nicole) all cells cleared.
-  - Verified `חיוב_פילאטיס.xlsx`: Naama Col 2 = 72 hrs; Nicole Col 3 = 103.33 hrs + OT (4.5 / 1.0).
+  - Verified `חילנט` summary rows (50, 105, 176, 191, 234, 287, 316, 328, 343, 344) are bold with fill `#FFF2CC`.
+  - Verified `מכירות` sheet displays the August table for all 6 representatives.
   - All 94 automated tests passed (0 failures).
 
 ---

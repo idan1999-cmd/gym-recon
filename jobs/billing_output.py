@@ -189,7 +189,7 @@ def _parse_sales_data(sales_file, target_month=None, aliases=None):
         matching_sheet = None
         if month_str:
             for s in wb_s.sheetnames:
-                if f"{month_str}/26" in s or f"0{month_str}.26" in s or f"{month_str}.26" in s or f"Jul-26" in s or "יולי" in s:
+                if f"{month_str}/26" in s or f"0{month_str}.26" in s or f"{month_str}.26" in s or (month_str in ["8", "08"] and "2026" in s):
                     matching_sheet = s
                     break
         if not matching_sheet:
@@ -201,27 +201,20 @@ def _parse_sales_data(sales_file, target_month=None, aliases=None):
             matching_sheet = wb_s.sheetnames[0]
 
         ws = wb_s[matching_sheet]
-        current_section = None
         for r in range(1, ws.max_row + 1):
-            row_str = " ".join([str(ws.cell(r, c).value or "") for c in range(1, ws.max_column + 1)])
-            if "מועדון" in row_str or "חדר כושר" in row_str:
-                current_section = 'gym'
-                continue
-            elif "פילאטיס" in row_str:
-                current_section = 'pilates'
-                continue
+            name_cell = ws.cell(r, 2).value
+            amt_cell = ws.cell(r, 3).value
+            if name_cell and isinstance(amt_cell, (int, float)) and amt_cell > 0:
+                _, canon, _, _ = resolve_trainer(str(name_cell), aliases) if aliases else (None, str(name_cell), 0, None)
+                branch = 'pilates' if canon in ["ניקול אדלמן", "ניקול איידלמן", "נעמה חיון"] else 'gym'
+                sales_data[branch]['reps'][canon] = amt_cell
+                sales_data[branch]['total_with_social'] += float(amt_cell)
+                sales_data[branch]['total_wage'] += round(float(amt_cell) / 1.08, 2)
 
-        # Fallback: line-by-line rows if structured section header is absent
-        if sales_data['gym']['total_wage'] == 0 and sales_data['pilates']['total_wage'] == 0:
-            tot_w = 0.0
-            for r in range(1, ws.max_row + 1):
-                name_cell = ws.cell(r, 2).value
-                amt_cell = ws.cell(r, 3).value
-                if name_cell and isinstance(amt_cell, (int, float)) and amt_cell > 0:
-                    tot_w += float(amt_cell)
-            if tot_w > 0:
-                sales_data['gym']['total_wage'] = round(tot_w, 2)
-                sales_data['gym']['total_with_social'] = round(tot_w * 1.219, 2)
+        sales_data['gym']['total_with_social'] = round(sales_data['gym']['total_with_social'], 2)
+        sales_data['pilates']['total_with_social'] = round(sales_data['pilates']['total_with_social'], 2)
+        sales_data['gym']['total_wage'] = round(sales_data['gym']['total_wage'], 2)
+        sales_data['pilates']['total_wage'] = round(sales_data['pilates']['total_wage'], 2)
         wb_s.close()
     except Exception:
         pass
@@ -431,26 +424,78 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
         # Populate / Replace raw 'חילנט' sheet content with active Hilan file
         if "חילנט" in wb.sheetnames and hilan_files:
             try:
+                from openpyxl.styles import Font, PatternFill, Border, Side
                 idx = wb.sheetnames.index("חילנט")
                 wb.remove(wb["חילנט"])
                 wb_src = openpyxl.load_workbook(hilan_files[0], data_only=True)
                 ws_src = wb_src.active
                 ws_new = wb.create_sheet(title="חילנט", index=idx)
+
+                summary_fill = PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid")
+                summary_font = Font(name="Calibri", size=11, bold=True)
+                summary_border = Border(
+                    top=Side(style='thin', color='B0B0B0'),
+                    bottom=Side(style='double', color='000000')
+                )
+
+                for r in range(1, ws_src.max_row + 1):
+                    row_vals = [ws_src.cell(r, c).value for c in range(1, ws_src.max_column + 1)]
+                    is_summary = any(isinstance(v, str) and ("סה\"כ" in v or "סה״כ" in v or "סיכום" in v) for v in row_vals)
+
+                    for c in range(1, ws_src.max_column + 1):
+                        val = ws_src.cell(r, c).value
+                        if val is not None:
+                            ws_new.cell(r, c, value=val)
+
+                    if is_summary and r > 1:
+                        for c in range(1, ws_src.max_column + 1):
+                            cell = ws_new.cell(r, c)
+                            cell.font = summary_font
+                            cell.fill = summary_fill
+                            cell.border = summary_border
+                wb_src.close()
+            except Exception as e:
+                pass
+
+        # Populate / Replace 'מכירות' sheet with active August sales commissions
+        if "מכירות" in wb.sheetnames and sales_files:
+            try:
+                from openpyxl.styles import Font, PatternFill, Border, Side
+                idx = wb.sheetnames.index("מכירות")
+                wb.remove(wb["מכירות"])
+                wb_src = openpyxl.load_workbook(sales_files[0], data_only=True)
+                src_sheet_name = "2026" if "2026" in wb_src.sheetnames else wb_src.sheetnames[0]
+                ws_src = wb_src[src_sheet_name]
+                ws_new = wb.create_sheet(title="מכירות", index=idx)
+
+                header_fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
+                header_font = Font(name="Calibri", size=11, bold=True)
+                tot_fill = PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid")
+                tot_font = Font(name="Calibri", size=11, bold=True)
+
                 for r in range(1, ws_src.max_row + 1):
                     for c in range(1, ws_src.max_column + 1):
                         val = ws_src.cell(r, c).value
                         if val is not None:
-                            ws_new.cell(r, c).value = val
+                            cell = ws_new.cell(r, c, value=val)
+                            if r == 3:
+                                cell.font = header_font
+                                cell.fill = header_fill
+                            elif r >= 4:
+                                cell.font = Font(name="Calibri", size=11)
+
+                if sales_data and sales_data.get('gym', {}).get('total_with_social', 0) > 0:
+                    g_tot = sales_data['gym']['total_with_social']
+                    g_wage = sales_data['gym']['total_wage']
+                    ws_new.cell(10, 14, value=round(g_tot, 2))
+                    ws_new.cell(10, 13, value=round(g_wage, 2))
+                    ws_new.cell(10, 2, value='סך הכל חדר כושר').font = tot_font
+                    ws_new.cell(10, 3, value=round(g_tot, 2)).font = tot_font
+                    ws_new.cell(10, 3).fill = tot_fill
+
+                wb_src.close()
             except Exception as e:
                 pass
-
-        # Populate sales commissions in 'מכירות' sheet if present
-        if "מכירות" in wb.sheetnames and sales_data and sales_data.get('gym', {}).get('total_with_social', 0) > 0:
-            ws_sales = wb["מכירות"]
-            g_tot = sales_data['gym']['total_with_social']
-            g_wage = sales_data['gym']['total_wage']
-            ws_sales.cell(10, 14, value=round(g_tot, 2))
-            ws_sales.cell(10, 13, value=round(g_wage, 2))
 
     elif branch_key == "פילאטיס":
         if "דוח מרכז לאישור מנהל" in wb.sheetnames:
@@ -482,16 +527,36 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
 
         if "חילנט" in wb.sheetnames and hilan_files:
             try:
+                from openpyxl.styles import Font, PatternFill, Border, Side
                 idx = wb.sheetnames.index("חילנט")
                 wb.remove(wb["חילנט"])
                 wb_src = openpyxl.load_workbook(hilan_files[0], data_only=True)
                 ws_src = wb_src.active
                 ws_new = wb.create_sheet(title="חילנט", index=idx)
+
+                summary_fill = PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid")
+                summary_font = Font(name="Calibri", size=11, bold=True)
+                summary_border = Border(
+                    top=Side(style='thin', color='B0B0B0'),
+                    bottom=Side(style='double', color='000000')
+                )
+
                 for r in range(1, ws_src.max_row + 1):
+                    row_vals = [ws_src.cell(r, c).value for c in range(1, ws_src.max_column + 1)]
+                    is_summary = any(isinstance(v, str) and ("סה\"כ" in v or "סה״כ" in v or "סיכום" in v) for v in row_vals)
+
                     for c in range(1, ws_src.max_column + 1):
                         val = ws_src.cell(r, c).value
                         if val is not None:
-                            ws_new.cell(r, c).value = val
+                            ws_new.cell(r, c, value=val)
+
+                    if is_summary and r > 1:
+                        for c in range(1, ws_src.max_column + 1):
+                            cell = ws_new.cell(r, c)
+                            cell.font = summary_font
+                            cell.fill = summary_fill
+                            cell.border = summary_border
+                wb_src.close()
             except Exception as e:
                 pass
         if "סיכום אימונים ומכירות מנויים" in wb.sheetnames:
@@ -517,6 +582,7 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                 p_wage = sales_data['pilates']['total_wage']
                 ws.cell(27, 14, value=round(p_tot, 2))
                 ws.cell(27, 13, value=round(p_wage, 2))
+    return sales_data
 
 
 def build(branch_key, cfg, source_path, by_category, held, new_trainers,
@@ -526,7 +592,7 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
     wb = openpyxl.load_workbook(source_path)
     wbv = openpyxl.load_workbook(source_path, data_only=True)
 
-    _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases, target_month=target_month, invoices=invoices)
+    sales_data = _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases, target_month=target_month, invoices=invoices)
 
     ws_edit = wb[cfg["approval_sheet"]]
     ext = cfg["external_lines"]; amt_col = cfg["amount_col"]
@@ -543,6 +609,16 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
         if isinstance(cur, str) and cur.startswith("="):
             v = vals.get((sheet, f"{amt_L}{r}"))
             ws_edit.cell(r, amt_col, value=(round(v, 2) if isinstance(v, (int, float)) else 0))
+
+    # Overwrite sales commissions line if active sales data present
+    if branch_key == "חדר כושר" and sales_data and sales_data.get('gym', {}).get('total_with_social', 0) > 0:
+        g_tot = round(sales_data['gym']['total_with_social'], 2)
+        ws_edit.cell(62, amt_col, value=g_tot)
+        vals[(sheet, f"{amt_L}62")] = g_tot
+    elif branch_key == "פילאטיס" and sales_data and sales_data.get('pilates', {}).get('total_with_social', 0) > 0:
+        p_tot = round(sales_data['pilates']['total_with_social'], 2)
+        ws_edit.cell(56, amt_col, value=p_tot)
+        vals[(sheet, f"{amt_L}56")] = p_tot
 
     # 1) Phase-B writes: overwrite the מאמני חוץ rows with validated freelancer $
     row_amounts = {}
