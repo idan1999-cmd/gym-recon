@@ -290,9 +290,7 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                     invoice_pt[name_key] = invoice_pt.get(name_key, 0) + qty
                 elif "משמרת" in desc:
                     invoice_shifts[name_key] = invoice_shifts.get(name_key, 0) + qty
-                elif "קבוצ" in desc:
-                    invoice_grp[name_key] = invoice_grp.get(name_key, 0) + qty
-                elif "סטודיו" in desc or "שיעור" in desc or "חוג" in desc or "מזרן" in desc:
+                elif "קבוצ" in desc or "סטודיו" in desc or "שיעור" in desc or "חוג" in desc or "מזרן" in desc or "פילאטיס" in desc:
                     invoice_std[name_key] = invoice_std.get(name_key, 0) + qty
 
     if branch_key == "חדר כושר":
@@ -306,12 +304,10 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                     arb = arbox_data.get(canon, {})
                     inv_s = invoice_std.get(canon, 0)
                     arb_s = arb.get("classes", 0)
-                    has_inv = (canon in invoice_std or canon in invoice_grp or canon in invoice_shifts or canon in invoice_pt)
+                    has_inv = (canon in invoice_std or canon in invoice_shifts or canon in invoice_pt)
                     val_s = inv_s if inv_s > 0 else (arb_s if (arb_s > 0 and not has_inv) else 0)
                     ws.cell(r, 2).value = val_s if val_s > 0 else None
-
-                    inv_g = invoice_grp.get(canon, 0)
-                    ws.cell(r, 3).value = inv_g if inv_g > 0 else None
+                    ws.cell(r, 3).value = None
 
                     inv_p = invoice_pt.get(canon, 0)
                     arb_p = arb.get("personal", 0)

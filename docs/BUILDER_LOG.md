@@ -195,14 +195,13 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
   1. **Accurate Category Extraction from Freelancer Invoices:**
      - Updated `jobs/billing_output.py` (`_populate_summary_sheets`) to separate and accurately map:
        - **אימונים אישיים (Col G)**: Personal training quantities.
-       - **אימונים קבוצתיים (Col C)**: Freelance group classes outside shift.
+       - **אימוני סטודיו/קבוצה (Col B)**: Freelance group/studio classes outside shift (all freelance group sessions are aggregated in Col B like other freelancers).
        - **משמרת חדר כושר חיצוני (Col N)**: External trainer floor shift hours.
-       - **סטודיו (Col B)**: Regular studio classes.
      - **עידו גליקו (Row 19):**
+       - **3 אימוני סטודיו/קבוצה** (Col B).
        - **106 אימונים אישיים** (Col G).
-       - **3 אימוני קבוצה** (Col C).
        - **11 שעות משמרת חיצוני** (Col N).
-       - **0 סטודיו רגיל** (Col B - cleared, since he does not teach regular studio).
+       - **0 אימונים קבוצתיים בעמודה C** (Col C left empty for freelancers).
      - **נוי אסרף (Row 17):**
        - **14 אימונים אישיים** (Col G).
        - **8 שיעורי סטודיו** (Col B).
@@ -210,13 +209,13 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
      - **מאיה זיידנר (Row 6):** **5 שיעורי סטודיו** (Col B) + **48.4 שעות משמרת חיצוני** (Col N).
   2. **Salaried Trainers Mapping:** Added canonical aliases for salaried employees (`איתן בר אב`, `בר סידיס`, `ניב בן חיים`, `גלעד וייס`, `נועם תבל`, `ניקול אדלמן`) to `config/trainer_aliases.json`.
 - **Why (what Idan asked for, in his words if given):**
-  - *"ובעידו גליקו בכלל טעית. שים לב לשניהם."*
+  - *"שים לב שעידו גליקו צריך להכניס את האימוני קבוצה שלו כמו כל שאר העצמאיים, בכמות אימוני סטודיו. תעדכן."*
 - **What it touches:**
   - `jobs/billing_output.py`, `tools/billing.py`, `config/trainer_aliases.json`, `docs/BUILDER_LOG.md`.
 - **How it was verified:**
   - Verified `סיכום אמוני סטודיו וקבוצה`:
     - Row 17 (Noy Asraf): Col B=8, Col G=14.
-    - Row 19 (Ido Glicko): Col B=None, Col C=3, Col G=106, Col N=11.
+    - Row 19 (Ido Glicko): Col B=3, Col C=None, Col G=106, Col N=11.
   - All 94 automated tests passed (0 failures).
 
 ---
