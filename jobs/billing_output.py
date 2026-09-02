@@ -343,8 +343,19 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                     grp = hil.get("grp", 0)
                     rem = max(0.0, tot_wage - pers - grp)
 
-                    ws.cell(r, 7).value = round(pers, 2) if pers > 0 else None
+                    # Group & studio columns (Col 2: Studio, Col 3: Non-shift group, Col 4: In-shift group)
+                    ws.cell(r, 2).value = None
+                    ws.cell(r, 3).value = None
                     ws.cell(r, 4).value = round(grp, 2) if grp > 0 else None
+
+                    # Personal training columns (Col 7: Personal non-shift, Col 8-12: other PT)
+                    ws.cell(r, 7).value = round(pers, 2) if pers > 0 else None
+                    ws.cell(r, 8).value = None
+                    ws.cell(r, 9).value = None
+                    ws.cell(r, 10).value = None
+                    ws.cell(r, 11).value = None
+                    ws.cell(r, 12).value = None
+                    ws.cell(r, 14).value = None
 
                     if canon in ["ניקול אדלמן", "ניקול איידלמן"]:
                         ws.cell(r, 15).value = None
