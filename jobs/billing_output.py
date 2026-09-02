@@ -240,10 +240,6 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
         hilan_files.extend(glob.glob(os.path.join(input_dir, "**", pat), recursive=True))
         hilan_files.extend(glob.glob(os.path.join(os.path.dirname(input_dir), "**", pat), recursive=True))
         hilan_files.extend(glob.glob(os.path.join("input", "**", pat), recursive=True))
-    hilan_files = [f for f in dict.fromkeys(hilan_files) if os.path.isfile(f)]
-
-    hilan_data = _parse_hilan_data(hilan_files[0], aliases) if hilan_files else {}
-
     sales_patterns = ["*עמלות*.xlsx", "*מכירות*.xlsx", "*sales*.xlsx"]
     sales_files = []
     for pat in sales_patterns:
@@ -251,6 +247,25 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
         sales_files.extend(glob.glob(os.path.join(os.path.dirname(input_dir), "**", pat), recursive=True))
         sales_files.extend(glob.glob(os.path.join("input", "**", pat), recursive=True))
     sales_files = [f for f in dict.fromkeys(sales_files) if os.path.isfile(f)]
+
+    month_str = str(target_month) if target_month else ""
+    def _file_sort_key(p):
+        score = 0
+        if "dropzone" in p or "לגרור" in p:
+            score += 100
+        if month_str:
+            if f"_{month_str.zfill(2)}" in p or f"{month_str}.26" in p or f"{month_str}/26" in p:
+                score += 50
+            if month_str in ["8", "08"] and "אוגוסט" in p:
+                score += 50
+            if month_str in ["7", "07"] and "יולי" in p:
+                score += 50
+        return -score
+
+    hilan_files.sort(key=_file_sort_key)
+    sales_files.sort(key=_file_sort_key)
+
+    hilan_data = _parse_hilan_data(hilan_files[0], aliases) if hilan_files else {}
     sales_data = _parse_sales_data(sales_files[0], target_month, aliases) if sales_files else {}
 
     arbox_data = {}
@@ -323,10 +338,27 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                 if t_name:
                     _, canon, _, _ = resolve_trainer(t_name, aliases)
                     hil = hilan_data.get(canon, {})
-                    reg_w = round(hil["reg"], 2) if hil.get("reg", 0) > 0 else (round(hil["total_wage"], 2) if hil.get("total_wage", 0) > 0 else None)
-                    ws.cell(r, 15).value = reg_w
-                    ws.cell(r, 8).value = round(hil["pers"], 2) if hil.get("pers", 0) > 0 else None
-                    ws.cell(r, 4).value = round(hil["grp"], 2) if hil.get("grp", 0) > 0 else None
+                    reg = hil.get("reg", 0) or hil.get("total_wage", 0)
+                    pers = hil.get("pers", 0)
+                    grp = hil.get("grp", 0)
+                    rem = max(0.0, reg - pers - grp)
+
+                    ws.cell(r, 7).value = round(pers, 2) if pers > 0 else None
+                    ws.cell(r, 4).value = round(grp, 2) if grp > 0 else None
+
+                    if canon in ["ניקול אדלמן", "ניקול איידלמן"]:
+                        ws.cell(r, 15).value = None
+                        ws.cell(r, 16).value = round(reg, 2) if reg > 0 else None
+                    elif canon in ["נועם תבל", "נעם תבל"]:
+                        ws.cell(r, 15).value = None
+                        ws.cell(r, 16).value = round(reg, 2) if reg > 0 else None
+                    elif canon in ["לאון ורחובסקי", "לאוניד ורחובסקי"]:
+                        half = round(rem / 2.0, 2)
+                        ws.cell(r, 15).value = half if half > 0 else None
+                        ws.cell(r, 16).value = round(rem - half, 2) if (rem - half) > 0 else None
+                    else:
+                        ws.cell(r, 15).value = round(rem, 2) if rem > 0 else None
+                        ws.cell(r, 16).value = None
 
         # Dynamically populate overtime & travel on 'דוח מרכז לאישור מנהל'
         if "דוח מרכז לאישור מנהל" in wb.sheetnames:

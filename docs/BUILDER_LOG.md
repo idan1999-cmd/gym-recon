@@ -189,33 +189,36 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 
 ---
 
-## 2026-09-02 — Freelancer Personal Training, Groups & Shifts Breakdown Sync (Noy Asraf & Ido Glicko)
+## 2026-09-02 — Freelancer & Salaried Shift, Personal Training, Groups & Reception Breakdown Sync
 
 - **What changed:**
-  1. **Accurate Category Extraction from Freelancer Invoices:**
-     - Updated `jobs/billing_output.py` (`_populate_summary_sheets`) to separate and accurately map:
-       - **אימונים אישיים (Col G)**: Personal training quantities.
-       - **אימוני סטודיו/קבוצה (Col B)**: Freelance group/studio classes outside shift (all freelance group sessions are aggregated in Col B like other freelancers).
-       - **משמרת חדר כושר חיצוני (Col N)**: External trainer floor shift hours.
-     - **עידו גליקו (Row 19):**
-       - **3 אימוני סטודיו/קבוצה** (Col B).
-       - **106 אימונים אישיים** (Col G).
-       - **11 שעות משמרת חיצוני** (Col N).
-       - **0 אימונים קבוצתיים בעמודה C** (Col C left empty for freelancers).
-     - **נוי אסרף (Row 17):**
-       - **14 אימונים אישיים** (Col G).
-       - **8 שיעורי סטודיו** (Col B).
+  1. **Salaried Net Shifts & Reception Split (`_populate_summary_sheets` in `jobs/billing_output.py`):**
+     - Prioritized active month Hilan file from `dropzone` (`דו״ח חילנט אוגוסט 2026.xlsx`).
+     - Implemented dynamic shift hour deduction: `משמרת חדר כושר (Col O) = שעות רגילות מחילנט פחות אישיים וקבוצות`.
+     - **נועם תבל (Row 23):** Mapped strictly to Reception/Sales (Col P = 50.00 ש"ע קבלה, Col O = None).
+     - **ניקול אדלמן (Row 21):** Mapped strictly to Reception/Sales (Col P = 97.83 ש"ע קבלה, Col O = None).
+     - **לאון ורחובסקי (Row 22):** Split net remaining regular hours (after deducting 9 PT) 50/50 between Gym Shift (Col O = 44.45) and Reception (Col P = 44.44).
+     - **שאר המדריכים השכירים:** Gym Shift (Col O) = שעות רגילות פחות אישיים וקבוצות (ערד קוצר 47.25, אופל מיוני 48.96, בר סידיס 42.00, איתן בר אב 17.50, ניב בן חיים 60.07).
+  2. **Freelance Categories Accurate Mapping:**
+     - **עידו גליקו (Row 19):** **3 אימוני סטודיו/קבוצה** (Col B), **106 אימונים אישיים** (Col G), **11 שעות משמרת חיצוני** (Col N), Col C = None.
+     - **נוי אסרף (Row 17):** **14 אימונים אישיים** (Col G), **8 שיעורי סטודיו** (Col B).
      - **גיל טל (Row 8):** **4.75 שעות משמרת חיצוני** (Col N).
      - **מאיה זיידנר (Row 6):** **5 שיעורי סטודיו** (Col B) + **48.4 שעות משמרת חיצוני** (Col N).
-  2. **Salaried Trainers Mapping:** Added canonical aliases for salaried employees (`איתן בר אב`, `בר סידיס`, `ניב בן חיים`, `גלעד וייס`, `נועם תבל`, `ניקול אדלמן`) to `config/trainer_aliases.json`.
+  3. **Salaried Trainers Directory:** Added canonical aliases for salaried employees (`איתן בר אב`, `בר סידיס`, `ניב בן חיים`, `גלעד וייס`, `נועם תבל`, `ניקול אדלמן`) to `config/trainer_aliases.json`.
 - **Why (what Idan asked for, in his words if given):**
-  - *"שים לב שעידו גליקו צריך להכניס את האימוני קבוצה שלו כמו כל שאר העצמאיים, בכמות אימוני סטודיו. תעדכן."*
+  - *"שים לב שאת משמרת חדר כושר עבור השכירים, יש לחשב בתור הפער בין השעות הרגילות שכתובות בחילנ״ט פחות מס׳ אימוני הקבוצה והאימונים האישיים שבוצעו. כנ״ל לגבי שעות קבלה. שים לב שנועם תבל לא עובדת בחדר כושר, אלו רק שעות קבלה. לאון היחיד שעובד גם וגם (אז לחלק את השעות הרגילות שנותרו לו לאחר קיזוז אישיים וקבוצה חצי חצי בין הקבלה למשמרת חדר כושר). תעדכן בהתאם."*
 - **What it touches:**
   - `jobs/billing_output.py`, `tools/billing.py`, `config/trainer_aliases.json`, `docs/BUILDER_LOG.md`.
 - **How it was verified:**
   - Verified `סיכום אמוני סטודיו וקבוצה`:
-    - Row 17 (Noy Asraf): Col B=8, Col G=14.
-    - Row 19 (Ido Glicko): Col B=3, Col C=None, Col G=106, Col N=11.
+    - Row 20 (Eitan Bar Av): PT=8, GymShift(O)=17.50.
+    - Row 21 (Nicole Edelman): Reception(P)=97.83, GymShift(O)=None.
+    - Row 22 (Leon Verchovsky): PT=9, GymShift(O)=44.45, Reception(P)=44.44.
+    - Row 23 (Noam Tevel): Reception(P)=50.00, GymShift(O)=None.
+    - Row 24 (Niv Ben Haim): GymShift(O)=60.07.
+    - Row 25 (Arad Kotzer): PT=50, Grp=19, GymShift(O)=47.25.
+    - Row 27 (Bar Sidis): PT=15, GymShift(O)=42.00.
+    - Row 28 (Opel Mayoni): PT=9, Grp=5, GymShift(O)=48.96.
   - All 94 automated tests passed (0 failures).
 
 ---
