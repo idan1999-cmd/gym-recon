@@ -245,14 +245,17 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
      - **עידו גליקו (Row 19):** **3 אימוני סטודיו/קבוצה** (Col B), **106 אימונים אישיים** (Col G), **11 שעות משמרת חיצוני** (Col N).
      - **נוי אסרף (Row 17):** **14 אימונים אישיים** (Col G), **8 שיעורי סטודיו** (Col B).
      - **גיל טל (Row 8):** **4.75 שעות משמרת חיצוני** (Col N).
-     - **מאיה זיידנר (Row 6):** **5 שיעורי סטודיו** (Col B) + **48.4 שעות משמרת חיצוני** (Col N).
+   12. **Deliverable Cleanup & Summary-Only Hilan Tab:**
+     - Removed helper tabs `ריכוז שעות` and `דגלים` from deliverable workbooks in `output/` (`חיוב_חדר_כושר.xlsx` and `חיוב_פילאטיס.xlsx`).
+     - Refactored `חילנט` sheet to retain only the header and the highlighted employee summary rows (and grand total), omitting granular day-by-day punches.
 - **Why (what Idan asked for, in his words if given):**
-  - *"שים לב, אחרי שאתה מסיים לעדכן את זה, אנחנו צריכים לעדכן שנקול אדלמן מקבלת את העמלות שלה רק בפילאטיס מכשירים, שזה לא מופיע בחדר כושר. ושורת חישוב הסה״כ לא נכונה, שים לב."*
+  - *"לאחר מכן תמחק לי מהדוח יזם את הריכוז שעות ואת הדגלים. בדוח הילנט תשאיר רק את הסך הכל הכללי, לא צריך את הפירוט שעות הנקודתי של כל עובד, רק מספיק את מה שביקשתי ממך להבליט קודם. לאחר מכן תריץ לי אל מול דוח יזם קודם של יולי כדי לראות את הפערים. מעלה אותו בפניך בתיקייה של הקלט. לא להשתמש בו, רק תשווה לי."*
 - **What it touches:**
   - `jobs/billing_output.py`, `tools/billing.py`, `config/trainer_aliases.json`, `docs/BUILDER_LOG.md`.
 - **How it was verified:**
-  - Verified Nicole is omitted from Gym `מכירות` sheet.
-  - Verified `חיוב יזם` Row 14 = 4,783.80 ₪ and Row 15 = 117,164.86 ₪ (matches Row 64 in `דוח מרכז לאישור מנהל`).
+  - Verified `חיוב_חדר_כושר.xlsx` sheet list contains only `['דוח מרכז לאישור מנהל', 'סיכום אמוני סטודיו וקבוצה', 'חילנט', 'חיוב יזם', 'מכירות', 'גיליון2', 'גיליון1', 'חגים', 'דוח אימוני סטודיו']`.
+  - Verified `חילנט` sheet contains only 11 clean summary rows (all highlighted in `#FFF2CC` and bold).
+  - Executed comparison script between July and August 2026 reports.
   - All 94 automated tests passed (0 failures).
 
 ---

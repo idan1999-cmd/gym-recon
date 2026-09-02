@@ -450,7 +450,7 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                 else:
                     ws_main.cell(11, c).value = None
 
-        # Populate / Replace raw 'חילנט' sheet content with active Hilan file
+        # Populate / Replace raw 'חילנט' sheet content with active Hilan file (Summary rows only)
         if "חילנט" in wb.sheetnames and hilan_files:
             try:
                 from openpyxl.styles import Font, PatternFill, Border, Side
@@ -467,21 +467,24 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                     bottom=Side(style='double', color='000000')
                 )
 
+                out_r = 1
                 for r in range(1, ws_src.max_row + 1):
                     row_vals = [ws_src.cell(r, c).value for c in range(1, ws_src.max_column + 1)]
                     is_summary = any(isinstance(v, str) and ("סה\"כ" in v or "סה״כ" in v or "סיכום" in v) for v in row_vals)
 
-                    for c in range(1, ws_src.max_column + 1):
-                        val = ws_src.cell(r, c).value
-                        if val is not None:
-                            ws_new.cell(r, c, value=val)
-
-                    if is_summary and r > 1:
+                    if r == 1 or is_summary:
                         for c in range(1, ws_src.max_column + 1):
-                            cell = ws_new.cell(r, c)
-                            cell.font = summary_font
-                            cell.fill = summary_fill
-                            cell.border = summary_border
+                            val = ws_src.cell(r, c).value
+                            if val is not None:
+                                ws_new.cell(out_r, c, value=val)
+
+                        if is_summary and out_r > 1:
+                            for c in range(1, ws_src.max_column + 1):
+                                cell = ws_new.cell(out_r, c)
+                                cell.font = summary_font
+                                cell.fill = summary_fill
+                                cell.border = summary_border
+                        out_r += 1
                 wb_src.close()
             except Exception as e:
                 pass
@@ -580,21 +583,24 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                     bottom=Side(style='double', color='000000')
                 )
 
+                out_r = 1
                 for r in range(1, ws_src.max_row + 1):
                     row_vals = [ws_src.cell(r, c).value for c in range(1, ws_src.max_column + 1)]
                     is_summary = any(isinstance(v, str) and ("סה\"כ" in v or "סה״כ" in v or "סיכום" in v) for v in row_vals)
 
-                    for c in range(1, ws_src.max_column + 1):
-                        val = ws_src.cell(r, c).value
-                        if val is not None:
-                            ws_new.cell(r, c, value=val)
-
-                    if is_summary and r > 1:
+                    if r == 1 or is_summary:
                         for c in range(1, ws_src.max_column + 1):
-                            cell = ws_new.cell(r, c)
-                            cell.font = summary_font
-                            cell.fill = summary_fill
-                            cell.border = summary_border
+                            val = ws_src.cell(r, c).value
+                            if val is not None:
+                                ws_new.cell(out_r, c, value=val)
+
+                        if is_summary and out_r > 1:
+                            for c in range(1, ws_src.max_column + 1):
+                                cell = ws_new.cell(out_r, c)
+                                cell.font = summary_font
+                                cell.fill = summary_fill
+                                cell.border = summary_border
+                        out_r += 1
                 wb_src.close()
             except Exception as e:
                 pass
@@ -626,7 +632,7 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
 
 def build(branch_key, cfg, source_path, by_category, held, new_trainers,
           hilan, out_path, target, missing_receipts=None, all_sessions=None, aliases=None,
-          invoices=None, target_month=None):
+          invoices=None, target_month=None, keep_flags=True):
     # formula workbook (to edit) + value workbook (to resolve refs)
     wb = openpyxl.load_workbook(source_path)
     wbv = openpyxl.load_workbook(source_path, data_only=True)
@@ -720,9 +726,14 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
     # 3) keep all sheets so formula references across tabs (e.g. סיכום אמוני סטודיו וקבוצה) stay valid
     # do not delete helper sheets
 
-    # 4) flags sheet
-    _write_flags(wb, branch_key, cfg, total, target, held, new_trainers, hilan, not_rolled,
-                 missing_receipts=missing_receipts)
+    # 4) flags sheet / sheet cleanup
+    if keep_flags:
+        _write_flags(wb, branch_key, cfg, total, target, held, new_trainers, hilan, not_rolled,
+                     missing_receipts=missing_receipts)
+    else:
+        for s_name in ["דגלים", "ריכוז שעות"]:
+            if s_name in wb.sheetnames:
+                wb.remove(wb[s_name])
 
     wb.save(out_path)
     wb.close(); wbv.close()

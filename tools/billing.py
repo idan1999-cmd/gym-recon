@@ -200,7 +200,7 @@ def main():
         total = bo.build(bk, cfg, wb_path, by_category, held, new_trainers,
                          hilan, out_path, dynamic_target, missing_receipts=missing,
                          all_sessions=sessions, aliases=aliases,
-                         invoices=invoices, target_month=args.month)
+                         invoices=invoices, target_month=args.month, keep_flags=False)
 
         status = "OK" if abs(total - dynamic_target) < 0.05 else "REVIEW"
         if hilan_suspect:
