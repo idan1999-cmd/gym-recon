@@ -533,6 +533,13 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
     vals[(sheet, cfg["total_cell"])] = total
 
     ws_ci = wb["חיוב יזם"]
+    if target_month:
+        import datetime
+        try:
+            ws_ci.cell(3, 6).value = datetime.datetime(2026, int(target_month), 1)
+        except Exception:
+            pass
+
     for row in ws_ci.iter_rows():
         for cell in row:
             if isinstance(cell.value, str) and cell.value.startswith("=") \

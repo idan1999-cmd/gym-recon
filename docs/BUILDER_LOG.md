@@ -203,19 +203,27 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
      - Linked Row 6 (`שעות רגילות`) for reception staff dynamically to `סיכום אמוני סטודיו וקבוצה` (P21 for Nicole, P23 for Noam, P22 for Leon).
   3. **Live Hilan Sheet Synchronization (`חילנט` tab):**
      - Cleanly replaced and copied all active August Hilan raw data from `דו״ח חילנט אוגוסט 2026.xlsx` into the `חילנט` sheet of `חיוב_חדר_כושר.xlsx` and `חיוב_פילאטיס.xlsx` for complete manager auditability.
-  4. **Freelance Categories Accurate Mapping:**
+  4. **Nir Eisenbach August Invoice (#50062) Renamed & Fully Integrated:**
+     - Renamed `50062-2.pdf` to standardized convention `החשבונית של ניר איזנבך 50062.pdf`.
+     - Extracted 1 management @ 4,000 ₪, 32 group/studio @ 200 ₪ = 6,400 ₪, and 31 PT @ 110 ₪ = 3,410 ₪ (Subtotal: 13,810 ₪ / Total: 16,295.80 ₪).
+     - Integrated amounts into `חיוב יזם`:
+       - `22655 ניהול מקצועי`: 4,000 ₪
+       - `22653 אימוני סטודיו`: 15,410 ₪ (includes Nir's 6,400 ₪)
+       - `22650 אימונים אישיים`: 32,310 ₪ (includes Nir's 3,410 ₪)
+       - Grand total in `חיוב_חדר_כושר.xlsx` updated to **118,797.46 ₪**.
+     - Updated Row 10 in `סיכום אמוני סטודיו וקבוצה`: Studio (Col B) = 32, Personal (Col G) = 31.
+  5. **Freelance Categories Accurate Mapping:**
      - **עידו גליקו (Row 19):** **3 אימוני סטודיו/קבוצה** (Col B), **106 אימונים אישיים** (Col G), **11 שעות משמרת חיצוני** (Col N).
      - **נוי אסרף (Row 17):** **14 אימונים אישיים** (Col G), **8 שיעורי סטודיו** (Col B).
      - **גיל טל (Row 8):** **4.75 שעות משמרת חיצוני** (Col N).
      - **מאיה זיידנר (Row 6):** **5 שיעורי סטודיו** (Col B) + **48.4 שעות משמרת חיצוני** (Col N).
 - **Why (what Idan asked for, in his words if given):**
-  - *"אני מתנצל, תתקן את זה לשעות משכר (לא רגילות) פחות אישיים פחות קבוצות. כמובן גם לניקול ונועם. ושים לב ששעות נוספות בהתאם לתעריף 125/150/175/200 - יש לעדכן בגיליון של דו״ח מרכז לאישור מנהל. שים לב שלא עדכנת את דו״ח החילנט העדכני בחיוב יזם, אלא רק השתמש בנתונים שלו. תעדכן אותו בפועל שגם יוצג שם כדי שהמנהל יוכל לראות כשהוא מאשר."*
+  - *"ושים לב שצרפתי לך גם את החשבונית של ניר, תשנה את השם שלה כמו שקבענו ותעדכן את הנתונים בחיוב יזם בהתאם."*
 - **What it touches:**
-  - `jobs/billing_output.py`, `tools/billing.py`, `config/trainer_aliases.json`, `docs/BUILDER_LOG.md`.
+  - `jobs/billing_output.py`, `jobs/job_billing.py`, `config/branches.json`, `config/invoices_ocr.json`, `docs/BUILDER_LOG.md`.
 - **How it was verified:**
-  - Verified `חילנט` tab has all 344 rows of live August data.
-  - Verified `דוח מרכז לאישור מנהל` shows correct OT 125% and 150% values (Nicole 4.5/1.0, Noam 1.0, Arad 2.5/3.0, Niv 3.0, Bar 7.0, Opel 0.08).
-  - Verified `סיכום אמוני סטודיו וקבוצה` matches total wage minus PT and groups for all salaried employees.
+  - Verified `חיוב יזם` Grand Total = **118,797.46 ₪**.
+  - Verified `סיכום אמוני סטודיו וקבוצה` Row 10: Col B=32, Col G=31.
   - All 94 automated tests passed (0 failures).
 
 ---

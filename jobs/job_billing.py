@@ -93,7 +93,13 @@ def validate_invoices(invoices, branch_key, all_sessions, aliases, pay, log, tar
                 note=f'invoice held out of auto-write ({inv.get("category")}); '
                      f'manager must resolve the HIGH flag before it is booked'))
         else:
-            by_category[cat] = by_category.get(cat, 0.0) + amt
+            if cat == "mixed" and inv.get("line_items"):
+                for item in inv.get("line_items", []):
+                    item_cat = item.get("category") or "studio"
+                    item_amt = _num(item.get("total"))
+                    by_category[item_cat] = by_category.get(item_cat, 0.0) + item_amt
+            else:
+                by_category[cat] = by_category.get(cat, 0.0) + amt
             # amounts cache entry — resolved trainer identity travels with the
             # amount even though the Excel write below is category-aggregated
             trainer_amounts.append({
