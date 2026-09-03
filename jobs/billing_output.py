@@ -412,6 +412,13 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
             ws_main.cell(6, 4).value = "='סיכום אמוני סטודיו וקבוצה'!P22"
             ws_main.cell(26, 4).value = '=IF(D5="נציגת קבלה",D7*$L$38,D7*$E$38)+IF(D5="נציגת קבלה",D6*$L$37,D6*$E$37)+IF(D5="נציגת קבלה",D8*$L$39,D8*$E$39)+IF(D5="נציגת קבלה",D9*$L$40,D9*$E$40)+IF(D5="נציגת קבלה",D10*$L$41,D10*$E$41)+D13+D11'
 
+            # Connect internal wage rows (47-52) to top breakdown (N25-N29)
+            ws_main.cell(47, 4).value = "=N26"  # פקידת קבלה
+            ws_main.cell(48, 4).value = "=N25"  # שעות מאמנים
+            ws_main.cell(49, 4).value = "=N29"  # אימונים קבוצתיים (22660)
+            ws_main.cell(50, 4).value = "=N27"  # אימונים אישיים (22650)
+            ws_main.cell(52, 4).value = "=N28"  # אימוני סטודיו (22653)
+
             # Connect comparison section (Rows 47-58)
             gym_hilan_tot = round(sum(
                 h.get("total_wage", 0) for c_name, h in hilan_data.items()
