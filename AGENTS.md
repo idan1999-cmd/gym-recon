@@ -35,8 +35,9 @@ It is **agent judgment + deterministic money tools.**
 
 1. **תקציב מול ביצוע** — official workbooks from **כרטסת** + budget template  
    (`python tools/ledger_sync.py` → `output/תקציב_מול_ביצוע_*.xlsx`)
-2. **Trainer billing** — invoice OCR + validation → `output/חיוב_*.xlsx` + `דגלים`
-3. **Supplier pack** — `output/ספקים_לאישור_מנהל.xlsx` (+30/+60)
+2. **Trainer billing & Manager reports** — invoice OCR + validation → `output/דו״ח מרכז חדר כושר *.xlsx`, `output/דו״ח מרכז פילאטיס *.xlsx` + `דגלים`
+3. **Salaried Payroll Control** — `output/ריכוז בקרת שכר שכירים *.xlsx` (all-inclusive employer costs + developer reconciliation with 0 delta)
+4. **Supplier pack** — `output/ספקים_לאישור_מנהל.xlsx` (+30/+60)
 
 **Core Operator Contract:**  
 *The operator does NOT need to create, duplicate, or calculate summary workbooks by hand. That is the exact job of this automation engine. We work on a single persistent master template that is automatically populated and updated from raw external inputs (Arbox, Hilan, Invoices, Sales).*
