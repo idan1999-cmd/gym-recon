@@ -423,6 +423,10 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
         # Dynamically populate overtime, travel & bonuses on 'דוח מרכז לאישור מנהל'
         if "דוח מרכז לאישור מנהל" in wb.sheetnames:
             ws_main = wb["דוח מרכז לאישור מנהל"]
+            # Set title to active month
+            month_name = "אוגוסט" if target_month == 8 else ("יולי" if target_month == 7 else "נוכחי")
+            ws_main.cell(2, 1).value = f"נוכחות {month_name} 26"
+
             # Connect Row 6 and Row 26 formulas to summary sheet for reception staff
             ws_main.cell(6, 2).value = None
             ws_main.cell(6, 3).value = "='סיכום אמוני סטודיו וקבוצה'!P23"
