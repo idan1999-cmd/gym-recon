@@ -440,13 +440,28 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
             ws_main.cell(50, 4).value = "=N27"  # אימונים אישיים (22650)
             ws_main.cell(52, 4).value = "=N28"  # אימוני סטודיו (22653)
 
-            # Connect comparison section (Rows 47-58)
+            # Connect comparison section (Rows 47-58) and align all numbers in Col 10 (J)
             gym_hilan_tot = round(sum(
                 h.get("total_wage", 0) for c_name, h in hilan_data.items()
                 if c_name not in ["ניקול אדלמן", "ניקול איידלמן", "נעמה חיון"]
             ), 2)
             if gym_hilan_tot > 0:
                 ws_main.cell(47, 10).value = gym_hilan_tot
+
+            ws_main.cell(48, 10).value = "='סיכום אמוני סטודיו וקבוצה'!P36+'סיכום אמוני סטודיו וקבוצה'!Q36"
+            ws_main.cell(49, 10).value = "='סיכום אמוני סטודיו וקבוצה'!B36"
+            ws_main.cell(50, 10).value = "='סיכום אמוני סטודיו וקבוצה'!F36"
+            ws_main.cell(51, 10).value = 0
+            ws_main.cell(52, 10).value = "='סיכום אמוני סטודיו וקבוצה'!E36"
+            ws_main.cell(52, 11).value = None
+            ws_main.cell(53, 10).value = "='סיכום אמוני סטודיו וקבוצה'!J36"
+            ws_main.cell(53, 11).value = None
+            ws_main.cell(54, 10).value = "='סיכום אמוני סטודיו וקבוצה'!K36"
+            ws_main.cell(54, 11).value = None
+            ws_main.cell(55, 10).value = "='סיכום אמוני סטודיו וקבוצה'!G36"
+            ws_main.cell(56, 10).value = "='סיכום אמוני סטודיו וקבוצה'!L36+'סיכום אמוני סטודיו וקבוצה'!N36"
+            ws_main.cell(57, 10).value = "=SUM(J48:J56)"
+            ws_main.cell(58, 10).value = "=J47-J57"
 
             for c in range(2, 13):
                 emp_name = ws_main.cell(4, c).value
