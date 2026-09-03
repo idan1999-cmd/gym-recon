@@ -406,10 +406,11 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
         # Dynamically populate overtime, travel & bonuses on 'דוח מרכז לאישור מנהל'
         if "דוח מרכז לאישור מנהל" in wb.sheetnames:
             ws_main = wb["דוח מרכז לאישור מנהל"]
-            # Connect Row 6 formulas to summary sheet for reception staff
+            # Connect Row 6 and Row 26 formulas to summary sheet for reception staff
             ws_main.cell(6, 2).value = None
             ws_main.cell(6, 3).value = "='סיכום אמוני סטודיו וקבוצה'!P23"
             ws_main.cell(6, 4).value = "='סיכום אמוני סטודיו וקבוצה'!P22"
+            ws_main.cell(26, 4).value = '=IF(D5="נציגת קבלה",D7*$L$38,D7*$E$38)+IF(D5="נציגת קבלה",D6*$L$37,D6*$E$37)+IF(D5="נציגת קבלה",D8*$L$39,D8*$E$39)+IF(D5="נציגת קבלה",D9*$L$40,D9*$E$40)+IF(D5="נציגת קבלה",D10*$L$41,D10*$E$41)+D13+D11'
 
             # Connect comparison section (Rows 47-58)
             gym_hilan_tot = round(sum(
