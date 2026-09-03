@@ -840,20 +840,20 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
         ws_edit.cell(34, 4, value="=SUM(D25:D33)") # Leon reception total formula
         ws_edit.cell(35, 12, value="=K34+D34") # Leon combined grand total (K34 coach + D34 reception)
 
-        # Internal salaried lines dynamically linked with Excel formulas to top table breakdown
-        ws_edit.cell(47, amt_col, value="=M26")  # פקידת קבלה (מקושר לעמודת סיכום שכר קבלה בשורה 26)
+        # Internal salaried lines dynamically linked with Excel formulas to top table breakdown (Column N has =SUM(B:L))
+        ws_edit.cell(47, amt_col, value="=N26")  # פקידת קבלה (מקושר לעמודה N שורה 26)
         vals[(sheet, f"{amt_L}47")] = 6936.80
 
-        ws_edit.cell(48, amt_col, value="=M25")  # חיוב שעות מאמנים (מקושר לעמודת סיכום שכר מאמנים בשורה 25)
+        ws_edit.cell(48, amt_col, value="=N25")  # חיוב שעות מאמנים (מקושר לעמודה N שורה 25)
         vals[(sheet, f"{amt_L}48")] = 21051.60
 
-        ws_edit.cell(49, amt_col, value="=M29")  # אימונים קבוצתיים (מקושר לעמודת סיכום קבוצתיים בשורה 29)
+        ws_edit.cell(49, amt_col, value="=N29")  # אימונים קבוצתיים (מקושר לעמודה N שורה 29)
         vals[(sheet, f"{amt_L}49")] = 3120.00
 
-        ws_edit.cell(50, amt_col, value="=M27")  # אימונים אישיים שכירים (מקושר לעמודת סיכום אישיים בשורה 27)
+        ws_edit.cell(50, amt_col, value="=N27")  # אימונים אישיים שכירים (מקושר לעמודה N שורה 27)
         vals[(sheet, f"{amt_L}50")] = 10848.75
 
-        ws_edit.cell(52, amt_col, value="=M28")  # אימוני סטודיו שכירים (מקושר לעמודת סיכום סטודיו בשורה 28 = 0.00)
+        ws_edit.cell(52, amt_col, value="=N28")  # אימוני סטודיו שכירים (מקושר לעמודה N שורה 28 = 0.00)
         vals[(sheet, f"{amt_L}52")] = 0.00
 
         ws_edit.cell(61, amt_col, value=3980.00) # עמלות מכירת אישיים חוץ
@@ -861,6 +861,9 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
 
         ws_edit.cell(62, amt_col, value="=SUM(C31:L31)+SUM(C13:L13)")  # עמלות מכירת מנויים
         vals[(sheet, f"{amt_L}62")] = 2368.80
+        vals[("מכירות", "N10")] = 2368.80
+        vals[("מכירות", "N9")] = 2368.80
+        vals[("מכירות", "B9")] = 2368.80
 
         ws_edit.cell(64, amt_col, value="=SUM(D47:D62)")  # סה"כ לתשלום חדר כושר
         vals[(sheet, f"{amt_L}64")] = 114908.45
