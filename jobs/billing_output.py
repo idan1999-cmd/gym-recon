@@ -800,14 +800,14 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
         ws_edit.cell(48, amt_col, value=21051.60) # חיוב שעות מאמנים
         vals[(sheet, f"{amt_L}48")] = 21051.60
 
-        ws_edit.cell(49, amt_col, value=3120.00)  # אימונים קבוצתיים (ערד 19 + אופל 5)
+        ws_edit.cell(49, amt_col, value=3120.00)  # אימונים קבוצתיים (22660)
         vals[(sheet, f"{amt_L}49")] = 3120.00
 
         ws_edit.cell(50, amt_col, value=10848.75) # אימונים אישיים שכירים
         vals[(sheet, f"{amt_L}50")] = 10848.75
 
-        ws_edit.cell(52, amt_col, value=450.00)   # אימוני סטודיו שכירים
-        vals[(sheet, f"{amt_L}52")] = 450.00
+        ws_edit.cell(52, amt_col, value=0.00)     # אימוני סטודיו שכירים (0 - שכירים רק תחת 22660)
+        vals[(sheet, f"{amt_L}52")] = 0.00
 
         if sales_data and sales_data.get('gym', {}).get('total_with_social', 0) > 0:
             g_tot = round(sales_data['gym']['total_with_social'], 2)
