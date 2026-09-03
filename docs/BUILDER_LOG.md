@@ -9,8 +9,48 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 2. **חיוב יזם & דוח מרכז לאישור מנהל (Trainer & Staff Billing):** Computes monthly charges for the property owner/developer across shifts, reception, personal training, studio classes, management fees, and sales commissions.
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
+## 2026-09-03 — August Close Finalization: Reception Dynamic Formulas, Single Travel Allocation, 22660 Salaried Class Rules, and Hours Comparison Alignment
 
-## 2026-09-03 — Missing Invoices Ingestion (Ran Kislov, Lena Brown, Noy Freund) & Gil Tal Verification
+- **What changed:**
+  1. **Dynamic Reception Formulas (Leon & Noam):**
+     - Connected Row 6 in Gym `דוח מרכז לאישור מנהל` for reception staff directly to `סיכום אמוני סטודיו וקבוצה` via dynamic Excel formulas (`='סיכום אמוני סטודיו וקבוצה'!P23` for Noam Tevel 51h, and `='סיכום אמוני סטודיו וקבוצה'!P22` for Leon Verkhovsky 44.44h).
+     - Row 26 (חיוב קבלה) computes tiered wages dynamically: Noam 3,617.50 ₪ + Leon 3,319.30 ₪ = **6,936.80 ₪** (Row 47), replacing old static July cache (60h / 8,630 ₪).
+  2. **Single Travel Allowance Principle (No Duplicate Travel on Dual Roles):**
+     - Fixed travel allowance allocation so that employees with dual roles (e.g. Leonid Verkhovsky working both reception and gym shifts) receive travel allowance **once only** (under reception Col D, 208.50 ₪, and zeroed/None under instructor Col K).
+  3. **Salaried Group/Studio Classes Classification (Line 22660 vs 22653):**
+     - Enforced business law that salaried instructors' group/studio classes belong **strictly under 22660 (`אימונים קבוצתיים` - Row 49)**.
+     - Row 52 (`22653 אימוני סטודיו` for salaried staff) is permanently zeroed at **0.00 ₪**.
+     - Row 53 (`22653 שיעורי סטודיו מאמני חוץ`) is reserved strictly for freelance external trainer invoices.
+  4. **Granular Multi-Line Freelance Invoice Itemization:**
+     - Ido Gliko (Invoice 40011): 11 shift hours @ 55 ₪ (605 ₪ -> Row 56), 106 PT (11,660 ₪ -> Row 54), 3 group (450 ₪ -> Row 53), 2,415 ₪ PT sales commission + 565 ₪ bonus (2,980 ₪ -> Row 61).
+     - Noy Asraf (Invoice 40024): 14 PT (1,540 ₪ -> Row 54), 8 studio (1,200 ₪ -> Row 53).
+     - Idan Wekser (Invoice 40558): 18,000 ₪ management (Row 57), 28 PT (3,080 ₪ -> Row 54), 2 studio (300 ₪ -> Row 53), 1,000 ₪ sales commission (Row 61).
+     - Nir Eisenbach: 4,000 ₪ professional management split 2,500 ₪ Gym (Row 60) and 1,500 ₪ Pilates (Row 51).
+  5. **Orly Baumel Complete Workbook Sweep:**
+     - Swept all helper tables, summary sheets, and lookup formulas across both workbooks, completely eliminating any `#N/A` or unreferenced lookup rows.
+  6. **Hours Comparison Table (`השוואת שעות עבודה`) Column Alignment:**
+     - Aligned all comparison table values (Hilan 490.25, actual 375.25, studio 0, group 24, PT 91, net 490.25, delta 0.00) strictly in **Column 10 (J)**.
+     - Cleared column 11 (K) and horizontal offset cells, ensuring a clean, straight, professional table.
+  7. **Header & Title Sync:**
+     - Updated Gym manager sheet header from `נוכחות יוני 26` to **`נוכחות אוגוסט 26`**.
+- **Why (what Idan asked for, in his words):**
+  - *"ושים לב ששמת ללאון 60 שעות קבלה, אבל בגיליון של סיכום אימוני סטודיו הצהרנו שיש לו 44 שעות קבלה. תעדכן בהתאם."*
+  - *"הוא לא יכול לקבל נסיעות פעמיים! רק תחת אחד מהם."*
+  - *"כי מאמנים שכירים (מה שבשחור) צריכים להיות רק תחת אימונים קבוצתיים 22660."*
+  - *"שים לב שתחת ש״ע חדר כושר מאמני חוץ יש לך גם שעות של עידו גליקו ונוי. בעמלות מכירות אישיים - חיצוני, יש גם את עידן."*
+  - *"שים לב שאם אנחנו מוחקים עובד שלא עובד אצלנו יותר, למחוק כל התייחסות אליו כי אז הנוסחאות לא תקניות. אורלי באומל."*
+  - *"ושים לב שיש לך עמודות שקפצו כאן, תמחק ותסדר אותן."*
+- **What it touches:**
+  - `jobs/billing_output.py`, `config/branches.json`, `config/invoices_ocr.json`, `AGENTS.md`, `docs/SYSTEM_MAP.md`, `docs/CLIENT_IDAN.md`, `docs/BUILDER_LOG.md`.
+- **How it was verified:**
+  - Full billing pipeline executed for Month 8.
+  - Verified Gym approval total = 114,908.45 ₪, Pilates approval total = 31,652.20 ₪.
+  - Verified Leon Col D Row 6 = 44.44h, Row 11 = 208.50 ₪; Col K Row 11 = None.
+  - Verified hours comparison table in Column J with 0.00 delta.
+
+---
+
+
 
 - **What changed:**
   1. **Standardized & Renamed Uploaded Invoices:**

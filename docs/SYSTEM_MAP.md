@@ -206,24 +206,30 @@ Below is the verified specification for the monthly billing calculations:
 
 ### 4. Travel Allowance (`תשלום נסיעות לשכירים`)
 - **Rule:**
-  - Salaried employees working up to 90 hours monthly (up to 50% capacity): **₪100.00**
-  - Salaried employees working over 90 hours monthly: **₪200.00**
+  - Salaried employees working under 60 hours monthly: **₪100.00**
+  - Salaried employees working 60–90 hours monthly: **₪150.00** (e.g. Bar Sidis, Niv Ben Haim, Opel Meyoni, Naama Hayon)
+  - Salaried employees working over 90 hours monthly: **₪200.00** (e.g. Arad Kotzer, Nicole Edelman)
+  - Leonid Verkhovsky (`לאוניד ורחובסקי`): **₪208.50** (fixed contract).
+- **Single Travel Principle:** An employee with a dual role (e.g. Leon) receives travel allowance **once only** (under reception column D, never duplicated under instructor column K).
 
 ### 5. Dual Role (Receptionist + Fitness Instructor)
-- **Rule:** Hours are strictly separated by project codes in Hilan (reception at ₪70 vs gym instruction at ₪75) without duplicate hours.
+- **Rule:** Hours are strictly separated by project codes in Hilan (reception at ₪70 vs gym instruction at ₪75) without duplicate hours. Leon's remaining shift hours after personal/studio sessions are split 50% Gym instructor (Col O) and 50% Receptionist (Col P). Reception hours in `דוח מרכז` link dynamically via `='סיכום אמוני סטודיו וקבוצה'!P22`.
 
-### 6. Fixed Management Fees
-- **Professional Management (`ניהול מקצועי`):** ₪2,500.00 fixed monthly.
-- **Gym Management (`ניהול חדר כושר`):** ₪22,000.00 fixed monthly.
+### 6. Salaried vs Freelance Class Groupings
+- **Rule:** Salaried instructors' group classes belong **strictly under line 22660** (`אימונים קבוצתיים` - Row 49).
+- Line 22653 (`אימוני סטודיו` - Row 52) for salaried staff is **₪0.00** (zeroed).
+- Line 22653 (`שיעורי סטודיו מאמני חוץ` - Row 53) is reserved **strictly for external freelance invoices**.
 
-### 7. Session Rates Charged to Developer
-- **Small Studio Class (`אימון סטודיו קטן`):** ₪180.00 per session.
-- **Pilates Studio Class (`סטודיו פילאטיס קטן`):** ₪185.00 per session.
-- **Personal Training (`אימון אישי`):** ₪115.00 per session.
+### 7. Inactive Employee Clean Sweep
+- **Rule:** When an employee terminates employment (e.g. Orly Baumel), all rows, lookup tables, and formulas referencing them across all sheets are purged to eliminate `#N/A` errors.
 
-### 8. Sales & Upgrade Commissions (`עמלות מכירת מנויים ושידרוגים`)
-- **Rule:** Input sales data provided in the sales sheet (`מכירות!M11`) **already includes the 8% National Insurance (`ביטוח לאומי`)**, so the figure is transferred directly without additional multiplication.
+### 8. Mixed Freelance Invoice Routing
+- **Rule:** Invoices with multiple services (e.g. Ido Gliko, Noy Asraf, Idan Wekser, Nir Eisenbach) are broken down per line item into their specific budget codes (shift hours -> 22604, PT -> 22650, studio -> 22653, management -> 22601/22655, sales commissions -> 22650 Row 61).
 
-### 9. Pilates Specific Staffing
+### 9. Hours Comparison Table Alignment
+- **Rule:** All values in the `השוואת שעות עבודה` table in `דוח מרכז` are aligned strictly in column J (Col 10) in a single unified column without horizontal staggering into column K.
+
+### 10. Pilates Specific Staffing
 - **Rule:** Naama Hayun (`נעמה חיון`) is the sole salaried pilates instructor; Nicole Edelman (`ניקול אדלמן`) is the pilates receptionist; all other instructors are freelancers.
+
 
