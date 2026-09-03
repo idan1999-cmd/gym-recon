@@ -9,6 +9,52 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 2. **חיוב יזם & דוח מרכז לאישור מנהל (Trainer & Staff Billing):** Computes monthly charges for the property owner/developer across shifts, reception, personal training, studio classes, management fees, and sales commissions.
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
+
+## 2026-09-03 — Complete August Formula Harmonization, Pilates Clean Sweep, Live Developer Charge Wiring, and Gil Tal Invoice Consolidation
+
+- **What changed:**
+  1. **Purged Duplicate Deliverable Files:**
+     - Streamlined `output/` to contain strictly the 4 official deliverable workbooks (`דו״ח מרכז חדר כושר אוגוסט 26.xlsx`, `דו״ח מרכז פילאטיס אוגוסט 26.xlsx`, `תקציב_מול_ביצוע_חדר_כושר.xlsx`, `תקציב_מול_ביצוע_פילאטיס.xlsx`).
+     - Removed obsolete duplicate files (`חיוב_חדר_כושר.xlsx`, `חיוב_פילאטיס.xlsx`, and background templates).
+  2. **Live Dynamic Excel Formulas in `חיוב יזם` (Both Branches):**
+     - Transformed all developer charge amount cells (Column F / 6) into live dynamic Excel formulas pointing directly to `דוח מרכז לאישור מנהל` (e.g. `='דוח מרכז לאישור מנהל'!D50+'דוח מרכז לאישור מנהל'!D54`), preserving interactive auditability.
+  3. **Salaried Breakdown Linkage (Gym Row 47 to 52):**
+     - Connected salaried expense rows directly to Column N summary (`=N26`, `=N25`, `=N29`, `=N27`, `=N28`), dynamically reflecting reception (6,936.80 ₪), gym shifts (21,051.60 ₪), group classes (3,120.00 ₪), and personal training (10,848.75 ₪).
+  4. **Freelance Baseline Formula Shapes (Gym Rows 53 to 56):**
+     - Restored authentic July baseline formula syntax for external trainers:
+       - Row 53 (Studio): `=SUM('סיכום אמוני סטודיו וקבוצה'!B3:B19)*'דוח מרכז לאישור מנהל'!P37`
+       - Row 54 (PT): `=SUM('סיכום אמוני סטודיו וקבוצה'!G3:L19)*'דוח מרכז לאישור מנהל'!O38`
+       - Row 55 (Groups): `=SUM('סיכום אמוני סטודיו וקבוצה'!C3:D19)*'דוח מרכז לאישור מנהל'!N38`
+       - Row 56 (Shifts): `=SUM('סיכום אמוני סטודיו וקבוצה'!N3:N19)*$E$37`
+  5. **Pilates Clean Sweep (Racheli Boim & Lihi Kinar Roster Purge):**
+     - Removed all remnants, names, and formulas referencing Racheli Boim and Lihi Kinar from `סיכום אימונים ומכירות מנויים`.
+     - Active Pilates roster strictly consists of the 7 active external instructors (Dafna, Linoy, Moran, Noy Freund, Sivan, Sapir, Noam Shalev).
+  6. **Pilates Sales Table Replacement & Dynamic Linking:**
+     - Completely purged the old July horizontal sales matrix from `סיכום אימונים ומכירות מנויים`.
+     - Inserted clean August sales commission table with Naama Hayon (0 ₪) and Nicole Edelman (2,894.40 ₪ via `=2680*1.08`).
+     - Connected Nicole's sales commission dynamically to Row 26 Col C in the top employee approval table (`='סיכום אימונים ומכירות מנויים'!C23`) and to Row 47 (`='סיכום אימונים ומכירות מנויים'!C24`).
+  7. **Gil Tal Invoices Consolidated & Renamed:**
+     - Merged `דרישת תשלום #1001` (5 PT @ 130 = 650 ₪) and `דרישת תשלום #1002` (4.75 shift hours @ 50 = 237.5 ₪) into a single standard PDF: `החשבונית של גיל טל 1001-1002.pdf`.
+     - Removed individual parts and duplicates from `input/dropzone/invoices/`.
+
+- **Why (what Idan asked for, in his words):**
+  - *"כי בסופו של דבר החיוב יזם בתמונה הזו, צריך לקבל את המידע מהדוח מרכז לאישור מנהל."*
+  - *"וגם כאן - שתהיה נוסחה דינאמית, לא רק מספר סטטי. זה שאתה יודע, זה מעולה - אבל צריך להראות את זה כמו שצריך."*
+  - *"תוריד את רחלי בויים מהמצבה בפילאטיס מכשירים ואת ליהי כינר. תמחק כל התייחסות משם. ושים לב שהטבלה של המכירות בפילאטיס מכשירים היא טבלה ישנה! תצרף רק את הטבלה החדשה של החודש שעשיתי (של אוגוסט) עם העמלות של ניקול ונעמה."*
+  - *"זו הטבלה הישנה!!!! בפילאטיס מכשירים. אותה תמחק מהגיליון."*
+  - *"ראיתי שכל הנוסחאות שעשית לגבי אימונים אישיים של מאמני חוץ וראשי קבוצה של מאמני חוץ, אני לא בטוח שהנוסחאות תקינות. תוודא רגע מול הדוחות הישנים שיש לנו שעשינו כבר ביולי... תבדוק אותה רגע ותראה מה הפערים."*
+  - *"שים לב שבדו״ח מרכז פילאטיס איבדת את הנוסחא וההתייחסות למכירות של ניקול! צריך למשוך בצורה נכונה מהטבלה שצרפנו."*
+  - *"שים לב שצרפתי לתיקייה חשבוניות אחרונות של גיל טל. תאחד אותן ותשנה שם. אין צורך לעדכן יותר את הדו״ח המרכז."*
+
+- **What it touches:**
+  - `jobs/billing_output.py`, `tools/billing.py`, `input/dropzone/invoices/`, `AGENTS.md`, `docs/SYSTEM_MAP.md`, `docs/CLIENT_IDAN.md`, `docs/BUILDER_LOG.md`.
+
+- **How it was verified:**
+  - Regenerated all workbooks using `tools/billing.py`.
+  - Inspected cell formulas in Python with `openpyxl` (data_only=False) to verify dynamic links.
+  - Verified `החשבונית של גיל טל 1001-1002.pdf` contains both pages and is readable.
+
+---
 ## 2026-09-03 — August Close Finalization: Reception Dynamic Formulas, Single Travel Allocation, 22660 Salaried Class Rules, and Hours Comparison Alignment
 
 - **What changed:**
