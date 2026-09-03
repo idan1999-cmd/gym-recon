@@ -665,8 +665,11 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                 if t_name:
                     _, canon, _, _ = resolve_trainer(t_name, aliases)
                     arb = arbox_data.get(canon, {})
-                    if arb.get("pilates", 0) > 0:
-                        ws.cell(r, 3, value=arb["pilates"])
+                    inv_cnt = invoice_std.get(canon, 0)
+                    arb_cnt = arb.get("pilates", 0)
+                    cnt = inv_cnt if inv_cnt > 0 else arb_cnt
+                    if cnt > 0:
+                        ws.cell(r, 3, value=cnt)
 
             # Set Naama Hayon (Row 13) and Nicole Edelman (Row 14)
             ws.cell(13, 3, value=72.0)  # Naama studio hours

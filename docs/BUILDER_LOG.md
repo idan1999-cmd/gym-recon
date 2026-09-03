@@ -10,6 +10,35 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
 
+## 2026-09-03 — Missing Invoices Ingestion (Ran Kislov, Lena Brown, Noy Freund) & Gil Tal Verification
+
+- **What changed:**
+  1. **Standardized & Renamed Uploaded Invoices:**
+     - Converted receipt images to PDF and standardized names:
+       - `החשבונית של לנה ברואון 19.pdf` (3 studio classes x 150 ₪ = 450.00 ₪).
+       - `החשבונית של רן קיסלוב 0396.pdf` (12 shift hours x 50 ₪ = 600.00 ₪).
+       - `החשבונית של נוי פרוינד 80166.pdf` (2 reformer + 1 mat = 430.00 ₪).
+  2. **Updated OCR Configuration & Config Lines:**
+     - Added the 3 new invoice records to `config/invoices_ocr.json`.
+     - Added `"pilates"` category to `config/branches.json` under `external_lines` for Pilates branch.
+  3. **Verified Gil Tal Status (גיל טל):**
+     - Confirmed that Invoice 1002 (237.5 ₪) covers only **4.75 hours of Gym shifts** (3.8.26).
+     - Verified that in Arbox August report (`דו״ח שיעורים אוגוסט 2026.csv`), Gil Tal conducted **5 Studio/Group classes** (TRX and A+ Endurance on 4.8, 10.8, 24.8, 25.8, 31.8) for which **no invoice has been submitted yet**.
+  4. **Updated Deliverables:**
+     - **חדר כושר (`חיוב_חדר_כושר.xlsx`):** Total updated to **`116,714.86 ₪`** (includes Lena Brown 450 ₪ studio + Ran Kislov 600 ₪ shifts).
+     - **פילאטיס (`חיוב_פילאטיס.xlsx`):** Total updated to **`31,652.20 ₪`** (includes all freelance Pilates invoices: Dafna, Linoy, Sivan, Noy).
+- **Why (what Idan asked for, in his words if given):**
+  - *"העליתי בפניך את החשבוניות החסרות של רן קיסלוב, לנה ברואון, נוי פרויינד. לדעתי חסרה עוד של גיל טל - תוודא לי. תשנה את השמות בהתאם כפי שתיאמנו כבר"*
+- **What it touches:**
+  - `input/dropzone/invoices/`, `config/invoices_ocr.json`, `config/branches.json`, `jobs/billing_output.py`, `output/חיוב_*.xlsx`, `docs/BUILDER_LOG.md`.
+- **How it was verified:**
+  - Verified Gym workbook contains Lena Brown on Row 16 (Col B=3) and Ran Kislov on Row 9 (Col N=12).
+  - Verified Pilates workbook contains Noy Freund on Row 7 (Col C=3).
+  - Verified 5 unbilled Arbox studio sessions for Gil Tal in August.
+  - All 94 automated tests passed (0 failures).
+
+---
+
 ## 2026-08-31 — Annual Supplier Contract Badging & Multi-Month Recognition
 
 - **What changed:** 
