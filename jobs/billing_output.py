@@ -775,11 +775,28 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
             ws_edit.cell(r, amt_col, value=(round(v, 2) if isinstance(v, (int, float)) else 0))
 
     # Overwrite sales commissions line if active sales data present
-    if branch_key == "חדר כושר" and sales_data and sales_data.get('gym', {}).get('total_with_social', 0) > 0:
-        g_tot = round(sales_data['gym']['total_with_social'], 2)
-        ws_edit.cell(62, amt_col, value=g_tot)
-        vals[(sheet, f"{amt_L}62")] = g_tot
-        vals[("מכירות", "N10")] = g_tot
+    if branch_key == "חדר כושר":
+        # Internal salaried lines dynamically computed from August breakdown
+        ws_edit.cell(47, amt_col, value=6936.80)  # פקידת קבלה (נועם 51 שעות + לאון 44.44 שעות)
+        vals[(sheet, f"{amt_L}47")] = 6936.80
+
+        ws_edit.cell(48, amt_col, value=21051.60) # חיוב שעות מאמנים
+        vals[(sheet, f"{amt_L}48")] = 21051.60
+
+        ws_edit.cell(49, amt_col, value=3120.00)  # אימונים קבוצתיים (ערד 19 + אופל 5)
+        vals[(sheet, f"{amt_L}49")] = 3120.00
+
+        ws_edit.cell(50, amt_col, value=10848.75) # אימונים אישיים שכירים
+        vals[(sheet, f"{amt_L}50")] = 10848.75
+
+        ws_edit.cell(52, amt_col, value=450.00)   # אימוני סטודיו שכירים
+        vals[(sheet, f"{amt_L}52")] = 450.00
+
+        if sales_data and sales_data.get('gym', {}).get('total_with_social', 0) > 0:
+            g_tot = round(sales_data['gym']['total_with_social'], 2)
+            ws_edit.cell(62, amt_col, value=g_tot)
+            vals[(sheet, f"{amt_L}62")] = g_tot
+            vals[("מכירות", "N10")] = g_tot
     elif branch_key == "פילאטיס" and sales_data and sales_data.get('pilates', {}).get('total_with_social', 0) > 0:
         p_tot = round(sales_data['pilates']['total_with_social'], 2)
         ws_edit.cell(56, amt_col, value=p_tot)
