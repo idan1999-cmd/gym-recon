@@ -302,28 +302,45 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                     invoice_std[name_key] = invoice_std.get(name_key, 0) + qty
 
     if branch_key == "חדר כושר":
+        # Remove any cell or row referencing Orly Baumel across the entire workbook
+        for sname in wb.sheetnames:
+            ws_scan = wb[sname]
+            for r in range(1, ws_scan.max_row + 1):
+                for c in range(1, ws_scan.max_column + 1):
+                    val = ws_scan.cell(r, c).value
+                    if val and isinstance(val, str) and ("אורלי" in val or "באומל" in val):
+                        for c_clear in range(1, ws_scan.max_column + 1):
+                            ws_scan.cell(r, c_clear).value = None
+
         if "סיכום אמוני סטודיו וקבוצה" in wb.sheetnames:
             ws = wb["סיכום אמוני סטודיו וקבוצה"]
             # Freelance trainers (rows 3 to 19) from Invoice and Arbox
             for r in range(3, 20):
                 t_name = ws.cell(r, 1).value
-                if t_name:
-                    _, canon, _, _ = resolve_trainer(t_name, aliases)
-                    arb = arbox_data.get(canon, {})
-                    inv_s = invoice_std.get(canon, 0)
-                    arb_s = arb.get("classes", 0)
-                    has_inv = (canon in invoice_std or canon in invoice_shifts or canon in invoice_pt)
-                    val_s = inv_s if inv_s > 0 else (arb_s if (arb_s > 0 and not has_inv) else 0)
-                    ws.cell(r, 2).value = val_s if val_s > 0 else None
-                    ws.cell(r, 3).value = None
+                if not t_name:
+                    for c_clear in range(2, 18):
+                        ws.cell(r, c_clear).value = None
+                    continue
+                _, canon, _, _ = resolve_trainer(t_name, aliases)
+                if canon in ["אורלי באומל", "אורלי", "באומל"]:
+                    for c_clear in range(1, 18):
+                        ws.cell(r, c_clear).value = None
+                    continue
+                arb = arbox_data.get(canon, {})
+                inv_s = invoice_std.get(canon, 0)
+                arb_s = arb.get("classes", 0)
+                has_inv = (canon in invoice_std or canon in invoice_shifts or canon in invoice_pt)
+                val_s = inv_s if inv_s > 0 else (arb_s if (arb_s > 0 and not has_inv) else 0)
+                ws.cell(r, 2).value = val_s if val_s > 0 else None
+                ws.cell(r, 3).value = None
 
-                    inv_p = invoice_pt.get(canon, 0)
-                    arb_p = arb.get("personal", 0)
-                    val_p = inv_p if inv_p > 0 else (arb_p if arb_p > 0 else 0)
-                    ws.cell(r, 7).value = val_p if val_p > 0 else None
+                inv_p = invoice_pt.get(canon, 0)
+                arb_p = arb.get("personal", 0)
+                val_p = inv_p if inv_p > 0 else (arb_p if arb_p > 0 else 0)
+                ws.cell(r, 7).value = val_p if val_p > 0 else None
 
-                    inv_sh = invoice_shifts.get(canon, 0)
-                    ws.cell(r, 14).value = inv_sh if inv_sh > 0 else None
+                inv_sh = invoice_shifts.get(canon, 0)
+                ws.cell(r, 14).value = inv_sh if inv_sh > 0 else None
 
             # Salaried trainers (rows 20 to 29) from Hilan - using total_wage (שעות משכר)
             for r in range(20, 30):
