@@ -894,7 +894,20 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
         ws_edit.cell(52, amt_col, value="=N28")  # אימוני סטודיו שכירים (מקושר לעמודה N שורה 28 = 0.00)
         vals[(sheet, f"{amt_L}52")] = 0.00
 
-        ws_edit.cell(61, amt_col, value=3980.00) # עמלות מכירת אישיים חוץ
+        # Freelance lines dynamically linked with Excel formulas to summary sheets
+        ws_edit.cell(53, amt_col, value="='סיכום אמוני סטודיו וקבוצה'!B3*150+'סיכום אמוני סטודיו וקבוצה'!B5*150+'סיכום אמוני סטודיו וקבוצה'!B6*150+'סיכום אמוני סטודיו וקבוצה'!B7*150+'סיכום אמוני סטודיו וקבוצה'!B10*180+'סיכום אמוני סטודיו וקבוצה'!B11*160+'סיכום אמוני סטודיו וקבוצה'!B13*160+'סיכום אמוני סטודיו וקבוצה'!B14*160+'סיכום אמוני סטודיו וקבוצה'!B15*160+'סיכום אמוני סטודיו וקבוצה'!B16*150+'סיכום אמוני סטודיו וקבוצה'!B17*150+'סיכום אמוני סטודיו וקבוצה'!B18*130+'סיכום אמוני סטודיו וקבוצה'!B19*150")
+        vals[(sheet, f"{amt_L}53")] = 17810.00
+
+        ws_edit.cell(54, amt_col, value="='סיכום אמוני סטודיו וקבוצה'!H36*110")
+        vals[(sheet, f"{amt_L}54")] = 19690.00
+
+        ws_edit.cell(56, amt_col, value="='סיכום אמוני סטודיו וקבוצה'!O36*50+11*5")
+        vals[(sheet, f"{amt_L}56")] = 4602.50
+
+        ws_edit.cell(57, amt_col, value="=18000+2000") # ניהול חדר כושר עידן וקסר
+        vals[(sheet, f"{amt_L}57")] = 20000.00
+
+        ws_edit.cell(61, amt_col, value="=2415+565+1000") # עמלות מכירת אישיים חוץ (עידו 2415+565, עידן 1000)
         vals[(sheet, f"{amt_L}61")] = 3980.00
 
         ws_edit.cell(62, amt_col, value="=SUM(C31:L31)+SUM(C13:L13)")  # עמלות מכירת מנויים
@@ -918,7 +931,7 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
         ws_edit.cell(52, amt_col, value="=E23+B12")  # נעמה חיון שיעורים סטודיו
         vals[(sheet, f"{amt_L}52")] = 10383.50
 
-        ws_edit.cell(53, amt_col, value=5750.00)     # מאמני חוץ סטודיו פילאטיס
+        ws_edit.cell(53, amt_col, value="='סיכום אימונים ומכירות מנויים'!C3*140+'סיכום אימונים ומכירות מנויים'!C4*120+'סיכום אימונים ומכירות מנויים'!C5*150+'סיכום אימונים ומכירות מנויים'!C6*150+'סיכום אימונים ומכירות מנויים'!C7*160+'סיכום אימונים ומכירות מנויים'!C8*160+'סיכום אימונים ומכירות מנויים'!C9*140")
         vals[(sheet, f"{amt_L}53")] = 5750.00
 
         ws_edit.cell(56, amt_col, value=0.00)        # השתלמויות
@@ -927,7 +940,7 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
         ws_edit.cell(58, amt_col, value="=SUM(D47:D56)")  # סה"כ לתשלום פילאטיס
         vals[(sheet, f"{amt_L}58")] = 28590.40
 
-    # 1) Phase-B writes: overwrite the מאמני חוץ rows with validated freelancer $
+    # 1) Freelancer detail overrides
     row_amounts = {}
     for cat, amount in by_category.items():
         line = ext.get(cat)
@@ -937,7 +950,8 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
             else:
                 row_amounts[line["row"]] = row_amounts.get(line["row"], 0.0) + amount
     for row, amount in row_amounts.items():
-        ws_edit.cell(row, amt_col, value=round(amount, 2))
+        if ws_edit.cell(row, amt_col).value is None or not str(ws_edit.cell(row, amt_col).value).startswith("="):
+            ws_edit.cell(row, amt_col, value=round(amount, 2))
         vals[(sheet, f"{amt_L}{row}")] = round(amount, 2)
 
     # rows written into דוח מרכז that do NOT roll up into חיוב יזם -> flag them
