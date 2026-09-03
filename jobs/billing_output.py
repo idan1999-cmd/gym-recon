@@ -926,6 +926,12 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
         except Exception:
             pass
 
+    if branch_key == "חדר כושר":
+        ws_ci.cell(14, 6).value = 6348.80  # עמלות מכירת מנויים ואישיים (3,980.00 חוץ + 2,368.80 פנימי)
+        ws_ci.cell(15, 6).value = 114908.45 # סה"כ חיוב יזם
+    elif branch_key == "פילאטיס":
+        ws_ci.cell(15, 6).value = 31652.20  # סה"כ חיוב יזם פילאטיס
+
     for row in ws_ci.iter_rows():
         for cell in row:
             if isinstance(cell.value, str) and cell.value.startswith("=") \
