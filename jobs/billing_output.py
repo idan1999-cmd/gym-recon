@@ -805,40 +805,27 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
             ws.cell(14, 4).value = None
             ws.cell(14, 5, value=103.33) # Nicole reception hours
 
-            # Clear all old sales rows 23-26
-            for r_clr in range(23, 27):
-                for c_clr in range(1, 20):
+            # Wipe out entire old July sales matrix (rows 18 to 35 across all columns)
+            for r_clr in range(18, 36):
+                for c_clr in range(1, 26):
                     ws.cell(r_clr, c_clr).value = None
 
-            # August Pilates Sales Table: Naama Hayon (Row 23) and Nicole Edelman (Row 24)
-            ws.cell(23, 2, value="נעמה חיון")
-            ws.cell(23, 4, value=50)
-            ws.cell(23, 6, value=30)
-            ws.cell(23, 8, value=70)
-            ws.cell(23, 10, value=72)
-            ws.cell(23, 13, value="=IFERROR(C23*D23+E23*F23+G23*H23+I23*J23, 0)")
-            ws.cell(23, 14, value="=M23*1.08")
+            # Build clean August 2026 Pilates Sales Commission Table
+            ws.cell(20, 2, value='סה"כ ריכוז עמלות ומאמץ מיוחד  8/26 - פילאטיס')
+            ws.cell(21, 2, value='שם המדריך')
+            ws.cell(21, 3, value='עמלת מכירה כולל 8% ביטוח לאומי')
+            ws.cell(21, 4, value='סוג')
 
-            ws.cell(24, 2, value="ניקול אדלמן")
-            ws.cell(24, 3, value=2)      # מנויים חדשים חצי שנתי
-            ws.cell(24, 4, value=50)     # עמלה
-            ws.cell(24, 5, value=21.5)   # חידוש מנויים
-            ws.cell(24, 6, value=30)     # עמלה
-            ws.cell(24, 7, value=22.5)   # מנויים חדשים שנתי
-            ws.cell(24, 8, value=70)     # עמלה
-            ws.cell(24, 9, value=5)      # מזומן שנתי
-            ws.cell(24, 10, value=72)    # עמלה
-            ws.cell(24, 13, value="=C24*D24+E24*F24+G24*H24+I24*J24")
-            ws.cell(24, 14, value="=M24*1.08")
+            ws.cell(22, 2, value='נעמה חיון')
+            ws.cell(22, 3, value=0.0)
+            ws.cell(22, 4, value='מכירות')
 
-            # Sales summary Row 27
-            ws.cell(27, 2, value='סך הכל')
-            ws.cell(27, 3, value="=SUM(C23:C26)")
-            ws.cell(27, 5, value="=SUM(E23:E26)")
-            ws.cell(27, 7, value="=SUM(G23:G26)")
-            ws.cell(27, 9, value="=SUM(I23:I26)")
-            ws.cell(27, 13, value="=SUM(M23:M26)")
-            ws.cell(27, 14, value="=SUM(N23:N26)")
+            ws.cell(23, 2, value='ניקול אדלמן')
+            ws.cell(23, 3, value='=2680*1.08')
+            ws.cell(23, 4, value='מכירות')
+
+            ws.cell(24, 2, value='סך הכל')
+            ws.cell(24, 3, value='=SUM(C22:C23)')
     return sales_data
 
 
@@ -919,7 +906,7 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
         ws_edit.cell(64, amt_col, value="=SUM(D47:D62)")  # סה"כ לתשלום חדר כושר
         vals[(sheet, f"{amt_L}64")] = 114908.45
     elif branch_key == "פילאטיס":
-        ws_edit.cell(47, amt_col, value="='סיכום אימונים ומכירות מנויים'!N27")
+        ws_edit.cell(47, amt_col, value="='סיכום אימונים ומכירות מנויים'!C24")
         vals[(sheet, f"{amt_L}47")] = 2894.40
 
         ws_edit.cell(49, amt_col, value="=E21+C12")  # ניקול אדלמן שעות עבודה
