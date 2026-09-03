@@ -36,6 +36,23 @@ def _num(x):
     except (ValueError, TypeError): return 0.0
 
 
+def calc_travel_allowance(hours: float, is_leon: bool = False) -> float:
+    """
+    Computes proportional travel allowance for salaried employees.
+    Max cap is 208 ₪ for ~100-120 hours.
+    Fewer hours receive a clean, rounded proportional amount (rounded to multiples of 10).
+    """
+    if not hours or hours <= 0:
+        return None
+    if is_leon:
+        return 208.50
+    if hours >= 100.0:
+        return 208.0
+    raw = (hours / 110.0) * 208.0
+    rounded = max(40.0, round(raw / 10.0) * 10.0)
+    return min(208.0, rounded)
+
+
 def _require_ref(part, formula):
     m = _CELLREF.fullmatch(part)
     if not m:
@@ -478,30 +495,22 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                 ot150 = hil.get("ot150", 0) if hil else 0
                 ot175 = hil.get("ot175", 0) if hil else 0
                 ot200 = hil.get("ot200", 0) if hil else 0
-                tot_hrs = hil.get("total_wage", 0) if hil else 0
+                tot_hrs = hil.get("total_wage", 0) if (hil and hil.get("total_wage", 0) > 0) else _num(ws_main.cell(6, c).value)
 
                 ws_main.cell(7, c).value = round(ot125, 2) if ot125 > 0 else None
                 ws_main.cell(8, c).value = round(ot150, 2) if ot150 > 0 else None
                 ws_main.cell(9, c).value = round(ot175, 2) if ot175 > 0 else None
                 ws_main.cell(10, c).value = round(ot200, 2) if ot200 > 0 else None
 
-                # Travel allowance tiers: Leonid = 208.50 ONLY ONCE (reception Col D, not duplicated on Col K)
+                # Travel allowance: Max 208 ₪ for ~100-120h, proportional clean rounded for fewer hours
                 if "לאון" in str(emp_name) or canon in ["לאון ורחובסקי", "לאוניד ורחובסקי"]:
                     role = str(ws_main.cell(5, c).value or "")
                     if "קבלה" in role or c == 4:
-                        ws_main.cell(11, c).value = 208.5
+                        ws_main.cell(11, c).value = calc_travel_allowance(tot_hrs, is_leon=True)
                     else:
                         ws_main.cell(11, c).value = None
-                elif canon in ["גלעד וייס", "גלעד ויס"]:
-                    ws_main.cell(11, c).value = 100.0
-                elif tot_hrs > 90:
-                    ws_main.cell(11, c).value = 200.0
-                elif tot_hrs >= 60:
-                    ws_main.cell(11, c).value = 150.0
-                elif tot_hrs > 0:
-                    ws_main.cell(11, c).value = 100.0
                 else:
-                    ws_main.cell(11, c).value = None
+                    ws_main.cell(11, c).value = calc_travel_allowance(tot_hrs)
 
                 # Special effort bonus (מאמץ מיוחד) on Row 13
                 if canon in ["גלעד וייס", "גלעד ויס"]:
@@ -676,15 +685,8 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                 ws_main.cell(9, c).value = round(ot175, 2) if ot175 > 0 else None
                 ws_main.cell(10, c).value = round(ot200, 2) if ot200 > 0 else None
 
-                # Travel allowance tiers: >90 hrs = 200, 60-90 hrs = 150, <60 hrs = 100
-                if tot_wage > 90:
-                    ws_main.cell(12, c).value = 200.0
-                elif tot_wage >= 60:
-                    ws_main.cell(12, c).value = 150.0
-                elif tot_wage > 0:
-                    ws_main.cell(12, c).value = 100.0
-                else:
-                    ws_main.cell(12, c).value = None
+                # Travel allowance: Max 208 ₪ for ~100-120h, proportional clean rounded for fewer hours
+                ws_main.cell(12, c).value = calc_travel_allowance(tot_wage)
 
             # Hilan cross check rows 47-52 in Pilates
             pilates_hilan_hrs = round(sum(
