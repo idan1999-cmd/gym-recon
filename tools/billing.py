@@ -196,7 +196,8 @@ def main():
         except Exception:
             pass
 
-        out_path = os.path.join(output_dir, f"חיוב_{branch_file_key}.xlsx")
+        out_filename = f"דו״ח מרכז {bk} {month_he} 26.xlsx"
+        out_path = os.path.join(output_dir, out_filename)
         total = bo.build(bk, cfg, wb_path, by_category, held, new_trainers,
                          hilan, out_path, dynamic_target, missing_receipts=missing,
                          all_sessions=sessions, aliases=aliases,
