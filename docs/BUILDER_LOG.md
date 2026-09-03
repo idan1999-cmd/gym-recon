@@ -10,6 +10,19 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
 
+## 2026-09-03 — Billing Knowledge Law: Sales Commissions Multiplier (1.08) & Special Effort Sync
+
+- **What changed:**
+  - Codified and locked **Rule 11** in `AGENTS.md` and engine specification:
+    1. **Summary Report (`דוח מרכז`):** When extracting sales commissions from the raw sales commission summary sheet, the base amount **must be multiplied by 1.08 (including the "מאמץ מיוחד" / special effort component)** for both Gym (item `22662`) and Pilates (item `181-22636`).
+    2. **Salaried Control Report (`דוח בקרת שכר שכירים`):** When transferring commission figures to the salaried payroll control report, take the numbers **inclusive** (with the 1.08 multiplier and special effort), exactly matching the summary report for 100% developer reconciliation (0 delta).
+- **Why (what Idan asked for, in his words if given):**
+  - *"שים לב לחדד לעצמך כשאתה עושה את הדוח המרכז, את המכירות, אחרי שהוצאנו אותם מהריכז עמלות מכירה מהגיליון שאני מצרף לך, אתה חייב להכפיל אותם ב-1.08 כולל מאמץ מיוחד. כשאתה מעביר את הנתונים לדוח בקרת שכירים, לקחת את המספרים כולל - כמו שמופיע בדו״ח המרכז. אין צורך לעדכן, רק תעדכן אצלך ברישומים."*
+- **What it touches:**
+  - `AGENTS.md` (Rule 11), `docs/BUILDER_LOG.md`.
+
+---
+
 ## 2026-09-03 — Salaried Payroll Control Workbook Automation (`ריכוז בקרת שכר שכירים 08.26.xlsx`)
 
 - **What changed:**
