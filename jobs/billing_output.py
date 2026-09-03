@@ -377,6 +377,11 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                         ws.cell(r, 15).value = round(rem, 2) if rem > 0 else None
                         ws.cell(r, 16).value = None
 
+            # Clear Orly Baumel (Row 12) completely (ended employment)
+            ws.cell(12, 1).value = None
+            for c in range(2, 20):
+                ws.cell(12, c).value = None
+
             # Explicit dynamic summary formulas for Row 36 (orange summary row)
             ws.cell(36, 1).value = "=SUM(B3:B19)"   # סטודיו חיצוניים
             ws.cell(36, 2).value = "=SUM(B20:B28)"  # סטודיו פנימיים
@@ -398,7 +403,7 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
             ws.cell(36, 18).value = 0               # משמרת קבלה פנימי במשמרת
             ws.cell(36, 19).value = "=SUM(A36:R36)" # סה"כ
 
-        # Dynamically populate overtime & travel on 'דוח מרכז לאישור מנהל'
+        # Dynamically populate overtime, travel & bonuses on 'דוח מרכז לאישור מנהל'
         if "דוח מרכז לאישור מנהל" in wb.sheetnames:
             ws_main = wb["דוח מרכז לאישור מנהל"]
             # Connect Row 6 formulas to summary sheet for reception staff
@@ -420,12 +425,8 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                     continue
                 _, canon, _, _ = resolve_trainer(emp_name, aliases)
                 if canon in ["ניקול אדלמן", "ניקול איידלמן", "נעמה חיון"]:
-                    ws_main.cell(6, c).value = None
-                    ws_main.cell(7, c).value = None
-                    ws_main.cell(8, c).value = None
-                    ws_main.cell(9, c).value = None
-                    ws_main.cell(10, c).value = None
-                    ws_main.cell(11, c).value = None
+                    for r_clear in range(4, 30):
+                        ws_main.cell(r_clear, c).value = None
                     continue
 
                 hil = hilan_data.get(canon, {})
@@ -440,17 +441,27 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                 ws_main.cell(9, c).value = round(ot175, 2) if ot175 > 0 else None
                 ws_main.cell(10, c).value = round(ot200, 2) if ot200 > 0 else None
 
-                # Travel allowance rule: Leonid gets 208.50, <=90 hrs = 100, >90 hrs = 200
+                # Travel allowance: Leonid gets 208.50, Gilad gets 100, >90 hrs = 200, <=90 = 100
                 if "לאון" in str(emp_name) or canon in ["לאון ורחובסקי", "לאוניד ורחובסקי"]:
                     ws_main.cell(11, c).value = 208.5
+                elif canon in ["גלעד וייס", "גלעד ויס"]:
+                    ws_main.cell(11, c).value = 100.0
                 elif tot_hrs > 90:
-                    ws_main.cell(11, c).value = 200
+                    ws_main.cell(11, c).value = 200.0
                 elif tot_hrs > 0:
-                    ws_main.cell(11, c).value = 100
+                    ws_main.cell(11, c).value = 100.0
                 else:
                     ws_main.cell(11, c).value = None
 
-        # Populate / Replace raw 'חילנט' sheet content with active Hilan file (Summary rows only)
+                # Special effort bonus (מאמץ מיוחד) on Row 13
+                if canon in ["גלעד וייס", "גלעד ויס"]:
+                    ws_main.cell(13, c).value = 195.0
+                elif canon in ["בר סידיס", "בר סידס"]:
+                    ws_main.cell(13, c).value = 165.0
+                else:
+                    ws_main.cell(13, c).value = None
+
+        # Populate / Replace raw 'חילנט' sheet content with active Hilan file (Summary rows only, Gym only)
         if "חילנט" in wb.sheetnames and hilan_files:
             try:
                 from openpyxl.styles import Font, PatternFill, Border, Side
@@ -467,24 +478,43 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                     bottom=Side(style='double', color='000000')
                 )
 
+                pilates_names = ["חיון נעמה", "איידלמן ניקול", "נעמה חיון", "ניקול אדלמן", "ניקול איידלמן"]
                 out_r = 1
+                tot_g_wage = 0.0
                 for r in range(1, ws_src.max_row + 1):
                     row_vals = [ws_src.cell(r, c).value for c in range(1, ws_src.max_column + 1)]
                     is_summary = any(isinstance(v, str) and ("סה\"כ" in v or "סה״כ" in v or "סיכום" in v) for v in row_vals)
+                    is_pilates_emp = any(isinstance(v, str) and any(pn in v for pn in pilates_names) for v in row_vals)
 
-                    if r == 1 or is_summary:
+                    if is_pilates_emp:
+                        continue
+                    if r == 1 or (is_summary and not any("כללי" in str(v) for v in row_vals)):
                         for c in range(1, ws_src.max_column + 1):
                             val = ws_src.cell(r, c).value
                             if val is not None:
                                 ws_new.cell(out_r, c, value=val)
 
                         if is_summary and out_r > 1:
+                            w_val = ws_src.cell(r, 10).value or ws_src.cell(r, 13).value
+                            if isinstance(w_val, (int, float)):
+                                tot_g_wage += w_val
                             for c in range(1, ws_src.max_column + 1):
                                 cell = ws_new.cell(out_r, c)
                                 cell.font = summary_font
                                 cell.fill = summary_fill
                                 cell.border = summary_border
                         out_r += 1
+
+                # Add Gym grand total
+                ws_new.cell(out_r, 4, value='סה"כ כללי חדר כושר')
+                ws_new.cell(out_r, 10, value=round(tot_g_wage, 2))
+                ws_new.cell(out_r, 11, value=round(tot_g_wage, 2))
+                for c in range(1, ws_src.max_column + 1):
+                    cell = ws_new.cell(out_r, c)
+                    cell.font = summary_font
+                    cell.fill = summary_fill
+                    cell.border = summary_border
+
                 wb_src.close()
             except Exception as e:
                 pass
@@ -581,7 +611,7 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                 ws_main.cell(9, c).value = round(ot175, 2) if ot175 > 0 else None
                 ws_main.cell(10, c).value = round(ot200, 2) if ot200 > 0 else None
 
-                if tot_wage > 90:
+                if canon in ["נעמה חיון", "ניקול אדלמן", "ניקול איידלמן"] or tot_wage >= 70:
                     ws_main.cell(12, c).value = 200
                 elif tot_wage > 0:
                     ws_main.cell(12, c).value = 100
