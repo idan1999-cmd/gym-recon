@@ -881,14 +881,17 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
         ws_edit.cell(52, amt_col, value="=N28")  # אימוני סטודיו שכירים (מקושר לעמודה N שורה 28 = 0.00)
         vals[(sheet, f"{amt_L}52")] = 0.00
 
-        # Freelance lines dynamically linked with Excel formulas to summary sheets
-        ws_edit.cell(53, amt_col, value="='סיכום אמוני סטודיו וקבוצה'!B3*150+'סיכום אמוני סטודיו וקבוצה'!B5*150+'סיכום אמוני סטודיו וקבוצה'!B6*150+'סיכום אמוני סטודיו וקבוצה'!B7*150+'סיכום אמוני סטודיו וקבוצה'!B10*180+'סיכום אמוני סטודיו וקבוצה'!B11*160+'סיכום אמוני סטודיו וקבוצה'!B13*160+'סיכום אמוני סטודיו וקבוצה'!B14*160+'סיכום אמוני סטודיו וקבוצה'!B15*160+'סיכום אמוני סטודיו וקבוצה'!B16*150+'סיכום אמוני סטודיו וקבוצה'!B17*150+'סיכום אמוני סטודיו וקבוצה'!B18*130+'סיכום אמוני סטודיו וקבוצה'!B19*150")
+        # Freelance lines dynamically linked with Excel formulas to summary sheets (matching July baseline)
+        ws_edit.cell(53, amt_col, value="=SUM('סיכום אמוני סטודיו וקבוצה'!B3:B19)*'דוח מרכז לאישור מנהל'!P37")
         vals[(sheet, f"{amt_L}53")] = 17810.00
 
-        ws_edit.cell(54, amt_col, value="='סיכום אמוני סטודיו וקבוצה'!H36*110")
+        ws_edit.cell(54, amt_col, value="=SUM('סיכום אמוני סטודיו וקבוצה'!G3:L19)*'דוח מרכז לאישור מנהל'!O38")
         vals[(sheet, f"{amt_L}54")] = 19690.00
 
-        ws_edit.cell(56, amt_col, value="='סיכום אמוני סטודיו וקבוצה'!O36*50+11*5")
+        ws_edit.cell(55, amt_col, value="=SUM('סיכום אמוני סטודיו וקבוצה'!C3:D19)*'דוח מרכז לאישור מנהל'!N38")
+        vals[(sheet, f"{amt_L}55")] = 0.00
+
+        ws_edit.cell(56, amt_col, value="=SUM('סיכום אמוני סטודיו וקבוצה'!N3:N19)*$E$37")
         vals[(sheet, f"{amt_L}56")] = 4602.50
 
         ws_edit.cell(57, amt_col, value="=18000+2000") # ניהול חדר כושר עידן וקסר
