@@ -758,49 +758,87 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
             except Exception:
                 pass
 
-            for r in range(3, 11):
-                t_name = ws.cell(r, 2).value
-                if t_name:
-                    _, canon, _, _ = resolve_trainer(t_name, aliases)
-                    arb = arbox_data.get(canon, {})
-                    inv_cnt = invoice_std.get(canon, 0)
-                    arb_cnt = arb.get("pilates", 0)
-                    cnt = inv_cnt if inv_cnt > 0 else arb_cnt
-                    if cnt > 0:
-                        ws.cell(r, 3, value=cnt)
+            # Roster of active external Pilates trainers (Racheli Boim and Lihi Kinar removed completely)
+            roster = [
+                ("דפנה כץ", "דפנה כץ", 140),
+                ("לינוי מזרחי", "לינוי מזרחי", 120),
+                ("מורן קליין", "מורן קליין", 150),
+                ("נוי פרוינד צונג", "נוי פרוינד צונג", 150),
+                ("סיוון פריימן", "סיוון פריימן", 160),
+                ("ספיר הורוביץ", "ספיר הורוביץ", 160),
+                ("נועם שליו ", "נועם שליו", 140),
+            ]
+
+            # Populate external trainers cleanly without Racheli Boim or Lihi Kinar
+            for idx_t, (t_name, t_rate_name, t_rate) in enumerate(roster, start=3):
+                ws.cell(idx_t, 2, value=t_name)
+                _, canon, _, _ = resolve_trainer(t_name, aliases)
+                arb = arbox_data.get(canon, {})
+                inv_cnt = invoice_std.get(canon, 0)
+                arb_cnt = arb.get("pilates", 0)
+                cnt = inv_cnt if inv_cnt > 0 else arb_cnt
+                ws.cell(idx_t, 3, value=(cnt if cnt > 0 else None))
+                ws.cell(idx_t, 10, value=t_rate_name)
+                ws.cell(idx_t, 11, value=t_rate)
+
+            # Clear any leftover rows 10 & 11 from old roster
+            for r_clr in range(len(roster) + 3, 11):
+                for c_clr in range(1, 15):
+                    ws.cell(r_clr, c_clr).value = None
+
+            ws.cell(11, 2, value='סה"כ מאמנים חוץ')
+            ws.cell(11, 3, value=f"=SUM(C3:C{len(roster)+2})")
+            ws.cell(11, 4, value=f"=SUM(D3:D{len(roster)+2})")
+            ws.cell(11, 5, value=f"=SUM(E3:E{len(roster)+2})")
+            ws.cell(11, 6, value=f"=SUM(F3:F{len(roster)+2})")
+            ws.cell(11, 10, value='ממוצע לשיעור')
+            ws.cell(11, 11, value=f"=AVERAGE(K3:K{len(roster)+2})")
 
             # Set Naama Hayon (Row 13) and Nicole Edelman (Row 14)
+            ws.cell(13, 2, value="נעמה חיון")
             ws.cell(13, 3, value=72.0)  # Naama studio hours
             ws.cell(13, 4).value = None
             ws.cell(13, 5).value = None
+
+            ws.cell(14, 2, value="ניקול איידלמן")
             ws.cell(14, 3).value = None
             ws.cell(14, 4).value = None
             ws.cell(14, 5, value=103.33) # Nicole reception hours
 
-            # Clear Naama (Row 23), Leon (Row 24) and Noam (Row 25) from Pilates sales
-            for r_clr in [23, 24, 25]:
+            # Clear all old sales rows 23-26
+            for r_clr in range(23, 27):
                 for c_clr in range(1, 20):
                     ws.cell(r_clr, c_clr).value = None
 
-            # Populate Nicole Edelman sales (Row 26)
-            ws.cell(26, 2, value="ניקול אדלמן")
-            ws.cell(26, 3, value=2)      # מנויים חדשים חצי שנתי
-            ws.cell(26, 4, value=50)     # עמלה
-            ws.cell(26, 5, value=21.5)   # חידוש מנויים
-            ws.cell(26, 6, value=30)     # עמלה
-            ws.cell(26, 7, value=22.5)   # מנויים חדשים שנתי
-            ws.cell(26, 8, value=70)     # עמלה
-            ws.cell(26, 9, value=5)      # מזומן שנתי
-            ws.cell(26, 10, value=72)    # עמלה
-            ws.cell(26, 13, value="=C26*D26+E26*F26+G26*H26+I26*J26")
-            ws.cell(26, 14, value="=M26*1.08")
+            # August Pilates Sales Table: Naama Hayon (Row 23) and Nicole Edelman (Row 24)
+            ws.cell(23, 2, value="נעמה חיון")
+            ws.cell(23, 4, value=50)
+            ws.cell(23, 6, value=30)
+            ws.cell(23, 8, value=70)
+            ws.cell(23, 10, value=72)
+            ws.cell(23, 13, value="=IFERROR(C23*D23+E23*F23+G23*H23+I23*J23, 0)")
+            ws.cell(23, 14, value="=M23*1.08")
+
+            ws.cell(24, 2, value="ניקול אדלמן")
+            ws.cell(24, 3, value=2)      # מנויים חדשים חצי שנתי
+            ws.cell(24, 4, value=50)     # עמלה
+            ws.cell(24, 5, value=21.5)   # חידוש מנויים
+            ws.cell(24, 6, value=30)     # עמלה
+            ws.cell(24, 7, value=22.5)   # מנויים חדשים שנתי
+            ws.cell(24, 8, value=70)     # עמלה
+            ws.cell(24, 9, value=5)      # מזומן שנתי
+            ws.cell(24, 10, value=72)    # עמלה
+            ws.cell(24, 13, value="=C24*D24+E24*F24+G24*H24+I24*J24")
+            ws.cell(24, 14, value="=M24*1.08")
 
             # Sales summary Row 27
-            if sales_data and sales_data.get('pilates', {}).get('total_with_social', 0) > 0:
-                p_tot = sales_data['pilates']['total_with_social']
-                p_wage = sales_data['pilates']['total_wage']
-                ws.cell(27, 14, value=round(p_tot, 2))
-                ws.cell(27, 13, value=round(p_wage, 2))
+            ws.cell(27, 2, value='סך הכל')
+            ws.cell(27, 3, value="=SUM(C23:C26)")
+            ws.cell(27, 5, value="=SUM(E23:E26)")
+            ws.cell(27, 7, value="=SUM(G23:G26)")
+            ws.cell(27, 9, value="=SUM(I23:I26)")
+            ws.cell(27, 13, value="=SUM(M23:M26)")
+            ws.cell(27, 14, value="=SUM(N23:N26)")
     return sales_data
 
 
@@ -869,7 +907,7 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
         vals[(sheet, f"{amt_L}64")] = 114908.45
     elif branch_key == "פילאטיס":
         ws_edit.cell(47, amt_col, value="='סיכום אימונים ומכירות מנויים'!N27")
-        vals[(sheet, f"{amt_L}47")] = 3061.80
+        vals[(sheet, f"{amt_L}47")] = 2894.40
 
         ws_edit.cell(49, amt_col, value="=E21+C12")  # ניקול אדלמן שעות עבודה
         vals[(sheet, f"{amt_L}49")] = 6062.50
@@ -883,11 +921,11 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
         ws_edit.cell(53, amt_col, value=5750.00)     # מאמני חוץ סטודיו פילאטיס
         vals[(sheet, f"{amt_L}53")] = 5750.00
 
-        ws_edit.cell(56, amt_col, value=2894.40)     # עמלות מכירה ניקול
-        vals[(sheet, f"{amt_L}56")] = 2894.40
+        ws_edit.cell(56, amt_col, value=0.00)        # השתלמויות
+        vals[(sheet, f"{amt_L}56")] = 0.00
 
         ws_edit.cell(58, amt_col, value="=SUM(D47:D56)")  # סה"כ לתשלום פילאטיס
-        vals[(sheet, f"{amt_L}58")] = 31652.20
+        vals[(sheet, f"{amt_L}58")] = 28590.40
 
     # 1) Phase-B writes: overwrite the מאמני חוץ rows with validated freelancer $
     row_amounts = {}
