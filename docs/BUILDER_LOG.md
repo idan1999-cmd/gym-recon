@@ -37,6 +37,14 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
        - `60 – 90` hours: **150.00 ₪** (e.g. Bar Sidis 66h, Niv Ben Haim 64h, Opel Meyoni 63h, Naama Hayon 72h)
        - `> 90` hours: **200.00 ₪** (e.g. Arad Kotzer 122.75h, Nicole Edelman 103.33h)
        - Leonid Verkhovsky: **208.50 ₪** (fixed contract)
+  9. **Idan Wekser Receipt (#40558) Ingestion:**
+     - Renamed uploaded receipt to `החשבונית של עידן וקסר 40558.pdf` (Total ₪22,380 before VAT: ₪18,000 management, 28 PT @ 110 = ₪3,080, 2 studio @ 150 = ₪300, ₪1,000 sales commission).
+     - Connected 28 PT and 2 studio to Row 5 (`עידן וקסר`) in `סיכום אמוני סטודיו וקבוצה`.
+  10. **Official Deliverable File Renaming & Output Directory Cleanup:**
+     - Created clean official deliverable workbooks in `output/`:
+       - `output/דו״ח מרכז חדר כושר אוגוסט 26.xlsx`
+       - `output/דו״ח מרכז פילאטיס אוגוסט 26.xlsx`
+     - Removed all temporary/test files (`_t_*.xlsx`, `test_*.xlsx`, `~$*.xlsx`, temporary json dumps) from `output/`.
 - **Why (what Idan asked for, in his words if given):**
   - *"לגבי נסיעות, תעשה שמי שעושה בין 60-90 שעות, יקבל 150 ש״ח נסיעות."*
 - **What it touches:**

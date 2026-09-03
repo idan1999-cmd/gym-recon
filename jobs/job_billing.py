@@ -99,10 +99,11 @@ def validate_invoices(invoices, branch_key, all_sessions, aliases, pay, log, tar
                     item_cat = item.get("category") or "studio"
                     item_amt = _num(item.get("total"))
                     if item_cat == "management":
-                        if branch_key == "חדר כושר":
-                            by_category[item_cat] = by_category.get(item_cat, 0.0) + 2500.0
-                        elif branch_key == "פילאטיס":
-                            by_category[item_cat] = by_category.get(item_cat, 0.0) + 1500.0
+                        if "ניר" in str(inv.get("trainer", "")):
+                            if branch_key == "חדר כושר":
+                                by_category[item_cat] = by_category.get(item_cat, 0.0) + 2500.0
+                            elif branch_key == "פילאטיס":
+                                by_category[item_cat] = by_category.get(item_cat, 0.0) + 1500.0
                     else:
                         if branch_key == "חדר כושר":
                             by_category[item_cat] = by_category.get(item_cat, 0.0) + item_amt
