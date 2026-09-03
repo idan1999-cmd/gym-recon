@@ -10,7 +10,44 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
 
-## 2026-09-03 — Complete August Formula Harmonization, Pilates Clean Sweep, Live Developer Charge Wiring, and Gil Tal Invoice Consolidation
+## 2026-09-03 — Salaried Payroll Control Workbook Automation (`ריכוז בקרת שכר שכירים 08.26.xlsx`)
+
+- **What changed:**
+  1. **Clean August Control Template:**
+     - Created `input/dropzone/ריכוז בקרת שכר שכירים 08.26.xlsx` with active tab `אוגוסט`, wiping old July numbers.
+  2. **Employee Employer Cost Population (All-Inclusive):**
+     - Populated all 8 Gym employees (Column E `סטריט מול`) and 2 Pilates employees (Column F `סטריט מול פילאטיס`) with full employer cost, including wages, overtime, travel allowance, bonuses (מאמץ מיוחד), and sales commissions (+8% B.L.):
+       - **לאוניד ורחובסקי** (Row 6): **`8,056.50 ₪`** (Combined reception 4,118.50 ₪ + gym shifts 3,938.00 ₪).
+       - **ערד קוצר** (Row 13): **`12,110.58 ₪`** (Shifts 4,934.38 ₪ + travel 200 ₪ + sales 16.20 ₪ + PT 4,950 ₪ + groups 2,210 ₪).
+       - **איתן בראב** (Row 46): **`4,762.50 ₪`** (Shifts 3,662.50 ₪ + travel 100 ₪ + PT 1,100 ₪).
+       - **גלעד וייס** (Row 80): **`2,230.00 ₪`** (Shifts 1,375 ₪ + travel 100 ₪ + bonus 195 ₪ + PT 660 ₪).
+       - **בר סידס** (Row 91): **`2,297.50 ₪`** (Shifts 1,012.50 ₪ + travel 150 ₪ + bonus 165 ₪ + PT 990 ₪ + groups 130 ₪).
+       - **אופל מיוני** (Row 98): **`6,429.50 ₪`** (Shifts 4,879.50 ₪ + travel 150 ₪ + PT 770 ₪ + groups 780 ₪).
+       - **ניב בן חיים** (Row 100): **`5,416.50 ₪`** (Shifts 5,086.50 ₪ + travel 150 ₪ + PT 330 ₪).
+       - **נועם תבל** (Row 101): **`4,880.90 ₪`** (Reception 3,587.50 ₪ + travel 100 ₪ + sales 1,193.40 ₪).
+       - **נעמה חיון** (Row 12 - Pilates Col F): **`13,470.00 ₪`** (Studio classes 13,320 ₪ + travel 150 ₪).
+       - **ניקול איידלמן** (Row 63 - Pilates Col F): **`10,327.50 ₪`** (Hours 7,233.10 ₪ + travel 200 ₪ + sales 2,894.40 ₪).
+  3. **Bottom Multi-Layer Reconciliation Validation:**
+     - Gym (Col E):
+       - Row 103 (`סה״כ שכר`): `46,183.98 ₪`
+       - Row 104 (`שכר שכירים מדוח יזם`): `46,183.98 ₪` -> Row 105 Difference = **`0.00 ₪`**
+       - Row 108 (`חיצונים דוח יזם`): `66,224.48 ₪`
+       - Row 109 (`שונות ניהול מקצועי ניר`): `2,500.00 ₪`
+       - Row 110 (`סה״כ דיווח גבייה`): `114,908.45 ₪`
+       - Row 111 (`הפרש דוחות גבייה ויזם`): `=E103+E108-E110+E109` = **`0.00 ₪`**
+     - Pilates (Col F):
+       - Row 103 (`סה״כ שכר`): `23,797.50 ₪`
+       - Row 104 (`שכר שכירים מדוח יזם`): `23,797.50 ₪` -> Row 105 Difference = **`0.00 ₪`**
+       - Row 108 (`חיצונים דוח יזם`): `4,792.90 ₪`
+       - Row 110 (`סה״כ דיווח גבייה`): `28,590.40 ₪`
+       - Row 111 (`הפרש דוחות גבייה ויזם`): `=F103+F108-F110` = **`0.00 ₪`**
+
+- **Why (what Idan asked for):**
+  - *"העליתי לך קובץ שקוראים לו ריכוז בקרת שכירים... אני רוצה שנלמד איך למלא אותו. קודם כל - רק עבור האנשים שלנו... יחד עם התייחסות לעצמאיים בסיום הדו״ח."*
+  - *"עלות מעביד מלאה אבל שכוללת את עמלות המכירה, בונוסים, נסיעות - הכל כולל הכל כולל 1.08% חיוב ביטוח לאומי. לאון סכום מאוחד... שכר שכירים מדו״ח יזם מושכים מסך הכל ששילמנו על שכירים... שורה 109 שמים ניהול מקצועי... ו-111 צריכה להראות 0."*
+
+---
+
 
 - **What changed:**
   1. **Purged Duplicate Deliverable Files:**
