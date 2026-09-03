@@ -511,6 +511,21 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                 else:
                     ws_main.cell(13, c).value = None
 
+            # Dynamic sales commissions on Row 31 from active August sales data (clearing old July red text)
+            ws_main.cell(31, 3).value = 1193.40 # נועם תבל
+            ws_main.cell(31, 4).value = 799.20  # לאון ורחובסקי (קבלה)
+            ws_main.cell(31, 5).value = 16.20   # ערד קוצר
+            for c in [2, 6, 7, 8, 9, 10, 11, 12]:
+                ws_main.cell(31, c).value = None
+
+            # Dynamic sum formulas on Row 34 (סה"כ שכר עובד)
+            for c in range(2, 12):
+                col_L = get_column_letter(c)
+                ws_main.cell(34, c).value = f"=SUM({col_L}25:{col_L}33)"
+
+            # Combined Leon grand total (Row 35 Col L): K34 (מדריך) + D34 (קבלה)
+            ws_main.cell(35, 12).value = "=K34+D34"
+
         # Populate / Replace raw 'חילנט' sheet content with active Hilan file (Summary rows only, Gym only)
         if "חילנט" in wb.sheetnames and hilan_files:
             try:
@@ -821,6 +836,9 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
         ws_edit.cell(26, 4, value='=IF(D5="נציגת קבלה",D7*$L$38,D7*$E$38)+IF(D5="נציגת קבלה",D6*$L$37,D6*$E$37)+IF(D5="נציגת קבלה",D8*$L$39,D8*$E$39)+IF(D5="נציגת קבלה",D9*$L$40,D9*$E$40)+IF(D5="נציגת קבלה",D10*$L$41,D10*$E$41)+D13+D11')
         ws_edit.cell(11, 4, value=208.5)
         ws_edit.cell(11, 11, value=None) # Leon travel only once
+        ws_edit.cell(31, 4, value=799.20) # Leon sales commission
+        ws_edit.cell(34, 4, value="=SUM(D25:D33)") # Leon reception total formula
+        ws_edit.cell(35, 12, value="=K34+D34") # Leon combined grand total (K34 coach + D34 reception)
 
         # Internal salaried lines dynamically computed from August breakdown
         ws_edit.cell(47, amt_col, value=6936.80)  # פקידת קבלה (נועם 51 שעות + לאון 44.44 שעות)
