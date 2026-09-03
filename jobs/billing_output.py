@@ -909,6 +909,15 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
         ws_edit.cell(64, amt_col, value="=SUM(D47:D62)")  # סה"כ לתשלום חדר כושר
         vals[(sheet, f"{amt_L}64")] = 114908.45
     elif branch_key == "פילאטיס":
+        # Top employee breakdown table: wire sales commission Row 26 to August sales table
+        ws_edit.cell(26, 2, value="='סיכום אימונים ומכירות מנויים'!C22")  # Naama sales commission (0.00)
+        ws_edit.cell(26, 3, value="='סיכום אימונים ומכירות מנויים'!C23")  # Nicole sales commission (2,894.40)
+        ws_edit.cell(26, 5, value="=SUM(B26:C26)")                        # Total sales to charge
+        ws_edit.cell(27, 2, value="=SUM(B25:B26)")                        # Naama total wage + sales
+        ws_edit.cell(27, 3, value="=SUM(C25:C26)")                        # Nicole total wage + sales
+        ws_edit.cell(27, 5, value="=SUM(E25:E26)")                        # Total employee charge
+
+        # Summary budget lines
         ws_edit.cell(47, amt_col, value="='סיכום אימונים ומכירות מנויים'!C24")
         vals[(sheet, f"{amt_L}47")] = 2894.40
 
