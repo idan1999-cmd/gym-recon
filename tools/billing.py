@@ -19,6 +19,7 @@ from ocr import load_or_ocr
 from arbox import load_sessions
 import job_billing as jb
 import billing_output as bo
+import job_payroll_control as jpc
 
 MONTHS_HE = [
     "ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני",
@@ -221,6 +222,12 @@ def main():
             "trainer_amounts_path": ta_path,
         }
         audit_log.extend(log)
+        
+    # Generate Salaried Payroll Control workbook directly to output directory
+    try:
+        jpc.generate_payroll_control(args.month, input_dir, output_dir)
+    except Exception as e:
+        pass
 
     audit_path = os.path.join(output_dir, "audit_log.json")
 
