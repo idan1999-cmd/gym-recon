@@ -441,13 +441,15 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                 ws_main.cell(9, c).value = round(ot175, 2) if ot175 > 0 else None
                 ws_main.cell(10, c).value = round(ot200, 2) if ot200 > 0 else None
 
-                # Travel allowance: Leonid gets 208.50, Gilad gets 100, >90 hrs = 200, <=90 = 100
+                # Travel allowance tiers: Leonid = 208.50, >90 hrs = 200, 60-90 hrs = 150, <60 hrs = 100
                 if "לאון" in str(emp_name) or canon in ["לאון ורחובסקי", "לאוניד ורחובסקי"]:
                     ws_main.cell(11, c).value = 208.5
                 elif canon in ["גלעד וייס", "גלעד ויס"]:
                     ws_main.cell(11, c).value = 100.0
                 elif tot_hrs > 90:
                     ws_main.cell(11, c).value = 200.0
+                elif tot_hrs >= 60:
+                    ws_main.cell(11, c).value = 150.0
                 elif tot_hrs > 0:
                     ws_main.cell(11, c).value = 100.0
                 else:
@@ -611,10 +613,13 @@ def _populate_summary_sheets(wb, branch_key, source_path, all_sessions, aliases,
                 ws_main.cell(9, c).value = round(ot175, 2) if ot175 > 0 else None
                 ws_main.cell(10, c).value = round(ot200, 2) if ot200 > 0 else None
 
-                if canon in ["נעמה חיון", "ניקול אדלמן", "ניקול איידלמן"] or tot_wage >= 70:
-                    ws_main.cell(12, c).value = 200
+                # Travel allowance tiers: >90 hrs = 200, 60-90 hrs = 150, <60 hrs = 100
+                if tot_wage > 90:
+                    ws_main.cell(12, c).value = 200.0
+                elif tot_wage >= 60:
+                    ws_main.cell(12, c).value = 150.0
                 elif tot_wage > 0:
-                    ws_main.cell(12, c).value = 100
+                    ws_main.cell(12, c).value = 100.0
                 else:
                     ws_main.cell(12, c).value = None
 

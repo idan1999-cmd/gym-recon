@@ -31,17 +31,19 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
   7. **Gilad Weiss & Bar Sidis Travel & Special Effort Bonuses (מאמץ מיוחד):**
      - Gilad Weiss (Col 8 in Gym `דוח מרכז`): Travel allowance = 100.00 ₪, Special Effort Bonus (מאמץ מיוחד) = 195.00 ₪.
      - Bar Sidis (Col 9 in Gym `דוח מרכז`): Special Effort Bonus (מאמץ מיוחד) = 165.00 ₪, Travel = 100.00 ₪.
-  8. **Naama Hayon Full Travel Allowance (200 ₪):**
-     - Updated Naama Hayon's travel allowance in Pilates `דוח מרכז` (Col 2, Row 12) to **200.00 ₪** (full travel allowance for 72 hours).
+  8. **Travel Allowance Tier Refinement (60–90 Hours = 150 ₪):**
+     - Refined travel allowance brackets across both branches:
+       - `< 60` hours: **100.00 ₪**
+       - `60 – 90` hours: **150.00 ₪** (e.g. Bar Sidis 66h, Niv Ben Haim 64h, Opel Meyoni 63h, Naama Hayon 72h)
+       - `> 90` hours: **200.00 ₪** (e.g. Arad Kotzer 122.75h, Nicole Edelman 103.33h)
+       - Leonid Verkhovsky: **208.50 ₪** (fixed contract)
 - **Why (what Idan asked for, in his words if given):**
-  - *"תמחק את אורלי באומל מהדו״ח, היא סיימה לעבוד אצלנו. שים לב שבדו״ח חילנ״ט של החדר כושר - נעמה חיון וניקול אדלמן עדיין מופיעות. למה לגלעד וייס לא מופיעות תשלום נסיעות בפועל? ושים לב שהוא קיבל על מאמץ מיוחד, שלא יתפספס בדו״ח המרכז. שים לב שמופיעות בדו״ח המרכז של הפילאטיס - פירוט מכירות של אוגוסט 2026 אבל הוא לא נכון! תיקח רק את הטבלה העדכנית שצרפתי. נעמה חיון שים לב בדו״ח פילאטיס תשלום נסיעות מלא, 72 שעות לחודש זה לגמרי יותר לכיוון משרה מלאה. שים לב. מהן ההנחיות שלך כאן?"*
+  - *"לגבי נסיעות, תעשה שמי שעושה בין 60-90 שעות, יקבל 150 ש״ח נסיעות."*
 - **What it touches:**
   - `jobs/billing_output.py`, `output/חיוב_חדר_כושר.xlsx`, `output/חיוב_פילאטיס.xlsx`, `docs/BUILDER_LOG.md`.
 - **How it was verified:**
-  - Verified Orly Baumel is deleted from summary sheet.
-  - Verified Gym `חילנט` sheet contains only 7 gym employees.
-  - Verified Gilad Weiss has travel (100) and bonus (195), Bar Sidis has bonus (165).
-  - Verified Naama Hayon has travel (200).
+  - Verified Bar Sidis, Niv Ben Haim, Opel Meyoni, and Naama Hayon receive 150 ₪.
+  - Verified Arad and Nicole receive 200 ₪, Leonid receives 208.50 ₪, Eitan and Noam receive 100 ₪.
   - All 94 automated tests passed (0 failures).
 
 ---
