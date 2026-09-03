@@ -10,6 +10,19 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
 
+## 2026-09-03 — Billing Knowledge Law: Shift Hours Formula Bonus Exclusion & Section 22662 Isolation
+
+- **What changed:**
+  - Codified and locked **Rule 12** in `AGENTS.md` and updated `output/דו״ח מרכז חדר כושר אוגוסט 26.xlsx`:
+    1. **Shift Hours Formula Clean-up (Rows 25 & 26):** Removed the bonus cell references (`+E13`, `+C13`) from the salaried trainers and reception shift hours formulas in sheet `דוח מרכז לאישור מנהל`. The formula now strictly computes base shift hours + overtime $\times$ hourly rate + travel (`+E11`), without adding bonus hours.
+    2. **Section 22662 Bonus Aggregation (Row 62):** All bonuses, special effort, and sales commissions are isolated and calculated strictly under **סעיף תקציבי 22662 (עמלות מכירות, מנויים ושדרוגים)** at the bottom of the report (`=SUM(C31:L31)+SUM(C13:L13)`).
+- **Why (what Idan asked for, in his words if given):**
+  - *"אני צריך שכשאתה מבצע את הדוח המרכז של חדר כושר, שתשים לב שבחיוב שעות מאמנים בגיליון של דוח מרכז לאישור מנהל, לא תיקח בחשבון את השעות בונוס. תוריד משם את החישוב של הנוסחה, תיקח רך ורק את מה שמופיע לך לחישוב שעות בנוסחה, תוריד את כל מה שקשור לבונוס. הבונוס צריך להופיע בנפרד בסוף הגיליון תחת עמלות מכירות מנויים ושדרוגים שזה סעיף תקציבי 22662."*
+- **What it touches:**
+  - `AGENTS.md` (Rule 12), `output/דו״ח מרכז חדר כושר אוגוסט 26.xlsx`, `docs/BUILDER_LOG.md`.
+
+---
+
 ## 2026-09-03 — Billing Knowledge Law: Sales Commissions Multiplier (1.08) & Special Effort Sync
 
 - **What changed:**
