@@ -927,37 +927,23 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
             pass
 
     if branch_key == "חדר כושר":
-        ws_ci.cell(14, 6).value = 6348.80  # עמלות מכירת מנויים ואישיים (3,980.00 חוץ + 2,368.80 פנימי)
-        ws_ci.cell(15, 6).value = 114908.45 # סה"כ חיוב יזם
+        ws_ci.cell(7, 6, value="='דוח מרכז לאישור מנהל'!D47")
+        ws_ci.cell(8, 6, value="='דוח מרכז לאישור מנהל'!D48+'דוח מרכז לאישור מנהל'!D56")
+        ws_ci.cell(9, 6, value="='דוח מרכז לאישור מנהל'!D49+'דוח מרכז לאישור מנהל'!D55")
+        ws_ci.cell(10, 6, value="='דוח מרכז לאישור מנהל'!D60")
+        ws_ci.cell(11, 6, value="='דוח מרכז לאישור מנהל'!D50+'דוח מרכז לאישור מנהל'!D54")
+        ws_ci.cell(12, 6, value="='דוח מרכז לאישור מנהל'!D52+'דוח מרכז לאישור מנהל'!D53")
+        ws_ci.cell(13, 6, value="='דוח מרכז לאישור מנהל'!D57+'דוח מרכז לאישור מנהל'!D58")
+        ws_ci.cell(14, 6, value="='דוח מרכז לאישור מנהל'!D61+'דוח מרכז לאישור מנהל'!D62")
+        ws_ci.cell(15, 6, value="=SUM(F7:F14)")
     elif branch_key == "פילאטיס":
-        ws_ci.cell(15, 6).value = 31652.20  # סה"כ חיוב יזם פילאטיס
-
-    for row in ws_ci.iter_rows():
-        for cell in row:
-            if isinstance(cell.value, str) and cell.value.startswith("=") \
-               and not cell.value.upper().startswith("=SUM("):
-                # Bug-6: an unrecognized formula must STOP the build (raise),
-                # never be overwritten with 0. That destroyed ~500 formulas.
-                resolved = _resolve_formula(cell.value, vals)
-                cell.value = resolved if resolved is not None else cell.value
-    # resolve the =SUM(F9:F14) grand total on חיוב יזם by summing resolved cells
-    for row in ws_ci.iter_rows():
-        for cell in row:
-            if isinstance(cell.value, str) and cell.value.upper().startswith("=SUM("):
-                rng = cell.value[5:-1]  # e.g. F9:F14 or 'Sheet'!F9:F14
-                # strip an optional sheet qualifier ('X'!F9:F14) -> F9:F14
-                if "!" in rng:
-                    rng = rng.split("!", 1)[1]
-                if ":" not in rng:
-                    raise UnknownFormulaError(f"unsupported SUM range: {cell.value}")
-                a, b = rng.split(":")
-                try:
-                    c1, r1 = coordinate_from_string(a); c2, r2 = coordinate_from_string(b)
-                except Exception:  # noqa: BLE001
-                    raise UnknownFormulaError(f"unsupported SUM range: {cell.value}")
-                col = column_index_from_string(c1)
-                s = sum(_num(ws_ci.cell(r, col).value) for r in range(int(r1), int(r2)+1))
-                cell.value = round(s, 2)
+        ws_ci.cell(9, 6, value="='דוח מרכז לאישור מנהל'!D49+'דוח מרכז לאישור מנהל'!D50")
+        ws_ci.cell(10, 6, value="='דוח מרכז לאישור מנהל'!D47+'דוח מרכז לאישור מנהל'!D48")
+        ws_ci.cell(11, 6, value="='דוח מרכז לאישור מנהל'!D52+'דוח מרכז לאישור מנהל'!D53")
+        ws_ci.cell(12, 6, value="='דוח מרכז לאישור מנהל'!D51")
+        ws_ci.cell(13, 6, value="='דוח מרכז לאישור מנהל'!D56")
+        ws_ci.cell(14, 6, value="='דוח מרכז לאישור מנהל'!D54+'דוח מרכז לאישור מנהל'!D55")
+        ws_ci.cell(15, 6, value="=SUM(F9:F14)")
 
     # 3) keep all sheets so formula references across tabs (e.g. סיכום אמוני סטודיו וקבוצה) stay valid
     # do not delete helper sheets
