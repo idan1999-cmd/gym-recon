@@ -874,7 +874,7 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
         ws_edit.cell(49, amt_col, value="=E21+C12")  # ניקול אדלמן שעות עבודה
         vals[(sheet, f"{amt_L}49")] = 6062.50
 
-        ws_edit.cell(51, amt_col, value=3500.00)     # ניהול סטודיו פילאטיס
+        ws_edit.cell(51, amt_col, value="=2000+1500")     # ניהול סטודיו פילאטיס (2,000 בסיס + 1,500 ניר אייזנבך)
         vals[(sheet, f"{amt_L}51")] = 3500.00
 
         ws_edit.cell(52, amt_col, value="=E23+B12")  # נעמה חיון שיעורים סטודיו
