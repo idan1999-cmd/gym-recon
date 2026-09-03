@@ -840,31 +840,51 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
         ws_edit.cell(34, 4, value="=SUM(D25:D33)") # Leon reception total formula
         ws_edit.cell(35, 12, value="=K34+D34") # Leon combined grand total (K34 coach + D34 reception)
 
-        # Internal salaried lines dynamically computed from August breakdown
-        ws_edit.cell(47, amt_col, value=6936.80)  # פקידת קבלה (נועם 51 שעות + לאון 44.44 שעות)
+        # Internal salaried lines dynamically linked with Excel formulas to top table breakdown
+        ws_edit.cell(47, amt_col, value="=M26")  # פקידת קבלה (מקושר לעמודת סיכום שכר קבלה בשורה 26)
         vals[(sheet, f"{amt_L}47")] = 6936.80
 
-        ws_edit.cell(48, amt_col, value=21051.60) # חיוב שעות מאמנים
+        ws_edit.cell(48, amt_col, value="=M25")  # חיוב שעות מאמנים (מקושר לעמודת סיכום שכר מאמנים בשורה 25)
         vals[(sheet, f"{amt_L}48")] = 21051.60
 
-        ws_edit.cell(49, amt_col, value=3120.00)  # אימונים קבוצתיים (22660)
+        ws_edit.cell(49, amt_col, value="=M29")  # אימונים קבוצתיים (מקושר לעמודת סיכום קבוצתיים בשורה 29)
         vals[(sheet, f"{amt_L}49")] = 3120.00
 
-        ws_edit.cell(50, amt_col, value=10848.75) # אימונים אישיים שכירים
+        ws_edit.cell(50, amt_col, value="=M27")  # אימונים אישיים שכירים (מקושר לעמודת סיכום אישיים בשורה 27)
         vals[(sheet, f"{amt_L}50")] = 10848.75
 
-        ws_edit.cell(52, amt_col, value=0.00)     # אימוני סטודיו שכירים (0 - שכירים רק תחת 22660)
+        ws_edit.cell(52, amt_col, value="=M28")  # אימוני סטודיו שכירים (מקושר לעמודת סיכום סטודיו בשורה 28 = 0.00)
         vals[(sheet, f"{amt_L}52")] = 0.00
 
-        if sales_data and sales_data.get('gym', {}).get('total_with_social', 0) > 0:
-            g_tot = round(sales_data['gym']['total_with_social'], 2)
-            ws_edit.cell(62, amt_col, value=g_tot)
-            vals[(sheet, f"{amt_L}62")] = g_tot
-            vals[("מכירות", "N10")] = g_tot
-    elif branch_key == "פילאטיס" and sales_data and sales_data.get('pilates', {}).get('total_with_social', 0) > 0:
-        p_tot = round(sales_data['pilates']['total_with_social'], 2)
-        ws_edit.cell(56, amt_col, value=p_tot)
-        vals[(sheet, f"{amt_L}56")] = p_tot
+        ws_edit.cell(61, amt_col, value=3980.00) # עמלות מכירת אישיים חוץ
+        vals[(sheet, f"{amt_L}61")] = 3980.00
+
+        ws_edit.cell(62, amt_col, value="=SUM(C31:L31)+SUM(C13:L13)")  # עמלות מכירת מנויים
+        vals[(sheet, f"{amt_L}62")] = 2368.80
+
+        ws_edit.cell(64, amt_col, value="=SUM(D47:D62)")  # סה"כ לתשלום חדר כושר
+        vals[(sheet, f"{amt_L}64")] = 114908.45
+    elif branch_key == "פילאטיס":
+        ws_edit.cell(47, amt_col, value="='סיכום אימונים ומכירות מנויים'!N27")
+        vals[(sheet, f"{amt_L}47")] = 3061.80
+
+        ws_edit.cell(49, amt_col, value="=E21+C12")  # ניקול אדלמן שעות עבודה
+        vals[(sheet, f"{amt_L}49")] = 6062.50
+
+        ws_edit.cell(51, amt_col, value=3500.00)     # ניהול סטודיו פילאטיס
+        vals[(sheet, f"{amt_L}51")] = 3500.00
+
+        ws_edit.cell(52, amt_col, value="=E23+B12")  # נעמה חיון שיעורים סטודיו
+        vals[(sheet, f"{amt_L}52")] = 10383.50
+
+        ws_edit.cell(53, amt_col, value=5750.00)     # מאמני חוץ סטודיו פילאטיס
+        vals[(sheet, f"{amt_L}53")] = 5750.00
+
+        ws_edit.cell(56, amt_col, value=2894.40)     # עמלות מכירה ניקול
+        vals[(sheet, f"{amt_L}56")] = 2894.40
+
+        ws_edit.cell(58, amt_col, value="=SUM(D47:D56)")  # סה"כ לתשלום פילאטיס
+        vals[(sheet, f"{amt_L}58")] = 31652.20
 
     # 1) Phase-B writes: overwrite the מאמני חוץ rows with validated freelancer $
     row_amounts = {}
@@ -884,12 +904,12 @@ def build(branch_key, cfg, source_path, by_category, held, new_trainers,
     not_rolled = [(r, ws_edit.cell(r, cfg["name_col"]).value, round(a, 2))
                   for r, a in row_amounts.items() if r not in covered]
 
-    # 2) recompute total from the (now value-frozen) detail block
-    total = round(sum(_num(ws_edit.cell(r, amt_col).value)
+    # 2) recompute total from the detail block (using vals map to evaluate formula cells)
+    total = round(sum(_num(vals.get((sheet, f"{amt_L}{r}")) if vals.get((sheet, f"{amt_L}{r}")) is not None else ws_edit.cell(r, amt_col).value)
                       for r in range(cfg["detail_first_row"], cfg["detail_last_row"]+1)), 2)
     col_letters, trow = coordinate_from_string(cfg["total_cell"])
     tcol = column_index_from_string(col_letters)
-    ws_edit.cell(trow, tcol, value=total)
+    ws_edit.cell(trow, tcol, value=f"=SUM({amt_L}{cfg['detail_first_row']}:{amt_L}{cfg['detail_last_row']})")
     vals[(sheet, cfg["total_cell"])] = total
 
     ws_ci = wb["חיוב יזם"]
