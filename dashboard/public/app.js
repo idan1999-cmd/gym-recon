@@ -59,8 +59,14 @@ function switchView(viewName) {
   document.getElementById('view-container-memberships').classList.toggle('hidden', viewName !== 'memberships');
   document.getElementById('view-container-charts').classList.toggle('hidden', viewName !== 'charts');
   document.getElementById('view-container-matrix').classList.toggle('hidden', viewName !== 'matrix');
+  const schedCont = document.getElementById('view-container-schedule');
+  if (schedCont) {
+    schedCont.classList.toggle('hidden', viewName !== 'schedule');
+  }
 
-  if (viewName === 'charts' && dashboardData) {
+  if (viewName === 'schedule') {
+    loadScheduleAnalytics();
+  } else if (viewName === 'charts' && dashboardData) {
     try {
       renderAnnualCharts(dashboardData.annual_trends);
     } catch (err) {
@@ -1425,6 +1431,231 @@ function filterMembershipsTables() {
   document.querySelectorAll('.mem-row-refund').forEach(row => {
     const text = row.getAttribute('data-search') || '';
     row.style.display = text.includes(query) ? '' : 'none';
+  });
+}
+
+// ============================================================================
+// SCHEDULE & TRAINER ATTENDANCE ANALYTICS (מערכת שעות ותפוסה)
+// ============================================================================
+let scheduleClub = 'מועדון A+';
+let scheduleRange = '1m';
+let scheduleMode = 'grid'; // 'grid' | 'trainers'
+let scheduleAnalyticsData = null;
+
+function setScheduleClub(club) {
+  scheduleClub = club;
+  document.querySelectorAll('.sched-club-btn').forEach(btn => {
+    btn.classList.remove('bg-zinc-900', 'text-white', 'shadow-2xs', 'font-bold');
+    btn.classList.add('text-zinc-600', 'hover:bg-zinc-200', 'font-medium');
+  });
+  const activeId = (club === 'מועדון A+' || club === 'חדר כושר') ? 'sched-club-gym' : 'sched-club-pilates';
+  const activeBtn = document.getElementById(activeId);
+  if (activeBtn) {
+    activeBtn.classList.remove('text-zinc-600', 'hover:bg-zinc-200', 'font-medium');
+    activeBtn.classList.add('bg-zinc-900', 'text-white', 'shadow-2xs', 'font-bold');
+  }
+  const badge = document.getElementById('sched-grid-branch-badge');
+  if (badge) badge.innerText = club;
+  loadScheduleAnalytics();
+}
+
+function setScheduleRange(range) {
+  scheduleRange = range;
+  document.querySelectorAll('.sched-range-btn').forEach(btn => {
+    btn.classList.remove('bg-rose-600', 'text-white', 'shadow-2xs');
+    btn.classList.add('text-zinc-600', 'hover:bg-white');
+  });
+  const activeBtn = document.getElementById(`sched-range-${range}`);
+  if (activeBtn) {
+    activeBtn.classList.remove('text-zinc-600', 'hover:bg-white');
+    activeBtn.classList.add('bg-rose-600', 'text-white', 'shadow-2xs');
+  }
+  loadScheduleAnalytics();
+}
+
+function setScheduleMode(mode) {
+  scheduleMode = mode;
+  document.querySelectorAll('.sched-mode-btn').forEach(btn => {
+    btn.classList.remove('bg-zinc-900', 'text-white', 'shadow-2xs');
+    btn.classList.add('text-zinc-600', 'hover:bg-white');
+  });
+  const activeBtn = document.getElementById(`sched-mode-${mode}`);
+  if (activeBtn) {
+    activeBtn.classList.remove('text-zinc-600', 'hover:bg-white');
+    activeBtn.classList.add('bg-zinc-900', 'text-white', 'shadow-2xs');
+  }
+
+  const gridSec = document.getElementById('sched-section-grid');
+  const trainersSec = document.getElementById('sched-section-trainers');
+  if (gridSec && trainersSec) {
+    gridSec.classList.toggle('hidden', mode !== 'grid');
+    trainersSec.classList.toggle('hidden', mode !== 'trainers');
+  }
+}
+
+async function loadScheduleAnalytics() {
+  try {
+    const url = `/api/schedule_analytics?club=${encodeURIComponent(scheduleClub)}&range=${scheduleRange}&min_occurrences=3`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    const data = await res.json();
+    scheduleAnalyticsData = data;
+    renderScheduleAnalytics(data);
+  } catch (err) {
+    console.error('Error loading schedule analytics:', err);
+    showToast('שגיאה בטעינת נתוני מערכת שעות');
+  }
+}
+
+function renderScheduleAnalytics(data) {
+  if (!data) return;
+  const kpis = data.kpis || {};
+  
+  // Update KPI Cards
+  const avgOccEl = document.getElementById('sched-kpi-avg-occ');
+  if (avgOccEl) avgOccEl.innerText = (kpis.avg_occupancy || 0) + '%';
+
+  const totSessEl = document.getElementById('sched-kpi-total-sessions');
+  if (totSessEl) totSessEl.innerText = `${kpis.total_sessions || 0} שיעורים נותחו`;
+
+  const weakCountEl = document.getElementById('sched-kpi-weak-count');
+  if (weakCountEl) weakCountEl.innerText = `${kpis.weak_slots_count || 0} משבצות`;
+
+  const peakHourEl = document.getElementById('sched-kpi-peak-hour');
+  if (peakHourEl) peakHourEl.innerText = kpis.peak_hour || '--:--';
+
+  const peakDayEl = document.getElementById('sched-kpi-peak-day');
+  if (peakDayEl) peakDayEl.innerText = `ביום ${kpis.peak_day || '--'}`;
+
+  const topTrEl = document.getElementById('sched-kpi-top-trainer');
+  if (topTrEl) topTrEl.innerText = kpis.top_trainer || '—';
+
+  // Render Timetable Grid
+  renderWeeklyTimetable(data.grid || {}, data.days || []);
+
+  // Render Trainers
+  renderTrainerAnalytics(data.trainers || []);
+
+  if (window.lucide) lucide.createIcons();
+}
+
+function renderWeeklyTimetable(grid, days) {
+  const container = document.getElementById('weekly-timetable-days-container');
+  if (!container) return;
+  container.innerHTML = '';
+
+  days.forEach(dayName => {
+    const dayCol = document.createElement('div');
+    dayCol.className = 'bg-zinc-50/80 rounded-2xl p-2.5 border border-zinc-200/70 flex flex-col space-y-2';
+
+    // Day Header
+    const slotsInDay = grid[dayName] || {};
+    const timeKeys = Object.keys(slotsInDay).sort();
+    let totalClassesInDay = 0;
+    timeKeys.forEach(t => { totalClassesInDay += (slotsInDay[t] || []).length; });
+
+    dayCol.innerHTML = `
+      <div class="bg-white px-3 py-2 rounded-xl border border-zinc-200/80 shadow-2xs flex items-center justify-between mb-1">
+        <span class="font-black text-xs text-zinc-900">יום ${dayName}</span>
+        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-zinc-100 text-zinc-600">${totalClassesInDay} שיעורים</span>
+      </div>
+      <div class="space-y-2 flex-1 custom-scrollbar"></div>
+    `;
+
+    const cardsList = dayCol.querySelector('div:last-child');
+
+    if (timeKeys.length === 0) {
+      cardsList.innerHTML = `<div class="p-4 text-center text-[10px] text-zinc-400">אין שיעורים קבועים</div>`;
+    } else {
+      timeKeys.forEach(tKey => {
+        const slots = slotsInDay[tKey] || [];
+        slots.forEach(s => {
+          const tierBorder = s.tier === 'strong' ? 'border-emerald-300 bg-emerald-50/30' :
+                             s.tier === 'moderate' ? 'border-amber-300 bg-amber-50/30' :
+                             'border-rose-300 bg-rose-50/40';
+
+          const pctBadge = s.tier === 'strong' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
+                           s.tier === 'moderate' ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                           'bg-rose-100 text-rose-800 border-rose-300';
+
+          const subBadge = (s.substitutes && s.substitutes.length > 0) ?
+            `<span class="text-[9px] px-1 py-0.2 rounded bg-zinc-100 text-zinc-500 border border-zinc-200" title="החלפות: ${s.substitutes.join(', ')}">הוחלף</span>` : '';
+
+          const card = document.createElement('div');
+          card.className = `p-2.5 rounded-xl border ${tierBorder} bg-white shadow-2xs hover:shadow-sm transition flex flex-col space-y-1.5`;
+          card.innerHTML = `
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-black text-zinc-900">${s.time}</span>
+              <span class="text-[10px] font-black px-1.5 py-0.5 rounded-md border ${pctBadge}">${s.avg_checkin_pct}%</span>
+            </div>
+            <div>
+              <div class="font-black text-xs text-zinc-900 leading-tight">${s.name}</div>
+              <div class="text-[11px] text-zinc-500 font-medium flex items-center gap-1 mt-0.5">
+                <i data-lucide="user" class="w-3 h-3 text-zinc-400"></i>
+                <span class="truncate">${s.primary_trainer}</span>
+                ${subBadge}
+              </div>
+            </div>
+            <div class="pt-1.5 border-t border-zinc-100 flex items-center justify-between text-[10px] text-zinc-400 font-medium">
+              <span><strong>${s.avg_checkin}</strong> נוכחים</span>
+              <span>${s.occurrences} מופעים</span>
+            </div>
+          `;
+          cardsList.appendChild(card);
+        });
+      });
+    }
+
+    container.appendChild(dayCol);
+  });
+}
+
+function renderTrainerAnalytics(trainers) {
+  const container = document.getElementById('trainers-cards-container');
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (!trainers || trainers.length === 0) {
+    container.innerHTML = `<div class="col-span-full p-8 text-center text-xs text-zinc-400">לא נמצאו נתוני מאמנים לתקופה זו</div>`;
+    return;
+  }
+
+  trainers.forEach(t => {
+    const tierBadge = t.tier === 'star' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' :
+                      t.tier === 'mid' ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                      'bg-rose-100 text-rose-800 border-rose-300';
+
+    const card = document.createElement('div');
+    card.className = "bg-white p-4 rounded-2xl border border-zinc-200/80 shadow-2xs hover:shadow-sm transition flex flex-col justify-between space-y-3";
+    card.innerHTML = `
+      <div class="flex items-start justify-between">
+        <div>
+          <div class="font-black text-sm text-zinc-900">${t.name}</div>
+          <div class="text-[11px] text-zinc-400 font-medium mt-0.5">${t.branches ? t.branches.join(', ') : ''}</div>
+        </div>
+        <span class="text-[10px] font-black px-2 py-0.5 rounded-lg border ${tierBadge}">${t.avg_checkin_pct}%</span>
+      </div>
+
+      <div class="bg-zinc-50 p-2.5 rounded-xl border border-zinc-100 flex items-center justify-between text-xs font-bold text-zinc-700">
+        <div class="text-center">
+          <div class="text-[10px] text-zinc-400 font-normal">שיעורים</div>
+          <div>${t.count}</div>
+        </div>
+        <div class="text-center border-r border-l border-zinc-200 px-3">
+          <div class="text-[10px] text-zinc-400 font-normal">נוכחים ממוצע</div>
+          <div class="${t.tier === 'star' ? 'text-emerald-700' : t.tier === 'low' ? 'text-rose-700' : 'text-zinc-800'}">${t.avg_checkin}</div>
+        </div>
+        <div class="text-center">
+          <div class="text-[10px] text-zinc-400 font-normal">ביטולים מאוחרים</div>
+          <div class="${t.total_late_cancels > 5 ? 'text-amber-700' : 'text-zinc-700'}">${t.total_late_cancels}</div>
+        </div>
+      </div>
+
+      <div class="text-[10px] text-zinc-400">
+        <span class="font-bold text-zinc-600">שיעורים עיקריים:</span> ${t.classes ? t.classes.join(', ') : '—'}
+      </div>
+    `;
+    container.appendChild(card);
   });
 }
 

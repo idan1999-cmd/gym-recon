@@ -52,6 +52,20 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(summary, ensure_ascii=False).encode("utf-8"))
             return
 
+        elif path == "/api/schedule_analytics":
+            club = query.get("club", ["all"])[0]
+            time_range = query.get("range", ["1m"])[0]
+            min_occ = int(query.get("min_occurrences", ["3"])[0])
+
+            analytics = data_service.get_schedule_analytics(club_filter=club, time_range=time_range, min_occurrences=min_occ)
+
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps(analytics, ensure_ascii=False).encode("utf-8"))
+            return
+
         elif path == "/api/health":
             self.send_response(200)
             self.send_header("Content-Type", "application/json")

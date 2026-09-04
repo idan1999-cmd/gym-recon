@@ -9,6 +9,36 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 2. **חיוב יזם & דוח מרכז לאישור מנהל (Trainer & Staff Billing):** Computes monthly charges for the property owner/developer across shifts, reception, personal training, studio classes, management fees, and sales commissions.
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
+## 2026-09-04 — Weekly Schedule Attendance Grid & Trainer Analytics in Executive Dashboard
+
+- **What changed:**
+  1. **Backend Schedule Analytics Engine (`dashboard/backend/data_service.py`):**
+     - Added `get_schedule_analytics(club_filter, time_range, min_occurrences)` method.
+     - Parses historical Arbox session files (July, August, dropzone) and de-duplicates records across files.
+     - Supports 3 interactive time ranges: `2w` (last 2 weeks), `1m` (last month), `6m` (last 6 months).
+     - Strict noise filter: filters out one-off substitutions and replacements by requiring $\ge 3$ occurrences for regular weekly slots.
+     - Performs branch isolation: filters between Main Gym / Studio (`מועדון A+`) and Pilates Reformer Studio (`פילאטיס מכשירים`).
+     - Aggregates weekly timetable grid by day (Sunday–Friday) and time slot with performance tiers:
+       - Strong ($\ge 80\%$ occupancy)
+       - Moderate ($65\% - 80\%$ occupancy)
+       - Weak ($< 65\%$ occupancy)
+     - Ranks trainer performance: session count, average attendees, average occupancy %, and late cancels.
+  2. **REST API Endpoint (`dashboard/backend/server.py`):**
+     - Exposed `GET /api/schedule_analytics?club=...&range=...&min_occurrences=3`.
+  3. **Frontend Dashboard UI (`dashboard/public/index.html` & `dashboard/public/app.js`):**
+     - Added 5th view mode button: **"מערכת שעות ותפוסה"** (`#view-schedule`).
+     - Added branch isolation selector, range selector, and sub-mode toggle (Weekly Timetable Grid vs. Trainer Analytics).
+     - Added 4 KPI cards (average occupancy, weak slots count, peak hour/day, top trainer).
+     - Rendered interactive 6-day timetable grid with color-coded slots, coach names, attendee numbers, and substitute badges.
+     - Rendered full trainer analytics cards grid with performance tier badges and class breakdowns.
+  4. **Automated Unit Tests (`tests/test_schedule_analytics.py`):**
+     - Added test suite validating gym analytics, pilates analytics, noise filtering, and time ranges.
+- **Why (what Idan asked for, in his words if given):**
+  - *"אני אעדיף שהתצוגה שאתה נותן לי של שיעורים חלשים חזקים תעשה את זה בצורה של מערכת שעות שבועית ולא בתצוגה של רשימה, זה יותר קל להסתכל על זה ככה. ואני אשמח שגם תעשה לי סנן שנותן פילוח של שבועיים אחורה, חודש אחורה וחצי שנה אחורה. שים לב לסנן מהתצוגה שיעורים שיש בהם רק מופע אחד או שניים, זה מעט מדי בשביל לקבל על זה איזשהו ערך ברור וככל הנראה מדובר בהחלפה. ותבצע הפרדה בין הפילאטיס מכשירים למועדון, אלו שני שיעורים שונים. ותבנה תצוגה גם למאמנים לחוד וגם לשעות השיעורים לחוד. ואת כל הדבר הזה אני מאשר שאתה יכול להכניס ישירות לתוך הדאשבורד."*
+- **What it touches:**
+  - `dashboard/backend/data_service.py`, `dashboard/backend/server.py`, `dashboard/public/index.html`, `dashboard/public/app.js`, `tests/test_schedule_analytics.py`, `docs/SYSTEM_MAP.md`, `docs/BUILDER_LOG.md`.
+
+---
 
 ## 2026-09-03 — Billing Knowledge Law: Shift Hours Formula Bonus Exclusion & Section 22662 Isolation
 

@@ -10,9 +10,9 @@ import re
 import csv
 import json
 import calendar
-from datetime import datetime
+from datetime import datetime, timedelta, date
 from pathlib import Path
-from collections import Counter
+from collections import Counter, defaultdict
 import openpyxl
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -1480,3 +1480,293 @@ class DashboardDataService:
             "memberships": memberships_data,
             "sales_cancellations": sales_cancellations
         }
+
+    def get_schedule_analytics(self, club_filter: str = "all", time_range: str = "1m", min_occurrences: int = 3) -> dict:
+        """
+        Analyzes session attendance, builds a weekly timetable grid, and ranks trainer performance.
+        club_filter: 'all' | 'מועדון A+' (or 'חדר כושר') | 'פילאטיס מכשירים'
+        time_range: '2w' (2 weeks) | '1m' (1 month) | '6m' (6 months)
+        min_occurrences: minimum sessions for a recurring weekly slot (default 3) to filter one-off subs.
+        """
+        all_files = list(INPUT_DIR.glob("**/*שיעור*.csv"))
+        raw_sessions = []
+        seen = set()
+
+        for fp in all_files:
+            try:
+                with open(fp, encoding="utf-8-sig") as f:
+                    for r in csv.DictReader(f):
+                        k = (r.get("תאריך"), r.get("שעת התחלה"), r.get("מאמנים"), r.get("שיעור"), r.get("סניף"))
+                        if k not in seen:
+                            seen.add(k)
+                            raw_sessions.append(r)
+            except Exception as e:
+                pass
+
+        def clean_num(val):
+            if not val:
+                return 0.0
+            val = str(val).replace("%", "").replace(",", "").strip()
+            try:
+                return float(val)
+            except (ValueError, TypeError):
+                return 0.0
+
+        # Parse valid dates for held sessions
+        parsed_sessions = []
+        for r in raw_sessions:
+            if r.get("סטטוס") != "מתקיים":
+                continue
+            d_str = r.get("תאריך", "").strip()
+            dt = None
+            for fmt in ("%d/%m/%Y", "%Y-%m-%d", "%d-%m-%Y"):
+                try:
+                    dt = datetime.strptime(d_str, fmt).date()
+                    break
+                except (ValueError, TypeError):
+                    pass
+            if dt:
+                parsed_sessions.append((dt, r))
+
+        if not parsed_sessions:
+            return {
+                "metadata": {"club": club_filter, "range": time_range, "total_sessions": 0},
+                "kpis": {},
+                "timetable": [],
+                "days": [],
+                "time_slots": [],
+                "grid": {},
+                "trainers": [],
+                "hourly": []
+            }
+
+        max_date = max(dt for dt, _ in parsed_sessions)
+
+        if time_range == "2w":
+            min_date = max_date - timedelta(days=14)
+        elif time_range == "1m":
+            min_date = max_date - timedelta(days=31)
+        else:  # 6m
+            min_date = max_date - timedelta(days=183)
+
+        # Filter by date and club
+        filtered_sessions = []
+        for dt, r in parsed_sessions:
+            if dt < min_date:
+                continue
+            branch = r.get("סניף", "").strip()
+            if "פילאטיס" in club_filter or "pilates" in club_filter.lower():
+                if "פילאטיס" not in branch:
+                    continue
+            elif "מועדון" in club_filter or "חדר כושר" in club_filter or "gym" in club_filter.lower():
+                if "פילאטיס" in branch:
+                    continue
+            filtered_sessions.append((dt, r))
+
+        # Recurring slots map: (day, time, class_name, branch)
+        recurring = defaultdict(lambda: {
+            "day": "", "time": "", "name": "", "branch": "",
+            "occurrences": 0, "checkins": [], "checkin_pcts": [],
+            "late_cancels": [], "trainers_counter": Counter()
+        })
+
+        # Trainer stats map: trainer_name
+        trainer_map = defaultdict(lambda: {
+            "name": "", "occurrences": 0, "checkins": [],
+            "checkin_pcts": [], "late_cancels": [], "classes": Counter(),
+            "branches": Counter()
+        })
+
+        # Hourly stats map
+        hourly_map = defaultdict(lambda: {"hour": "", "occurrences": 0, "checkins": [], "checkin_pcts": []})
+
+        # Day of week stats map
+        day_map = defaultdict(lambda: {"day": "", "occurrences": 0, "checkins": [], "checkin_pcts": []})
+
+        all_checkin_pcts = []
+        all_checkin_counts = []
+
+        for dt, r in filtered_sessions:
+            day = r.get("יום", "").strip()
+            time_str = r.get("שעת התחלה", "").strip()
+            name = r.get("שיעור", "").strip()
+            branch = r.get("סניף", "").strip()
+            t_name = r.get("מאמנים", "").strip() or "ללא מאמן"
+            ci = clean_num(r.get("צ׳ק אין"))
+            ci_pct = clean_num(r.get("אחוז צ׳ק אין"))
+            lc = clean_num(r.get("ביטולים מאוחרים"))
+
+            all_checkin_pcts.append(ci_pct)
+            all_checkin_counts.append(ci)
+
+            # Weekly timetable slot key
+            k = (day, time_str, name, branch)
+            rec = recurring[k]
+            rec["day"] = day
+            rec["time"] = time_str
+            rec["name"] = name
+            rec["branch"] = branch
+            rec["occurrences"] += 1
+            rec["checkins"].append(ci)
+            rec["checkin_pcts"].append(ci_pct)
+            rec["late_cancels"].append(lc)
+            rec["trainers_counter"][t_name] += 1
+
+            # Trainer
+            tm = trainer_map[t_name]
+            tm["name"] = t_name
+            tm["occurrences"] += 1
+            tm["checkins"].append(ci)
+            tm["checkin_pcts"].append(ci_pct)
+            tm["late_cancels"].append(lc)
+            tm["classes"][name] += 1
+            tm["branches"][branch] += 1
+
+            # Hourly
+            hour = time_str.split(":")[0] + ":00" if ":" in time_str else time_str
+            hm = hourly_map[hour]
+            hm["hour"] = hour
+            hm["occurrences"] += 1
+            hm["checkins"].append(ci)
+            hm["checkin_pcts"].append(ci_pct)
+
+            # Day
+            dm = day_map[day]
+            dm["day"] = day
+            dm["occurrences"] += 1
+            dm["checkins"].append(ci)
+            dm["checkin_pcts"].append(ci_pct)
+
+        # Build recurring weekly slots (filtered by min_occurrences)
+        days_order = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי"]
+        regular_slots = []
+        grid = {d: {} for d in days_order}
+
+        for k, d in recurring.items():
+            occ = d["occurrences"]
+            if occ < min_occurrences:
+                continue
+
+            avg_ci = round(sum(d["checkins"]) / occ, 1)
+            avg_pct = round(sum(d["checkin_pcts"]) / occ, 1)
+            primary_trainer = d["trainers_counter"].most_common(1)[0][0]
+            subs = [f"{tr} ({c})" for tr, c in d["trainers_counter"].most_common() if tr != primary_trainer]
+
+            tier = "strong" if avg_pct >= 80 else "moderate" if avg_pct >= 65 else "weak"
+
+            slot_obj = {
+                "day": d["day"],
+                "time": d["time"],
+                "name": d["name"],
+                "branch": d["branch"],
+                "occurrences": occ,
+                "avg_checkin": avg_ci,
+                "avg_checkin_pct": avg_pct,
+                "primary_trainer": primary_trainer,
+                "substitutes": subs,
+                "total_late_cancels": int(sum(d["late_cancels"])),
+                "tier": tier
+            }
+            regular_slots.append(slot_obj)
+
+            # Insert into grid
+            day_key = d["day"]
+            time_key = d["time"]
+            if day_key in grid:
+                if time_key not in grid[day_key]:
+                    grid[day_key][time_key] = []
+                grid[day_key][time_key].append(slot_obj)
+
+        # Distinct sorted time slots present in the timetable
+        unique_time_slots = sorted(list({s["time"] for s in regular_slots}))
+
+        # Process Trainers ranking
+        trainers_list = []
+        for t_name, d in trainer_map.items():
+            occ = d["occurrences"]
+            avg_ci = round(sum(d["checkins"]) / occ, 1) if occ else 0.0
+            avg_pct = round(sum(d["checkin_pcts"]) / occ, 1) if occ else 0.0
+            tier = "star" if avg_pct >= 80 else "mid" if avg_pct >= 65 else "low"
+            top_classes = [c for c, _ in d["classes"].most_common(3)]
+            branches = list(d["branches"].keys())
+
+            trainers_list.append({
+                "name": t_name,
+                "count": occ,
+                "avg_checkin": avg_ci,
+                "avg_checkin_pct": avg_pct,
+                "total_late_cancels": int(sum(d["late_cancels"])),
+                "classes": top_classes,
+                "branches": branches,
+                "tier": tier
+            })
+
+        trainers_list.sort(key=lambda x: x["avg_checkin_pct"], reverse=True)
+
+        # Process Hourly breakdown
+        hourly_list = []
+        for h in sorted(hourly_map.keys()):
+            d = hourly_map[h]
+            occ = d["occurrences"]
+            hourly_list.append({
+                "hour": h,
+                "count": occ,
+                "avg_checkin": round(sum(d["checkins"]) / occ, 1),
+                "avg_checkin_pct": round(sum(d["checkin_pcts"]) / occ, 1)
+            })
+
+        # Process Day breakdown
+        day_list = []
+        for d in days_order:
+            if d in day_map:
+                dm = day_map[d]
+                occ = dm["occurrences"]
+                day_list.append({
+                    "day": d,
+                    "count": occ,
+                    "avg_checkin": round(sum(dm["checkins"]) / occ, 1),
+                    "avg_checkin_pct": round(sum(dm["checkin_pcts"]) / occ, 1)
+                })
+
+        # Summary KPIs
+        tot_sess = len(filtered_sessions)
+        avg_occ = round(sum(all_checkin_pcts) / len(all_checkin_pcts), 1) if all_checkin_pcts else 0.0
+        weak_count = sum(1 for s in regular_slots if s["tier"] == "weak")
+        strong_count = sum(1 for s in regular_slots if s["tier"] == "strong")
+        mod_count = sum(1 for s in regular_slots if s["tier"] == "moderate")
+
+        peak_h = max(hourly_list, key=lambda x: x["avg_checkin_pct"])["hour"] if hourly_list else "—"
+        peak_d = max(day_list, key=lambda x: x["avg_checkin_pct"])["day"] if day_list else "—"
+        
+        star_candidates = [t for t in trainers_list if t["count"] >= (3 if time_range == "2w" else 5)]
+        top_trainer_name = star_candidates[0]["name"] if star_candidates else (trainers_list[0]["name"] if trainers_list else "—")
+
+        return {
+            "metadata": {
+                "club_filter": club_filter,
+                "time_range": time_range,
+                "min_occurrences": min_occurrences,
+                "date_from": min_date.strftime("%d/%m/%Y"),
+                "date_to": max_date.strftime("%d/%m/%Y"),
+                "total_held_sessions": tot_sess
+            },
+            "kpis": {
+                "avg_occupancy": avg_occ,
+                "total_sessions": tot_sess,
+                "regular_slots_count": len(regular_slots),
+                "weak_slots_count": weak_count,
+                "strong_slots_count": strong_count,
+                "moderate_slots_count": mod_count,
+                "peak_hour": peak_h,
+                "peak_day": peak_d,
+                "top_trainer": top_trainer_name
+            },
+            "days": days_order,
+            "time_slots": unique_time_slots,
+            "grid": grid,
+            "regular_slots": regular_slots,
+            "trainers": trainers_list,
+            "hourly": hourly_list,
+            "days_summary": day_list
+        }
+
