@@ -126,6 +126,18 @@ MONTHLY INPUTS DROP (input/)
 
 ---
 
+### 7. Executive Dashboard & Live CRM Sync
+- **Where it lives:** `dashboard/backend/server.py`, `dashboard/backend/data_service.py`, `dashboard/public/`
+- **Trigger:** `python dashboard/backend/server.py 3000`
+- **What it reads:** 
+  - Live Arbox API v2 (`/users`) + `config/arbox_users_cache.json` (852 active members partitioned across locations 1054 and 7157).
+  - Google Drive Sales CRM workbooks (`Gym-Sales-CRM/01_קבצי_קלט_לעיבוד/` and `02_קבצי_פלט_CRM_ודוחות/`) for monthly lead closers, freezes (211), and cancellations (154).
+  - Class attendance history (`input/**/*.csv`) for weekly timetable grid and coach occupancy rankings.
+  - Official budget workbooks under `output/`.
+- **What it serves:** Multi-mode web dashboard on port 3000 (Budget vs Actual cards, Live Memberships & Cancellations, Annual Trends, Matrix, and Schedule Timetable Analytics).
+
+---
+
 ## Spreadsheets
 
 ### 1. Workbooks: `חיוב_חדר_כושר_<month>.xlsx` & `חיוב_פילאטיס_<month>.xlsx`

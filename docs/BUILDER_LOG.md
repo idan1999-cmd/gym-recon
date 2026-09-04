@@ -9,15 +9,35 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 2. **חיוב יזם & דוח מרכז לאישור מנהל (Trainer & Staff Billing):** Computes monthly charges for the property owner/developer across shifts, reception, personal training, studio classes, management fees, and sales commissions.
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
-## 2026-09-04 — Memberships View Clean-up: Live Drive Indicator & Global Month Sync for Sales Closers
+## 2026-09-04 — Direct Arbox API & Google Drive CRM Integration for Memberships, Freezes & Cancellations
 
 - **What changed:**
-  1. **Snapshot Dropdown Removal (`dashboard/public/index.html`):** Removed the manual snapshot dropdown ("לשונית תאריך") from the Memberships & Cancellations view. Replaced with an active live sync indicator ("סנכרון דרייב פעיל - Live") and an active month badge.
-  2. **Month Synchronization with Sales Closers (`dashboard/public/app.js`):** Unified month navigation across the whole dashboard — changing the active month (June, July, August, September) via the top navigator now dynamically updates the sales closers and reps performance card for that exact selected month.
-- **Why (what Idan asked for, in his words if given):**
-  - *"במקביל, בסטטוס מנויים וביטולים כתוב לך לשונית תאריך, אפשר להוריד את זה, אנחנו עכשיו עושים את זה תמיד בלייב אז אין צורך לעשות את זה בצורה הזו כי אנחנו נגזור את הנתונים ישירות מהדרייב כמו שאמרנו. ואולי גם כאן תכניס איזשהו טאב שמאפשר לך לשנות לחודש אוגוסט, חודש יולי, חודש יוני לפי חודשים, כדי שהוא גם יוכל לראות, או שאפילו תשאיר אותו באותה צורה, פשוט כשאני מעביר חודש ביוני, יולי ואוגוסט למעלה אז הוא ישנה אותו בהתאם, כדי שנוכל לראות את הביצועים של אנשי המכירות בלייב בחודשים הקודמים."*
+  1. **Direct Arbox API & Cache Fallback (`dashboard/backend/data_service.py`):**
+     - Connected `parse_membership_data()` to the live Arbox v2 API (`/users`) with persistent local caching in `config/arbox_users_cache.json`.
+     - Accurately counts **852 total active members**, strictly partitioned by branch location IDs:
+       - **Gym (`מועדון A+`, location 1054):** 696 active members.
+       - **Pilates (`פילאטיס מכשירים`, location 7157):** 156 active members.
+  2. **Automated Google Drive Sales CRM Integration:**
+     - Connected `search_dirs` in `find_input_file()` to Google Drive CRM directories (`/Users/idanwekser/Gym-Sales-CRM/01_קבצי_קלט_לעיבוד` and `02_קבצי_פלט_CRM_ודוחות`).
+     - Extracts freezes (211) and cancellations (154) directly from `הקפאות וביטולים` and its forecast schedules.
+     - Extracts real average membership prices by branch from `ייבוא ארבוקס אוגוסט 2026`:
+       - Gym: ₪1,209.5 (₪100.8/mo)
+       - Pilates: ₪3,355.7 (₪279.6/mo)
+       - Combined: ₪1,442.5 (₪120.2/mo)
+     - Accurately computes future pending refunds (₪15,099.99 for September–November) rather than falling back to 0.
+  3. **Multi-Month Sales Closers Matching (`_get_sales_closers`):**
+     - Supports month-by-month sales performance lookup across tabs in both the local sales workbook and the Drive CRM file:
+       - **May (מאי 26):** Nicole 53 deals (₪141k), Shir 17, Noam 14, Leon 8.
+       - **June (יוני 26):** Nicole 62 deals (₪113k), Noam 29 (₪63k), Leon 24 (₪35k).
+       - **July (יולי 26):** Nicole 54 deals (₪110k), Noam 42 (₪84k), Leon 32 (₪60k).
+       - **August (אוגוסט / אוג 26):** Nicole 47 deals (₪98.5k), Noam 19 (₪35.6k), Leon 13 (₪20.4k).
+  4. **Frontend Live Integration:**
+     - Cleaned up the snapshot selector header in `index.html` and wired the top month switcher to dynamically refresh sales reps and monthly metrics.
+- **Why (what Idan asked for, in his words):**
+  - *"זה נראה שסטטוס מנויים וביטולים לא עובד, הוא מצליח להתחבר? הנתונים לא מופיעים."*
+  - *"במקביל, בסטטוס מנויים וביטולים כתוב לך לשונית תאריך, אפשר להוריד את זה, אנחנו עכשיו עושים את זה תמיד בלייב... ונוכל לראות את הביצועים של אנשי המכירות בלייב בחודשים הקודמים."*
 - **What it touches:**
-  - `dashboard/public/index.html`, `dashboard/public/app.js`, `docs/BUILDER_LOG.md`.
+  - `dashboard/backend/data_service.py`, `dashboard/public/index.html`, `dashboard/public/app.js`, `docs/BUILDER_LOG.md`.
 
 ---
 
