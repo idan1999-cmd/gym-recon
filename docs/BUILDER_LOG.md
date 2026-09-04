@@ -9,6 +9,18 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 2. **חיוב יזם & דוח מרכז לאישור מנהל (Trainer & Staff Billing):** Computes monthly charges for the property owner/developer across shifts, reception, personal training, studio classes, management fees, and sales commissions.
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
+## 2026-09-04 — Memberships View Clean-up: Live Drive Indicator & Global Month Sync for Sales Closers
+
+- **What changed:**
+  1. **Snapshot Dropdown Removal (`dashboard/public/index.html`):** Removed the manual snapshot dropdown ("לשונית תאריך") from the Memberships & Cancellations view. Replaced with an active live sync indicator ("סנכרון דרייב פעיל - Live") and an active month badge.
+  2. **Month Synchronization with Sales Closers (`dashboard/public/app.js`):** Unified month navigation across the whole dashboard — changing the active month (June, July, August, September) via the top navigator now dynamically updates the sales closers and reps performance card for that exact selected month.
+- **Why (what Idan asked for, in his words if given):**
+  - *"במקביל, בסטטוס מנויים וביטולים כתוב לך לשונית תאריך, אפשר להוריד את זה, אנחנו עכשיו עושים את זה תמיד בלייב אז אין צורך לעשות את זה בצורה הזו כי אנחנו נגזור את הנתונים ישירות מהדרייב כמו שאמרנו. ואולי גם כאן תכניס איזשהו טאב שמאפשר לך לשנות לחודש אוגוסט, חודש יולי, חודש יוני לפי חודשים, כדי שהוא גם יוכל לראות, או שאפילו תשאיר אותו באותה צורה, פשוט כשאני מעביר חודש ביוני, יולי ואוגוסט למעלה אז הוא ישנה אותו בהתאם, כדי שנוכל לראות את הביצועים של אנשי המכירות בלייב בחודשים הקודמים."*
+- **What it touches:**
+  - `dashboard/public/index.html`, `dashboard/public/app.js`, `docs/BUILDER_LOG.md`.
+
+---
+
 ## 2026-09-04 — Weekly Schedule Attendance Grid & Trainer Analytics in Executive Dashboard
 
 - **What changed:**
