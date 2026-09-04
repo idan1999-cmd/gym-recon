@@ -1007,6 +1007,11 @@ function renderMemberships(data) {
   if (!mem || !mem.stats) return;
 
   // 1. Populate Snapshot Select
+  const monthPill = document.getElementById('mem-active-month-pill');
+  if (monthPill && data.metadata) {
+    monthPill.innerText = `${data.metadata.month_name} 2026`;
+  }
+
   const snapSelect = document.getElementById('mem-snapshot-select');
   if (snapSelect && mem.available_snapshots && mem.available_snapshots.length > 0) {
     const currentVal = mem.active_tab;
