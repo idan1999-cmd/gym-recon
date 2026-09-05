@@ -1245,17 +1245,32 @@ function renderMemberships(data) {
   if (gymBar) gymBar.style.width = `${gymActivePct}%`;
   if (pilBar) pilBar.style.width = `${pilActivePct}%`;
 
-  // Frozen
+  // Frozen & Pending Freezes
   document.getElementById('mem-kpi-frozen-total').innerText = curStats.frozen.toLocaleString('he-IL');
   const frozenPct = totalBase > 0 ? ((curStats.frozen / totalBase) * 100).toFixed(1) : 0;
   document.getElementById('mem-kpi-frozen-pct').innerText = `${frozenPct}% מסה״כ`;
   document.getElementById('mem-kpi-frozen-gym').innerText = gymStats.frozen.toLocaleString('he-IL');
   document.getElementById('mem-kpi-frozen-pilates').innerText = pilStats.frozen.toLocaleString('he-IL');
 
-  // Future Cancellations
+  const pendingFreezesEl = document.getElementById('mem-kpi-pending-freezes-count');
+  if (pendingFreezesEl) {
+    const pFrz = curStats.pending_freezes !== undefined ? curStats.pending_freezes : (mem.pending_freezes || 0);
+    pendingFreezesEl.innerText = `${pFrz} ממתינות לטיפול`;
+  }
+
+  // Future Cancellations & Pending Cancellations
   document.getElementById('mem-kpi-cancel-total').innerText = curStats.future_cancellations.toLocaleString('he-IL');
   document.getElementById('mem-kpi-cancel-gym').innerText = gymStats.future_cancellations.toLocaleString('he-IL');
   document.getElementById('mem-kpi-cancel-pilates').innerText = pilStats.future_cancellations.toLocaleString('he-IL');
+
+  const pendingCancelsEl = document.getElementById('mem-kpi-pending-cancels-count');
+  if (pendingCancelsEl) {
+    const pCnc = curStats.pending_cancellations !== undefined ? curStats.pending_cancellations : (mem.pending_cancellations || 0);
+    pendingCancelsEl.innerText = `${pCnc} ממתינות לאישור`;
+  }
+
+  // Urgent Customer Alerts Banner (עצבים / חריגים / תלונות חמורות)
+  renderUrgentAlertsBanner(mem.urgent_alerts || []);
 
   // Average Price
   document.getElementById('mem-kpi-avg-price-total').innerText = formatNIS(curStats.avg_price);
@@ -1339,6 +1354,72 @@ function renderMemberships(data) {
   renderMembershipTypesList(mem.membership_types || []);
   renderReasonsList(sales ? (sales.reasons_breakdown || []) : []);
   renderSalesClosersList(sales ? (sales.sales_closers || []) : [], data.metadata ? data.metadata.month_name : 'יוני');
+}
+
+function renderUrgentAlertsBanner(alerts) {
+  const container = document.getElementById('mem-urgent-alert-banner');
+  if (!container) return;
+
+  if (!alerts || alerts.length === 0) {
+    container.classList.add('hidden');
+    container.innerHTML = '';
+    return;
+  }
+
+  container.classList.remove('hidden');
+  const topAlerts = alerts.slice(0, 3); // show up to 3 most critical
+
+  container.innerHTML = `
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-rose-600 via-rose-700 to-red-800 text-white p-5 shadow-xl border-2 border-rose-500 animate-pulse-subtle">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/20 pb-3 mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white text-2xl shadow-inner border border-white/30 shrink-0">
+            🚨
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-lg font-black tracking-tight text-white">התראת שירות חריגה: לקוחות כועסים / פניות דחופות בטיפול</h3>
+              <span class="px-2.5 py-0.5 text-xs font-black bg-white text-rose-800 rounded-full shadow-sm">
+                ${alerts.length} מקרים חריגים זוהו
+              </span>
+            </div>
+            <p class="text-xs text-rose-100 font-medium mt-0.5">
+              מערכת הניטור זיהתה מילות מפתח המעידות על לקוח נסער (עו״ד, תביעות, ציוד תקול, טענות עיכוב ביטול ממזמן)
+            </p>
+          </div>
+        </div>
+        <div class="text-xs font-bold bg-black/30 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 text-rose-100 shrink-0">
+          דורש התערבות מיידית של מנהל המועדון
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        ${topAlerts.map(a => `
+          <div class="bg-white/10 hover:bg-white/15 transition backdrop-blur-sm rounded-xl p-3.5 border border-white/20 flex flex-col justify-between space-y-2">
+            <div>
+              <div class="flex items-center justify-between gap-1 mb-1.5">
+                <span class="font-black text-sm text-white flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                  ${a.name}
+                </span>
+                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-rose-950/80 text-rose-200 border border-rose-500/40">
+                  ${a.req_type}
+                </span>
+              </div>
+              <div class="text-xs text-rose-100 line-clamp-3 font-normal leading-relaxed bg-black/20 p-2 rounded-lg border border-white/10">
+                "${a.notes}"
+              </div>
+            </div>
+            <div class="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-rose-200">
+              <span class="truncate max-w-[120px]">נציג: ${a.opener || 'נציג שירות'}</span>
+              <span class="font-bold text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/30">${a.status}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  if (window.lucide) lucide.createIcons();
 }
 
 function renderMembershipTypesList(types) {

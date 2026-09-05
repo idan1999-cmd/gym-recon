@@ -383,6 +383,11 @@
         </div>
       </div>
 
+      <!-- High Priority Urgent Alerts Banner (if angry customers or critical pending requests exist) -->
+      <div id="mem-urgent-alert-banner" class="hidden">
+        <!-- Injected dynamically by JS -->
+      </div>
+
       <!-- 6 Main KPI Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         
@@ -435,7 +440,13 @@
               <span>פילאטיס מכשירים:</span>
               <strong class="text-slate-900 font-bold" id="mem-kpi-frozen-pilates">0</strong>
             </div>
-            <div class="text-[11px] text-slate-400 pt-0.5">הקפאות פעילות בהווה / ממתינות לאישור</div>
+            <div class="mt-2 pt-2 border-t border-amber-100/60 flex items-center justify-between">
+              <span class="text-[11px] font-bold text-amber-800 flex items-center gap-1">
+                <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-600"></i>
+                בקשות הקפאה שטרם טופלו:
+              </span>
+              <span class="px-2 py-0.5 text-xs font-black bg-amber-100 text-amber-900 rounded-full" id="mem-kpi-pending-freezes-count">0</span>
+            </div>
           </div>
         </div>
 
@@ -460,7 +471,13 @@
               <span>פילאטיס מכשירים:</span>
               <strong class="text-slate-900 font-bold" id="mem-kpi-cancel-pilates">0</strong>
             </div>
-            <div class="text-[11px] text-slate-400 pt-0.5" id="mem-kpi-cancel-note">ממתינים לאישור מנהל או זיכוי כספי</div>
+            <div class="mt-2 pt-2 border-t border-rose-100/60 flex items-center justify-between">
+              <span class="text-[11px] font-bold text-rose-800 flex items-center gap-1">
+                <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-rose-600"></i>
+                בקשות ביטול שטרם טופלו:
+              </span>
+              <span class="px-2 py-0.5 text-xs font-black bg-rose-100 text-rose-900 rounded-full" id="mem-kpi-pending-cancels-count">0</span>
+            </div>
           </div>
         </div>
 
@@ -1291,6 +1308,6 @@
     <span id="toast-message">הנתונים סונכרנו בהצלחה!</span>
   </div>
 
-  <script src="app.js?v=4.0"></script>
+  <script src="app.js?v=4.1"></script>
 </body>
 </html>

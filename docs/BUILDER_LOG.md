@@ -9,6 +9,30 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 2. **חיוב יזם & דוח מרכז לאישור מנהל (Trainer & Staff Billing):** Computes monthly charges for the property owner/developer across shifts, reception, personal training, studio classes, management fees, and sales commissions.
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
+## 2026-09-05 — Pending Requests Tracking & High-Priority Angry Customer Alerts Banner
+
+- **What changed:**
+  1. **Pending Request Counting & Branch Segmentation (`dashboard/backend/data_service.py`):**
+     - Tracked and segregated pending requests awaiting manager approval or client response from `הקפאות וביטולים` in the Sales CRM workbook:
+       - **Pending Freezes (`pending_freezes`):** Exactly 6 requests awaiting manager confirmation (`ממתין לאישור מנהל` / `ממתין לאישור לקוח`).
+       - **Pending Cancellations (`pending_cancellations`):** 28 pending cases (10 awaiting manager decision, 2 awaiting client follow-up, 16 approved awaiting refund/credit execution).
+       - Both counters are segmented across Combined Club, Main Gym, and Pilates Studio.
+  2. **High-Severity Customer Grievance & Anger Detection Engine (`dashboard/backend/data_service.py`):**
+     - Built an automated scanner searching for critical friction indicators:
+       - Legal/threat keywords: `עו"ד`, `עורך דין`, `תביעה`, `משפט`, `משטרה`, `איום`.
+       - Faulty facility/equipment complaints: `תקול`, `תקולים`, `לא מרוצה`, `כל הזמן ההליכונים תקולים`.
+       - Severe process delay disputes: `ביקש לבטל ממזמן`, `מזמן`, `ממזמן`, `דחוף`, `ללא התייחסות`, `לא מובן העניין`, `ביטול מיידי`.
+     - Filtered down to active/pending cases requiring urgent executive intervention (e.g. **עוז אטיאס** - ציוד תקול והליכונים; **יהונתן ברוימן** - טוען שביקש לבטל ממזמן; **אראלה שריפייה** - טוענת שפנתה ביולי על ביטול מיידי; **תמר כהן** - הודעת ביטול בוואטסאפ ללא התייחסות; **פטריק הרוש** - לא מצליח להירשם).
+  3. **Frontend Alert Banner & KPI Badges (`dashboard/public/index.html` & `app.js`):**
+     - Under KPI 2 ("מנויים בהקפאה"): Added pending indicator pill (`⏳ 6 ממתינות לטיפול`).
+     - Under KPI 3 ("ביטולים עתידיים"): Added pending indicator pill (`⏳ 28 ממתינות לאישור`).
+     - Directly above the 6 KPI cards: Added **`#mem-urgent-alert-banner`** — a bold high-contrast red/rose executive alert banner displaying up to 3 high-priority customer cases with member name, request type, exact notes/quote, opening representative, and current status.
+     - Bumped script version tag to `app.js?v=4.1`.
+- **Why (what Idan asked for, in his words):**
+  - *"במקביל כאן, הייתי רוצה שתוסיף למסך סטטוס מנויים וביטולים גם בקשות ביטול ובקשות הקפאה מתחת לכמה בפועל יש בהקפאה שטרם טופלו, כדי שנכיר גם כמה בקשות פעילות יש. כמו כן, אם יש בקשה מאוד חריגה שמצביעה על עצבים של לקוח או משהו מאוד חריג, תציין אותה בענק כמשהו שיקפוץ לי ישירות לעין, כדי שכשאני נכנס לדשבורד, שיהיה לי משהו משמעותי עם התראה."*
+- **What it touches:**
+  - `dashboard/backend/data_service.py`, `dashboard/public/index.html`, `dashboard/public/app.js`, `docs/BUILDER_LOG.md`.
+
 ## 2026-09-05 — Weekly Schedule Timetable 2-Week Window & Month-Sync Fix
 
 - **What changed:**

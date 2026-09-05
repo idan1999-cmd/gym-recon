@@ -560,6 +560,9 @@ class DashboardDataService:
             sales_file = self.find_input_file(["*מכירות*2026*.xlsx", "*מכירות*.xlsx", "*קובץ מכירות*.xlsx"])
             frozen_gym, frozen_pil = 0, 0
             cancels_gym, cancels_pil = 0, 0
+            pending_freezes_gym, pending_freezes_pil = 0, 0
+            pending_cancels_gym, pending_cancels_pil = 0, 0
+            urgent_customer_alerts = []
             future_cancel_members = []
             cancellations_by_month = Counter()
             gym_prices, pil_prices = [], []
@@ -590,8 +593,52 @@ class DashboardDataService:
                             refund = safe_float(ws_c.cell(r, headers_c.get("סכום החזר כולל (₪)", headers_c.get("סכום החזר", 8))).value)
                             note = str(ws_c.cell(r, headers_c.get("סיבת הפנייה והערות הנציג", headers_c.get("הערות", 5))).value or "")
                             mgr_status = str(ws_c.cell(r, headers_c.get("סטטוס טיפול מנהל", 13)).value or "").strip()
+                            opener = str(ws_c.cell(r, headers_c.get("נציג פותח פנייה", 3)).value or "").strip()
 
                             branch_key = "pilates" if "פילאטיס" in note else "gym"
+
+                            # Detect Pending Untreated Requests:
+                            if "ממתין" in mgr_status:
+                                if "הקפא" in req_type:
+                                    if branch_key == "pilates":
+                                        pending_freezes_pil += 1
+                                    else:
+                                        pending_freezes_gym += 1
+                                elif "ביטול" in req_type:
+                                    if branch_key == "pilates":
+                                        pending_cancels_pil += 1
+                                    else:
+                                        pending_cancels_gym += 1
+
+                            # Detect Urgent / Angry Customer Signals (High Priority Alert Banner for Idan):
+                            # Focus on: pending cases with angry signals, faulty equipment complaints, disputes on prior unfulfilled cancellations, legal threats
+                            anger_keywords = [
+                                "עצבים", "כועס", "כועסת", "רותח", "רותחת", "זועם", "זועמת",
+                                "עו\"ד", "עורך דין", "תביעה", "משפט", "משטרה", "איום", "דחוף",
+                                "תקול", "תקולים", "לא מרוצה", "גניבה", "בושה", "מזמן", "ממזמן",
+                                "נמאס", "רשלנות", "תלונה", "צעק", "לא מובן העניין", "ללא התייחסות",
+                                "לא מצליח להירשם", "ביקש לבטל ממזמן", "ביטול מיידי"
+                            ]
+                            matched_triggers = [kw for kw in anger_keywords if kw in note]
+
+                            # Prioritize: 1) Any pending request with anger/complaint/dispute, OR 2) Severe unresolved customer grievance
+                            is_pending = ("ממתין" in mgr_status)
+                            has_critical_trigger = any(k in note for k in ["תקול", "לא מרוצה", "ממזמן", "עו\"ד", "דחוף", "ללא התייחסות", "לא מובן העניין", "מזמן"])
+                            
+                            if (is_pending and (matched_triggers or has_critical_trigger)) or (matched_triggers and "לא אושר" not in mgr_status and ("אושר וממתין" in mgr_status or is_pending)):
+                                alert_severity = "high" if (is_pending and has_critical_trigger) else "medium"
+                                urgent_customer_alerts.append({
+                                    "name": str(name).strip() if name else "לקוח",
+                                    "req_type": req_type,
+                                    "status": mgr_status,
+                                    "date": req_d,
+                                    "notes": note.strip(),
+                                    "opener": opener,
+                                    "branch": "פילאטיס מכשירים" if branch_key == "pilates" else "מועדון A+",
+                                    "matched_triggers": matched_triggers or ["תלונה / פנייה חריגה"],
+                                    "severity": alert_severity,
+                                    "is_pending": is_pending
+                                })
 
                             # 1. Filter Freezes: only currently active or pending manager/client freezes
                             if "הקפא" in req_type:
@@ -721,6 +768,8 @@ class DashboardDataService:
                     "active": active_total,
                     "frozen": frozen_gym + frozen_pil,
                     "future_cancellations": cancels_gym + cancels_pil,
+                    "pending_freezes": pending_freezes_gym + pending_freezes_pil,
+                    "pending_cancellations": pending_cancels_gym + pending_cancels_pil,
                     "total": active_total + frozen_gym + frozen_pil + cancels_gym + cancels_pil,
                     "avg_price": all_avg,
                     "avg_monthly_price": all_monthly
@@ -730,6 +779,8 @@ class DashboardDataService:
                     "active": active_gym,
                     "frozen": frozen_gym,
                     "future_cancellations": cancels_gym,
+                    "pending_freezes": pending_freezes_gym,
+                    "pending_cancellations": pending_cancels_gym,
                     "total": active_gym + frozen_gym + cancels_gym,
                     "avg_price": gym_avg,
                     "avg_monthly_price": gym_monthly
@@ -739,6 +790,8 @@ class DashboardDataService:
                     "active": active_pil,
                     "frozen": frozen_pil,
                     "future_cancellations": cancels_pil,
+                    "pending_freezes": pending_freezes_pil,
+                    "pending_cancellations": pending_cancels_pil,
                     "total": active_pil + frozen_pil + cancels_pil,
                     "avg_price": pil_avg,
                     "avg_monthly_price": pil_monthly
@@ -772,6 +825,9 @@ class DashboardDataService:
                     "label": "סנכרון חי"
                 }],
                 "stats": stats,
+                "pending_freezes": pending_freezes_gym + pending_freezes_pil,
+                "pending_cancellations": pending_cancels_gym + pending_cancels_pil,
+                "urgent_alerts": urgent_customer_alerts,
                 "future_cancellations": future_cancel_members,
                 "cancellations_by_month": sorted([{"month": k, "count": v} for k, v in cancellations_by_month.items()], key=lambda x: x["month"]),
                 "membership_types": top_membership_types,
