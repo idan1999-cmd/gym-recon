@@ -9,6 +9,7 @@ import json
 import urllib.parse
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
+from datetime import datetime
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(BASE_DIR))
@@ -39,7 +40,8 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             return
 
         elif path == "/api/data":
-            month = int(query.get("month", ["6"])[0])
+            cur_m = datetime.now().month
+            month = int(query.get("month", [str(cur_m)])[0])
             club = query.get("club", ["all"])[0]
             snapshot = query.get("snapshot", [None])[0]
 

@@ -9,6 +9,22 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 2. **חיוב יזם & דוח מרכז לאישור מנהל (Trainer & Staff Billing):** Computes monthly charges for the property owner/developer across shifts, reception, personal training, studio classes, management fees, and sales commissions.
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
+## 2026-09-05 — Dynamic Calendar Month Default (Opening on Current Month)
+
+- **What changed:**
+  1. **Dynamic Client Initialization (`dashboard/public/app.js` & `index.html`):**
+     - Replaced the hardcoded initialization (`let currentMonth = 6;`) with dynamic calendar month detection (`(new Date()).getMonth() + 1`).
+     - Removed the static `"יוני 2026"` placeholder from the header month pill in `index.html`.
+     - In `initDashboard()`, dynamically populated `#current-month-display` on load with the active month name and year (e.g. `ספטמבר 2026`).
+     - Preserved full interactive month navigation (`navigateMonth`) for switching back and forth across all 12 months.
+  2. **Dynamic Backend Fallback (`dashboard/backend/server.py` & `data_service.py`):**
+     - Updated `/api/data` handler in `server.py` to default to `datetime.now().month` whenever no specific month query parameter is provided (instead of falling back to 6).
+     - Restarted the local dashboard server daemon on port 3000.
+- **Why (what Idan asked for, in his words):**
+  - *"כשאני תמיד פותח את הדשבורד, מופיע לי חודש יוני. עדיף שתמיד יפתח החודש הנוכחי, זה הרבה יותר הגיוני והרבה יותר נוח."*
+- **What it touches:**
+  - `dashboard/public/app.js`, `dashboard/public/index.html`, `dashboard/backend/server.py`, `docs/BUILDER_LOG.md`.
+
 ## 2026-09-05 — Clean Membership Breakdown, Reason Time Filters, Seasonal Trends & Expiring Cohorts
 
 - **What changed:**

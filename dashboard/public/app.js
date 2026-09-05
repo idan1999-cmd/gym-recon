@@ -3,7 +3,8 @@
  * Supports: Cards View, Annual Trends & Charts View, Full 12-Month Matrix, and AI Insights.
  */
 
-let currentMonth = 6;
+const _initNow = new Date();
+let currentMonth = (_initNow.getMonth() + 1) || 9;
 let currentClub = 'all';
 let currentView = 'cards';
 let currentSnapshot = null;
@@ -2491,6 +2492,16 @@ async function saveBankBalance() {
 }
 
 function initDashboard() {
+  const now = new Date();
+  const calMonth = now.getMonth() + 1;
+  if (calMonth >= 1 && calMonth <= 12) {
+    currentMonth = calMonth;
+  }
+  const monthDisplay = document.getElementById('current-month-display');
+  if (monthDisplay) {
+    monthDisplay.innerText = `${MONTH_NAMES[currentMonth - 1]} ${now.getFullYear()}`;
+  }
+
   const modalEl = document.getElementById('drilldown-modal');
   if (modalEl) {
     modalEl.addEventListener('click', (e) => {
