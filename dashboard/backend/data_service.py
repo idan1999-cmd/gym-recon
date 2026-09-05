@@ -567,6 +567,7 @@ class DashboardDataService:
             urgent_customer_alerts = []
             future_cancel_members = []
             cancellations_by_month = Counter()
+            cancelled_members_names = set()
             gym_prices, pil_prices = [], []
             joins_map = {"2026-05": 95, "2026-06": 116, "2026-07": 128, "2026-08": 153}
 
@@ -670,6 +671,8 @@ class DashboardDataService:
 
                             # 2. Filter Cancellations: only pending manager/client or waiting for financial refund
                             elif "ביטול" in req_type:
+                                if name and mgr_status in ["אושר וממתין לזיכוי", "ממתין לאישור מנהל", "ממתין לאישור לקוח", "אושר ובוצע בארבוקס"]:
+                                    cancelled_members_names.add(str(name).strip())
                                 # Historical cancellations already done in Arbox months ago are excluded
                                 if mgr_status not in ["אושר וממתין לזיכוי", "ממתין לאישור מנהל", "ממתין לאישור לקוח"]:
                                     continue
@@ -859,22 +862,58 @@ class DashboardDataService:
                 else:
                     m_types_gym[m_clean] += 1
 
-                # Upcoming Expirations Tracking (מנויים שעומדים להסתיים)
+                # Upcoming Expirations Tracking (מנויים שעומדים להסתיים - צפי חידוש)
                 end_str = u.get("end")
                 fn = u.get("first_name", "") or ""
                 ln = u.get("last_name", "") or ""
                 f_name = f"{fn} {ln}".strip()
+                # Exclude members who already have a cancellation in process
+                if f_name in cancelled_members_names:
+                    continue
+
                 if end_str:
                     try:
                         d_exp = datetime.strptime(str(end_str)[:10], "%Y-%m-%d").date()
                         if d_exp >= datetime(2026, 9, 1).date():
+                            # Persistence & Churn Risk scoring
+                            risk_score = 0
+                            m_lower = (m_clean or "").lower()
+                            if any(k in m_lower for k in ["קיץ", "כרטיס", "בוטיק", "1 חודש", "חד פעמי"]):
+                                risk_score += 4
+                            elif any(k in m_lower for k in ["3 חודש", "שלושה"]):
+                                risk_score += 2
+                            if not u.get("rfid"):
+                                risk_score += 2
+                            st_val = str(u.get("start") or "")[:10]
+                            if st_val:
+                                try:
+                                    st_date = datetime.strptime(st_val, "%Y-%m-%d").date()
+                                    if (d_exp - st_date).days <= 100:
+                                        risk_score += 2
+                                except Exception:
+                                    pass
+
+                            if risk_score >= 4:
+                                p_risk = "high"
+                                p_label = "סיכון נשירה גבוה (התמדה נמוכה)"
+                            elif risk_score >= 2:
+                                p_risk = "medium"
+                                p_label = "התמדה בינונית"
+                            else:
+                                p_risk = "low"
+                                p_label = "התמדה גבוהה (יציב)"
+
                             expiring_members_list.append({
                                 "name": f_name or "לקוח",
                                 "membership": m_clean,
                                 "branch": "פילאטיס מכשירים" if is_pilates else "מועדון A+",
                                 "branch_key": "pilates" if is_pilates else "gym",
+                                "raw_date": d_exp.strftime("%Y-%m-%d"),
                                 "end_date": d_exp.strftime("%d/%m/%Y"),
-                                "month": d_exp.strftime("%Y-%m")
+                                "month": d_exp.strftime("%Y-%m"),
+                                "persistence_risk": p_risk,
+                                "persistence_label": p_label,
+                                "risk_score": risk_score
                             })
                     except Exception:
                         pass
@@ -921,6 +960,9 @@ class DashboardDataService:
                     "name": fam,
                     "data": [seasonal_trends[p].get(fam, 0) for p in seasonal_chart_data["categories"]]
                 })
+
+            # Sort expiring members by date ascending so closest date appears first!
+            expiring_members_list.sort(key=lambda x: x.get("raw_date", ""))
 
             # Expirations summary by month
             expiring_by_month = Counter(x["month"] for x in expiring_members_list)

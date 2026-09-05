@@ -1631,20 +1631,42 @@ function renderExpiringCohorts(members) {
     `;
   }).join('');
 
-  // Render Active Month Table Rows
-  const cohortList = byMonth[currentExpiringMonth] || [];
-  tableBody.innerHTML = cohortList.map(item => `
-    <tr class="hover:bg-slate-50/80 transition">
-      <td class="p-2.5 font-bold text-slate-900">${item.name}</td>
-      <td class="p-2.5 text-slate-700">${item.membership}</td>
-      <td class="p-2.5">
-        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${item.branch_key === 'pilates' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'}">
-          ${item.branch}
-        </span>
-      </td>
-      <td class="p-2.5 text-left font-mono font-bold text-amber-700">${item.end_date}</td>
-    </tr>
-  `).join('');
+  // Render Active Month Table Rows - sorted by end date ascending
+  const cohortList = (byMonth[currentExpiringMonth] || []).slice();
+  cohortList.sort((a, b) => (a.raw_date || a.end_date).localeCompare(b.raw_date || b.end_date));
+
+  tableBody.innerHTML = cohortList.map(item => {
+    const isHighRisk = (item.persistence_risk === 'high');
+    const isMedRisk = (item.persistence_risk === 'medium');
+
+    let riskBadge = '';
+    if (isHighRisk) {
+      riskBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-200 flex items-center gap-1 w-fit shadow-2xs"><i data-lucide="alert-triangle" class="w-3 h-3 text-rose-600"></i> סיכון נשירה (התמדה נמוכה)</span>`;
+    } else if (isMedRisk) {
+      riskBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1 w-fit"><i data-lucide="clock" class="w-3 h-3 text-amber-600"></i> התמדה בינונית</span>`;
+    } else {
+      riskBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1 w-fit"><i data-lucide="check" class="w-3 h-3 text-emerald-600"></i> התמדה גבוהה (יציב)</span>`;
+    }
+
+    const rowClass = isHighRisk
+      ? 'bg-rose-50/70 hover:bg-rose-100/70 border-r-4 border-r-rose-500 font-medium transition'
+      : (isMedRisk ? 'hover:bg-amber-50/40 transition' : 'hover:bg-slate-50/80 transition');
+
+    return `
+      <tr class="${rowClass}">
+        <td class="p-2.5 font-bold ${isHighRisk ? 'text-rose-950 font-black' : 'text-slate-900'}">${item.name}</td>
+        <td class="p-2.5 text-slate-700">${item.membership}</td>
+        <td class="p-2.5">
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold ${item.branch_key === 'pilates' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'}">
+            ${item.branch}
+          </span>
+        </td>
+        <td class="p-2.5">${riskBadge}</td>
+        <td class="p-2.5 text-left font-mono font-black ${isHighRisk ? 'text-rose-700' : 'text-amber-700'}">${item.end_date}</td>
+      </tr>
+    `;
+  }).join('');
+  if (window.lucide) lucide.createIcons();
 }
 
 function selectExpiringCohort(monthKey) {

@@ -9,6 +9,26 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 2. **חיוב יזם & דוח מרכז לאישור מנהל (Trainer & Staff Billing):** Computes monthly charges for the property owner/developer across shifts, reception, personal training, studio classes, management fees, and sales commissions.
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
+## 2026-09-05 — Expiring Members Cohort: Chronological Sort, Cancellation Exclusion & Churn Risk Flagging
+
+- **What changed:**
+  1. **Chronological Ascending Sorting (`data_service.py` & `app.js`):**
+     - Sorted the expiring members list by exact expiration date ascending (`raw_date`) so that members expiring soonest (e.g. 04/09, 06/09, 11/09...) always appear at the top of the table.
+  2. **Exclusion of Already-Cancelled Members (`data_service.py`):**
+     - Tracked all members with pending or approved future cancellations (`אושר וממתין לזיכוי`, `ממתין לאישור מנהל`, `ממתין לאישור לקוח`, `אושר ובוצע בארבוקס`).
+     - Excluded them from the renewal cohort (e.g. `יובל הרצבי` and `מיכל מנור` were removed since they are already in the cancellation pipeline and irrelevant for renewal outreach).
+  3. **Persistence & Churn Risk Scoring and Prominent Styling (`data_service.py`, `index.html`, `app.js`):**
+     - Added a dedicated table column: **`מדד התמדה וסיכון`**.
+     - Computed persistence and churn risk based on membership tier (transient summer / 3-month passes vs long-term annual), tenure, gate RFID presence, and orientation status:
+       - 🔴 **סיכון נשירה (התמדה נמוכה):** Highlighted with bold red badge `⚠️ סיכון נשירה (התמדה נמוכה)`, rose background tint (`bg-rose-50/70`), and a prominent red right border (`border-r-4 border-r-rose-500`) to immediately grab attention.
+       - 🟡 **התמדה בינונית:** Amber badge `⚡ התמדה בינונית`.
+       - 🟢 **התמדה גבוהה:** Emerald badge `✓ התמדה גבוהה (יציב)`.
+     - Bumped script cache tag to `app.js?v=4.5`.
+- **Why (what Idan asked for, in his words):**
+  - *"תסנן את הדשבורד לפי תאריך סיום, כך שהתאריך הקרוב ביותר יופיע קודם. תוסיף התייחסות להתמדה שלו, ותצבע בצורה בולטת את אלו שלא מתמידים מספיק ושיש סיכוי גדול יותר שיבטלו. אם מישהו מהם כבר עם סטטוס של ביטול עתידי, שים לב שהוא כבר עומד להיות מבוטל והוא לא רלוונטי כאן לצפי חידוש. תעדכן את זה בהתאם."*
+- **What it touches:**
+  - `dashboard/backend/data_service.py`, `dashboard/public/index.html`, `dashboard/public/app.js`, `docs/BUILDER_LOG.md`.
+
 ## 2026-09-05 — 100% Membership Count Alignment & Direct Membership Report Ingestion
 
 - **What changed:**
