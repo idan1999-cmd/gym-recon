@@ -144,6 +144,9 @@ function navigateMonth(direction) {
   
   document.getElementById('current-month-display').innerText = `${MONTH_NAMES[currentMonth - 1]} 2026`;
   fetchDashboardData();
+  if (currentView === 'schedule') {
+    loadScheduleAnalytics();
+  }
 }
 
 function toggleFixedSection() {
@@ -1663,7 +1666,7 @@ function setScheduleMode(mode) {
 
 async function loadScheduleAnalytics() {
   try {
-    const url = `/api/schedule_analytics?club=${encodeURIComponent(scheduleClub)}&range=${scheduleRange}&min_occurrences=3`;
+    const url = `/api/schedule_analytics?club=${encodeURIComponent(scheduleClub)}&range=${scheduleRange}&month=${currentMonth}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP error ${res.status}`);
     const data = await res.json();
@@ -1678,7 +1681,16 @@ async function loadScheduleAnalytics() {
 function renderScheduleAnalytics(data) {
   if (!data) return;
   const kpis = data.kpis || {};
+  const meta = data.metadata || {};
   
+  // Update Filter Notice Banner
+  const noticeText = document.getElementById('sched-filter-notice-text');
+  if (noticeText) {
+    const minOcc = meta.min_occurrences || (scheduleRange === '2w' ? 2 : 3);
+    const dateRangeStr = (meta.date_from && meta.date_to) ? ` (תקופה: ${meta.date_from} עד ${meta.date_to})` : '';
+    noticeText.innerHTML = `מוצגים שיעורים קבועים עם <strong>${minOcc} מופעים ומעלה</strong>${dateRangeStr}. אירועים חד-פעמיים סוננו.`;
+  }
+
   // Update KPI Cards
   const avgOccEl = document.getElementById('sched-kpi-avg-occ');
   if (avgOccEl) avgOccEl.innerText = (kpis.avg_occupancy || 0) + '%';

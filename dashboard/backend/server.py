@@ -56,8 +56,15 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             club = query.get("club", ["all"])[0]
             time_range = query.get("range", ["1m"])[0]
             min_occ = int(query.get("min_occurrences", ["3"])[0])
+            month_param = query.get("month", [None])[0]
+            target_month = int(month_param) if month_param and month_param.isdigit() else None
 
-            analytics = data_service.get_schedule_analytics(club_filter=club, time_range=time_range, min_occurrences=min_occ)
+            analytics = data_service.get_schedule_analytics(
+                club_filter=club,
+                time_range=time_range,
+                min_occurrences=min_occ,
+                target_month=target_month
+            )
 
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")

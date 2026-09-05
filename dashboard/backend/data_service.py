@@ -1763,12 +1763,13 @@ class DashboardDataService:
             "sales_cancellations": sales_cancellations
         }
 
-    def get_schedule_analytics(self, club_filter: str = "all", time_range: str = "1m", min_occurrences: int = 3) -> dict:
+    def get_schedule_analytics(self, club_filter: str = "all", time_range: str = "1m", min_occurrences: int = 3, target_month: int | None = None) -> dict:
         """
         Analyzes session attendance, builds a weekly timetable grid, and ranks trainer performance.
         club_filter: 'all' | 'מועדון A+' (or 'חדר כושר') | 'פילאטיס מכשירים'
         time_range: '2w' (2 weeks) | '1m' (1 month) | '6m' (6 months)
-        min_occurrences: minimum sessions for a recurring weekly slot (default 3) to filter one-off subs.
+        min_occurrences: minimum sessions for a recurring weekly slot. For '2w', automatically capped at 2.
+        target_month: optional month index (1-12) to anchor the analysis.
         """
         all_files = list(INPUT_DIR.glob("**/*שיעור*.csv"))
         raw_sessions = []
@@ -1812,7 +1813,7 @@ class DashboardDataService:
 
         if not parsed_sessions:
             return {
-                "metadata": {"club": club_filter, "range": time_range, "total_sessions": 0},
+                "metadata": {"club": club_filter, "range": time_range, "target_month": target_month, "total_sessions": 0},
                 "kpis": {},
                 "timetable": [],
                 "days": [],
@@ -1822,19 +1823,39 @@ class DashboardDataService:
                 "hourly": []
             }
 
-        max_date = max(dt for dt, _ in parsed_sessions)
+        all_dates = [dt for dt, _ in parsed_sessions]
+
+        # Determine reference anchor date based on target_month if specified
+        if target_month:
+            month_dates = [dt for dt in all_dates if dt.month == target_month]
+            if month_dates:
+                anchor_date = max(month_dates)
+            else:
+                # If chosen month has no direct session CSV, anchor to closest available date
+                closest_date = min(all_dates, key=lambda d: abs(d.month - target_month))
+                anchor_date = closest_date
+        else:
+            anchor_date = max(all_dates)
+
+        # In a 2-week window (14 days), each day of the week occurs at most 2 times (or 3 for the start day).
+        # Therefore, filtering by >=3 occurrences removes almost every single day except one!
+        # Automatically set min_occurrences to 2 for '2w' to allow a complete, regular 6-day timetable.
+        effective_min_occ = 2 if time_range == "2w" else min_occurrences
 
         if time_range == "2w":
-            min_date = max_date - timedelta(days=14)
+            min_date = anchor_date - timedelta(days=14)
+            max_date = anchor_date
         elif time_range == "1m":
-            min_date = max_date - timedelta(days=31)
+            min_date = anchor_date - timedelta(days=31)
+            max_date = anchor_date
         else:  # 6m
-            min_date = max_date - timedelta(days=183)
+            min_date = anchor_date - timedelta(days=183)
+            max_date = anchor_date
 
         # Filter by date and club
         filtered_sessions = []
         for dt, r in parsed_sessions:
-            if dt < min_date:
+            if dt < min_date or dt > max_date:
                 continue
             branch = r.get("סניף", "").strip()
             if "פילאטיס" in club_filter or "pilates" in club_filter.lower():
@@ -1926,7 +1947,7 @@ class DashboardDataService:
 
         for k, d in recurring.items():
             occ = d["occurrences"]
-            if occ < min_occurrences:
+            if occ < effective_min_occ:
                 continue
 
             avg_ci = round(sum(d["checkins"]) / occ, 1)
@@ -2027,7 +2048,8 @@ class DashboardDataService:
             "metadata": {
                 "club_filter": club_filter,
                 "time_range": time_range,
-                "min_occurrences": min_occurrences,
+                "target_month": target_month,
+                "min_occurrences": effective_min_occ,
                 "date_from": min_date.strftime("%d/%m/%Y"),
                 "date_to": max_date.strftime("%d/%m/%Y"),
                 "total_held_sessions": tot_sess

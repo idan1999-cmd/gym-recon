@@ -9,6 +9,25 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 2. **חיוב יזם & דוח מרכז לאישור מנהל (Trainer & Staff Billing):** Computes monthly charges for the property owner/developer across shifts, reception, personal training, studio classes, management fees, and sales commissions.
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
+## 2026-09-05 — Weekly Schedule Timetable 2-Week Window & Month-Sync Fix
+
+- **What changed:**
+  1. **Fixed Weekly Schedule Window & Day Coverage (`dashboard/backend/data_service.py`):**
+     - **Diagnosis:** In a 2-week window (14 calendar days), each weekday occurs exactly 2 times (only the starting boundary day can have 3). Because the recurrence filter was hardcoded to `min_occurrences >= 3`, every single weekday was stripped out except Monday (or Friday in July), creating the bug where only Mondays showed up!
+     - Automatically adjusted `effective_min_occ = 2` when selecting `time_range == '2w'`, ensuring all 6 days of the week (ראשון עד שישי) populate with their regular recurring classes (57 slots) while still filtering out one-off replacements.
+  2. **Month-Synced Schedule Analysis:**
+     - Connected `get_schedule_analytics()` to the global `target_month` parameter from the top month navigator (`&month=...`).
+     - In July (`month=7`), the analysis anchors to July 2026; in August (`month=8`), it anchors to August 2026.
+  3. **Frontend Dynamic Banner & Month Hook (`dashboard/public/app.js` & `index.html`):**
+     - `loadScheduleAnalytics()` now sends the selected `month` parameter.
+     - `navigateMonth()` immediately reloads the schedule analytics when the user is on the schedule tab.
+     - The filter notice banner dynamically displays the active occurrence threshold and date span (e.g. `17/08/2026 עד 31/08/2026`).
+     - Bumped script version tag to `app.js?v=3.9`.
+- **Why (what Idan asked for, in his words):**
+  - *"ולמה כשאני הולך לגיליון של מערכת שעות ותפוסה, כשאני הולך שבועיים אחורה אני רואה רק את ימי שני? אני לא רואה שום דבר בנוסף לזה. תנסה לעשות בדיקה רגע. גם כשאני הולך ליולי ויוני זה אותו הדבר."*
+- **What it touches:**
+  - `dashboard/backend/data_service.py`, `dashboard/backend/server.py`, `dashboard/public/index.html`, `dashboard/public/app.js`, `docs/BUILDER_LOG.md`.
+
 ## 2026-09-05 — Facility Utilities & Maintenance Multi-Trend Tracking in Executive View
 
 - **What changed:**
