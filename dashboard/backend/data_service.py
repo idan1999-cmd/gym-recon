@@ -298,66 +298,192 @@ class DashboardDataService:
             "historical_average": round(avg_past, 2)
         }
 
-    def generate_smart_insights(self, incomes: list, var_exp: list, fix_exp: list, month: int) -> list[dict]:
-        """Generates proactive AI financial tips and trend observations."""
+    def generate_smart_insights(
+        self,
+        incomes: list,
+        var_exp: list,
+        fix_exp: list,
+        month: int,
+        pacing_tracker: dict | None = None,
+        memberships_data: dict | None = None,
+        sales_cancellations: dict | None = None
+    ) -> list[dict]:
+        """
+        Generates executive, proactive AI action insights and alerts across all club modules:
+        1. Revenue target pacing & daily rate gap (Urgent / High Priority)
+        2. High churn risk expiring members needing immediate retention outreach
+        3. Scheduled refunds and cash outflow timeline (Drive / cancellations)
+        4. Operational billing & PT profitability (safeguarded against zero-budget illusions)
+        """
         tips = []
 
-        # 1. Check Sales Commission vs Revenue trend
-        comm_item = next((x for x in var_exp if "עמלות" in x["name"]), None)
-        mem_item = next((x for x in incomes if "מנויים" in x["name"]), None)
-        if comm_item and mem_item:
-            c_act = comm_item["months"].get(month, {}).get("actual", 0)
-            c_prev = comm_item["months"].get(max(1, month - 1), {}).get("actual", 0)
-            m_act = mem_item["months"].get(month, {}).get("actual", 0)
-            m_prev = mem_item["months"].get(max(1, month - 1), {}).get("actual", 0)
-            if c_act > 0 and c_prev > 0:
-                c_diff_pct = round(((c_act - c_prev) / c_prev) * 100, 1)
-                m_diff_pct = round(((m_act - m_prev) / m_prev) * 100, 1) if m_prev > 0 else 0
-                if c_diff_pct > 15 and m_diff_pct > 10:
+        # -------------------------------------------------------------
+        # 1. REVENUE PACING & DAILY TARGET GAP (דחוף לתפעול ומכירות)
+        # -------------------------------------------------------------
+        if pacing_tracker:
+            p_status = pacing_tracker.get("status")
+            gap = pacing_tracker.get("revenue_gap_to_pace", 0)
+            daily_req = pacing_tracker.get("daily_rate_required", 0)
+            days_rem = pacing_tracker.get("days_remaining", 0)
+            target = pacing_tracker.get("target", 0)
+            proj = pacing_tracker.get("projected_month_end", 0)
+            is_cur = pacing_tracker.get("is_current_month", False)
+
+            if is_cur:
+                if p_status == "behind" and gap > 0:
                     tips.append({
+                        "priority": "urgent",
+                        "tag": "🚨 דחוף לתפעול ומכירות",
+                        "icon": "zap",
+                        "color": "rose",
+                        "title": f"פער ביעד הכנסות: נדרש קצב של ₪{daily_req:,.0f} ליום",
+                        "text": f"קיים פער של ₪{gap:,.0f} מקצב היעד להיום (יעד חודשי: ₪{target:,.0f}). נותרו {days_rem} ימי מכירה — מומלץ לתדרך את דלפק המכירות להאצת שדרוגים וחידושים."
+                    })
+                elif p_status == "ahead" and gap < 0:
+                    tips.append({
+                        "priority": "success",
+                        "tag": "🚀 קצב מכירות חזק",
                         "icon": "trending-up",
                         "color": "emerald",
-                        "title": "יעילות צוות מכירות במגמת עלייה",
-                        "text": f"עמלות המכירה עלו ב-{c_diff_pct}% החודש במקביל לעלייה של {m_diff_pct}% בהכנסות ממנויים. התמריצים מניבים תוצאות."
+                        "title": f"הקדמת יעד הכנסות ב-₪{abs(gap):,.0f} מעל התוכנית",
+                        "text": f"המועדון מקדים את קצב היעד. צפי הסיום החודשי עומד על ₪{proj:,.0f} (יעד: ₪{target:,.0f}). מומלץ לשמר מומנטום בסגירות."
+                    })
+                elif p_status == "on_track":
+                    tips.append({
+                        "priority": "info",
+                        "tag": "🎯 עמידה בקצב יעד",
+                        "icon": "target",
+                        "color": "indigo",
+                        "title": f"עמידה בקצב יעד: נדרש ₪{daily_req:,.0f} ליום",
+                        "text": f"הכנסות החודש צמודות לקצב היעד. שמירה על קצב סגירות יומי של ₪{daily_req:,.0f} תבטיח עמידה מלאה ביעד של ₪{target:,.0f}."
                     })
 
-        # 2. Check Trainer cost efficiency
-        trainer_item = next((x for x in var_exp if "עלות מאמנים" in x["name"] or "מאמנות" in x["name"]), None)
-        if trainer_item:
-            t_act = trainer_item["months"].get(month, {}).get("actual", 0)
-            t_bud = trainer_item["months"].get(month, {}).get("budget", 0)
-            if t_act > t_bud:
-                diff = t_act - t_bud
+        # -------------------------------------------------------------
+        # 2. RETENTION & HIGH CHURN RISK EXPIRING MEMBERS (שימור לקוחות)
+        # -------------------------------------------------------------
+        if memberships_data:
+            exp_list = memberships_data.get("expiring_memberships", [])
+            curr_month_str = f"{self.year}-{month:02d}"
+            exp_this_month = [m for m in exp_list if m.get("month") == curr_month_str or (not m.get("month") and exp_list.index(m) < 30)]
+            if not exp_this_month:
+                exp_this_month = exp_list[:25]
+
+            high_risk = [m for m in exp_this_month if m.get("persistence_risk") == "high"]
+            total_exp = len(exp_this_month)
+
+            if high_risk:
                 tips.append({
-                    "icon": "alert-triangle",
+                    "priority": "urgent",
+                    "tag": "⚠️ שימור לקוחות דחוף",
+                    "icon": "user-x",
                     "color": "amber",
-                    "title": "התראת קצב שעות מאמנים",
-                    "text": f"נרשמה חריגה של ₪{diff:,.0f} בעלות המאמנים לעומת התקציב. כדאי לבדוק את פירוט החלפות המשמרות בחילנט."
+                    "title": f"{len(high_risk)} מנויים בסיכון נשירה גבוה מסתיימים החודש",
+                    "text": f"מתוך {total_exp} מנויים העומדים לפוג, זוהו {len(high_risk)} מתאמנים עם התמדה נמוכה / מתחת לסטנדרט המועדון. מומלץ ליצור קשר יזום ולהציע חבילת שימור לפני פקיעת התוקף."
                 })
-            else:
+            elif total_exp > 0:
                 tips.append({
-                    "icon": "check-circle",
+                    "priority": "info",
+                    "tag": "🔄 צפי חידושי מנויים",
+                    "icon": "hourglass",
                     "color": "blue",
-                    "title": "בקרת שכר מאמנים תקינה",
-                    "text": f"עלות המאמנים עומדת על ₪{t_act:,.0f} (מתוך תקציב של ₪{t_bud:,.0f}), חיסכון של ₪{t_bud - t_act:,.0f} מהתקרה."
+                    "title": f"{total_exp} מנויים עומדים להסתיים בחודש הקרוב",
+                    "text": f"המתאמנים מציגים התמדה סבירה. שיחת חידוש מתוזמנת של הצוות תבטיח שמירה על שיעור שימור גבוה."
                 })
 
-        # 3. Personal Training profitability check
+        # -------------------------------------------------------------
+        # 3. SCHEDULED REFUNDS & CASH OUTFLOW (תזרים וזיכויים מתוזמנים)
+        # -------------------------------------------------------------
+        scheduled_refunds = []
+        if memberships_data:
+            scheduled_refunds = memberships_data.get("monthly_refund_forecast", [])
+        
+        month_name_he = MONTH_NAMES_HE[month - 1]
+        cur_ref = next((r for r in scheduled_refunds if month_name_he in r.get("month", "") or f"{month:02d}" in r.get("month", "")), None)
+
+        if cur_ref and cur_ref.get("amount", 0) > 0:
+            amt = cur_ref["amount"]
+            cnt = cur_ref.get("count", 0)
+            cc = cur_ref.get("credit_card", 0)
+            bank = cur_ref.get("bank_transfer", 0)
+            tips.append({
+                "priority": "warning",
+                "tag": "💸 תזרים והחזרים כספיים",
+                "icon": "receipt",
+                "color": "purple",
+                "title": f"צפי החזר כספי: ₪{amt:,.0f} מתוזמן ל-15 לחודש",
+                "text": f"מתוזמנים {cnt} זיכויי ביטול מאושרים לביצוע (₪{bank:,.0f} העברה בנקאית, ₪{cc:,.0f} אשראי). יש לוודא כיסוי תזרימי בהנהלת חשבונות."
+            })
+        elif sales_cancellations:
+            summ = sales_cancellations.get("summary", {})
+            pending_amt = summ.get("approved_pending_refund_amount", 0)
+            pending_cnt = summ.get("approved_pending_count", 0)
+            if pending_amt > 0:
+                tips.append({
+                    "priority": "warning",
+                    "tag": "💸 תזרים והחזרים כספיים",
+                    "icon": "receipt",
+                    "color": "purple",
+                    "title": f"ממתינים לזיכוי: {pending_cnt} פניות בסך ₪{pending_amt:,.0f}",
+                    "text": f"פניות ביטול שאושרו על ידי מנהל וממתינות לביצוע הזיכוי בהנה״ח. יש לתאם מועד שידור מרוכז."
+                })
+
+        # -------------------------------------------------------------
+        # 4. PERSONAL TRAINING & STUDIO MARGINS (רווחיות ומאמנים בפועל)
+        # -------------------------------------------------------------
         pt_inc = next((x for x in incomes if "אישיים" in x["name"]), None)
         pt_exp = next((x for x in var_exp if "אישיים" in x["name"]), None)
         if pt_inc and pt_exp:
             inc_val = pt_inc["months"].get(month, {}).get("actual", 0)
             exp_val = pt_exp["months"].get(month, {}).get("actual", 0)
-            if inc_val > exp_val:
-                margin = round(((inc_val - exp_val) / inc_val) * 100, 1) if inc_val > 0 else 0
+            if inc_val > 0 and exp_val > 0 and inc_val > exp_val:
+                margin = round(((inc_val - exp_val) / inc_val) * 100, 1)
                 tips.append({
+                    "priority": "info",
+                    "tag": "💎 רווחיות אימונים אישיים",
                     "icon": "sparkles",
                     "color": "purple",
-                    "title": f"רווחיות אימונים אישיים: {margin}%",
-                    "text": f"הכנסות ה-PT (₪{inc_val:,.0f}) מכסות את שכר המאמנים (₪{exp_val:,.0f}) ומותירות רווח תפעולי של ₪{inc_val - exp_val:,.0f}."
+                    "title": f"רווחיות PT חזקה: {margin}% רווח תפעולי",
+                    "text": f"הכנסות מאימונים אישיים (₪{inc_val:,.0f}) מכסות את שכר המאמנים (₪{exp_val:,.0f}) ומותירות רווח תפעולי של ₪{inc_val - exp_val:,.0f}."
                 })
 
-        return tips
+        # -------------------------------------------------------------
+        # 5. TRAINER BILLING STATUS (ללא אשליות תקציב של 0!)
+        # -------------------------------------------------------------
+        trainer_item = next((x for x in var_exp if "עלות מאמנים" in x["name"] or "מאמנות" in x["name"]), None)
+        if trainer_item:
+            t_act = trainer_item["months"].get(month, {}).get("actual", 0)
+            t_bud = trainer_item["months"].get(month, {}).get("budget", 0)
+            if t_act > 0:
+                if t_act > t_bud and t_bud > 0:
+                    diff = t_act - t_bud
+                    tips.append({
+                        "priority": "warning",
+                        "tag": "⚠️ בקרת שכר מאמנים",
+                        "icon": "alert-triangle",
+                        "color": "amber",
+                        "title": f"חריגה של ₪{diff:,.0f} בעלות המאמנים",
+                        "text": f"עלות המאמנים בפועל (₪{t_act:,.0f}) חרגה מהתקציב (₪{t_bud:,.0f}). יש לבדוק פירוט החלפות משמרות בחילנט."
+                    })
+                elif t_act <= t_bud and t_bud > 0:
+                    tips.append({
+                        "priority": "success",
+                        "tag": "✅ בקרת שכר מאמנים",
+                        "icon": "check-circle",
+                        "color": "emerald",
+                        "title": "בקרת שכר מאמנים תקינה ומאוזנת",
+                        "text": f"עלות המאמנים עומדת על ₪{t_act:,.0f} מתוך תקציב של ₪{t_bud:,.0f} (ניצול של {round(t_act/t_bud*100, 1)}%)."
+                    })
+            elif t_act == 0 and t_bud > 0:
+                tips.append({
+                    "priority": "info",
+                    "tag": "⏳ בקרת שכר וחודש פעיל",
+                    "icon": "clock",
+                    "color": "blue",
+                    "title": "שכר מאמנים ועובדים טרם נסגר",
+                    "text": f"החודש פעיל — דוחות שעות חילנט וחשבוניות מאמנים יקלטו לקראת סגירת השכר (מסגרת תקציב משוריינת: ₪{t_bud:,.0f})."
+                })
+
+        return tips[:4]
 
     def get_annual_trends(self, incomes: list, var_exp: list, fix_exp: list) -> dict:
         """Calculates 12-month trend arrays for rich multi-chart visualizations."""
@@ -2559,9 +2685,8 @@ class DashboardDataService:
         else:
             total_exp_projected = calc_exp_projected
 
-        # Calculate annual trends & smart insights
+        # Calculate annual trends
         annual_trends = self.get_annual_trends(incomes_list, var_exp_list, fix_exp_list)
-        smart_insights = self.generate_smart_insights(incomes_list, var_exp_list, fix_exp_list, month)
 
         # Parse memberships and sales cancellations reports
         memberships_data = self.parse_membership_data(selected_tab=snapshot)
@@ -2654,6 +2779,14 @@ class DashboardDataService:
             "insight": pacing_insight,
             "is_current_month": (month == current_live_month)
         }
+
+        # Generate rich, multi-module executive smart insights & urgency alerts
+        smart_insights = self.generate_smart_insights(
+            incomes_list, var_exp_list, fix_exp_list, month,
+            pacing_tracker=pacing_tracker,
+            memberships_data=memberships_data,
+            sales_cancellations=sales_cancellations
+        )
 
         return {
             "metadata": {

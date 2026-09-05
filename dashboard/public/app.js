@@ -651,28 +651,62 @@ function renderSmartInsights(tips) {
   }
 
   container.innerHTML = `
-    <div class="p-4 bg-gradient-to-r from-zinc-950 via-zinc-900 to-black rounded-2xl border border-zinc-800 shadow-sm space-y-2.5 text-white">
-      <div class="flex items-center justify-between">
+    <div class="p-4 bg-gradient-to-r from-zinc-950 via-zinc-900 to-black rounded-2xl border border-zinc-800 shadow-sm space-y-3 text-white">
+      <div class="flex items-center justify-between border-b border-zinc-800/80 pb-2.5">
         <span class="text-xs font-black text-white flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse shadow-sm"></span>
           <i data-lucide="sparkles" class="w-4 h-4 text-rose-500"></i>
-          <span>תובנות חכמות וניתוח שינויים (AI Pulse)</span>
+          <span>תובנות חכמות, התראות ודגלים דחופים (AI Pulse)</span>
         </span>
-        <span class="text-[10px] bg-rose-600 text-white font-black px-2.5 py-0.5 rounded-full shadow-2xs">LIVE</span>
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] text-zinc-400 font-medium">סנכרון תפעולי בלייב</span>
+          <span class="text-[10px] bg-rose-600 text-white font-black px-2.5 py-0.5 rounded-full shadow-2xs">LIVE</span>
+        </div>
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-        ${tips.map(t => `
-          <div class="p-3 bg-zinc-900/90 rounded-xl border border-zinc-800 flex items-start gap-2.5 text-xs shadow-2xs">
-            <i data-lucide="${t.icon}" class="w-4 h-4 text-rose-500 mt-0.5 flex-shrink-0"></i>
-            <div>
-              <strong class="font-black text-zinc-100 block">${t.title}</strong>
-              <p class="text-zinc-400 mt-0.5 text-[11px] leading-relaxed">${t.text}</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-0.5">
+        ${tips.map(t => {
+          const isUrgent = t.priority === 'urgent';
+          const isWarning = t.priority === 'warning';
+          const isSuccess = t.priority === 'success';
+
+          let borderClass = 'border-zinc-800 bg-zinc-900/90';
+          let tagBadge = 'bg-zinc-800 text-zinc-300 border-zinc-700';
+          let iconColor = 'text-indigo-400';
+
+          if (isUrgent) {
+            borderClass = 'border-rose-600/70 bg-gradient-to-br from-rose-950/30 to-zinc-900/95';
+            tagBadge = 'bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse';
+            iconColor = 'text-rose-500';
+          } else if (isWarning) {
+            borderClass = 'border-amber-600/60 bg-gradient-to-br from-amber-950/20 to-zinc-900/95';
+            tagBadge = 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+            iconColor = 'text-amber-400';
+          } else if (isSuccess) {
+            borderClass = 'border-emerald-600/60 bg-gradient-to-br from-emerald-950/20 to-zinc-900/95';
+            tagBadge = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+            iconColor = 'text-emerald-400';
+          }
+
+          return `
+            <div class="p-3.5 rounded-xl border ${borderClass} flex items-start gap-3 text-xs shadow-2xs transition-all hover:border-zinc-600">
+              <div class="w-7 h-7 rounded-lg bg-zinc-800/80 flex items-center justify-center flex-shrink-0 mt-0.5 border border-zinc-700/50">
+                <i data-lucide="${t.icon || 'zap'}" class="w-4 h-4 ${iconColor}"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-2 mb-1 flex-wrap">
+                  <strong class="font-black text-zinc-100 text-xs">${t.title}</strong>
+                  ${t.tag ? `<span class="px-2 py-0.5 text-[9.5px] font-black rounded-md border ${tagBadge}">${t.tag}</span>` : ''}
+                </div>
+                <p class="text-zinc-300 text-[11px] leading-relaxed">${t.text}</p>
+              </div>
             </div>
-          </div>
-        `).join('')}
+          `;
+        }).join('')}
       </div>
     </div>
   `;
+
+  try { lucide.createIcons(); } catch (e) {}
 }
 
 function renderCategoryCards(items, containerId, type) {
