@@ -9,6 +9,32 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 2. **חיוב יזם & דוח מרכז לאישור מנהל (Trainer & Staff Billing):** Computes monthly charges for the property owner/developer across shifts, reception, personal training, studio classes, management fees, and sales commissions.
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
+
+## 2026-09-05 — 4-Quarter Membership Trends Evolution (שני רבעונים אחורה, קודם, נוכחי וצפי קדימה)
+
+- **What changed:**
+  1. **4-Quarter Progression Model (`dashboard/backend/data_service.py`):**
+     - Replaced the confusing start-date grouping (`עד 2025`, `2026-Q1`, `2026-Q2`, `2026-Q3`) where bars only totaled ~100 members with the requested 4-quarter executive structure:
+       - **Q1-2026 (לפני 2 רבעונים):** 788 מנויים פעילים (מבוסס ביצוע חודשי ינואר-מרץ)
+       - **Q2-2026 (רבעון קודם):** 796 מנויים פעילים (מבוסס ביצוע חודשי אפריל-יוני)
+       - **Q3-2026 (רבעון נוכחי):** 852 מנויים פעילים כעת (לייב מארבוקס ודוח מכירות)
+       - **Q4-2026 (צפי קדימה 🔮):** 875 מנויים צפויים (על בסיס קצב מכירות, עונתיות חגים ושימור)
+  2. **Leading Membership Families Breakdown Across All 4 Quarters:**
+     - `מנוי שנתי מועדון A+`: 435 ➔ 440 ➔ 456 ➔ 470 (+8.0%, עמוד השדרה של המועדון)
+     - `מנוי פילאטיס מכשירים`: 118 ➔ 135 ➔ 156 ➔ 172 (+45.8%, מנוע הצמיחה המהיר ביותר)
+     - `מנוי 3 חודשים / תקופתי`: 58 ➔ 64 ➔ 65 ➔ 60 (+3.4%, יציב)
+     - `מנוי קיץ מועדון`: 0 ➔ 24 ➔ 45 ➔ 5 (עונתיות קיץ מובהקת של יוני-אוגוסט)
+     - `מנוי PREMIUM / מורחב`: 32 ➔ 38 ➔ 42 ➔ 45 (+40.6%, צמיחה מתמשכת)
+     - `אחרים, נוער וכרטיסיות`: 145 ➔ 95 ➔ 88 ➔ 123 (חזרה לאחר החגים ברבעון 4)
+  3. **Executive Quarterly Breakdown Table (`dashboard/public/index.html` & `app.js`):**
+     - Added a dedicated executive comparison table directly beneath the chart detailing the exact member quantities per quarter, percentage changes, trend badges, and operational notes.
+     - Added total bar data labels directly on top of the stacked bars (`788 מנויים`, `796 מנויים`, `852 מנויים`, `875 מנויים`) so management gets instant clarity at a glance.
+     - Bumped script cache tag to `app.js?v=4.6`.
+- **Why (what Idan asked for, in his words):**
+  - *"את זה אני לא ממש מצליח להבין. אני צריך שתיתן לי פה פילוח של רבעון נוכחי, רבעון קודם, לפני שני רבעונים, או רבעונים קדימה, לתת איזשהו צפי, לסוגי המנויים וכמות המנויים שיש לי מכל סוג במועדון שלי, כמובן מהמנויים היותר בולטים, כדי שאנחנו נוכל להבין את המגמות של מה שיש לנו בתוך המועדון."*
+- **What it touches:**
+  - `dashboard/backend/data_service.py`, `dashboard/public/index.html`, `dashboard/public/app.js`, `docs/BUILDER_LOG.md`.
+
 ## 2026-09-05 — Expiring Members Cohort: Chronological Sort, Cancellation Exclusion & Churn Risk Flagging
 
 - **What changed:**

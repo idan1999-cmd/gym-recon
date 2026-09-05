@@ -1538,6 +1538,8 @@ function renderReasonsList(reasons) {
 // -------------------------------------------------------------------------
 // SEASONAL MEMBERSHIP TRENDS EVOLUTION (AREA CHART)
 // -------------------------------------------------------------------------
+// SEASONAL & QUARTERLY MEMBERSHIP TRENDS EVOLUTION
+// -------------------------------------------------------------------------
 function renderSeasonalMembershipChart(seasonal) {
   const el = document.getElementById('mem-seasonal-chart');
   if (!el || !seasonal || !seasonal.series || seasonal.series.length === 0) return;
@@ -1547,36 +1549,90 @@ function renderSeasonalMembershipChart(seasonal) {
     series: seasonal.series,
     chart: {
       type: 'bar',
-      height: 270,
+      height: 280,
       stacked: true,
       fontFamily: 'Heebo, sans-serif',
-      toolbar: { show: false }
+      toolbar: { show: false },
+      animations: {
+        enabled: true,
+        easing: 'easeinout',
+        speed: 500
+      }
     },
-    colors: ['#4f46e5', '#06b6d4', '#10b981', '#f59e0b', '#ec4899'],
+    colors: ['#4f46e5', '#06b6d4', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'],
     plotOptions: {
       bar: {
         horizontal: false,
-        borderRadius: 4,
-        columnWidth: '45%'
+        borderRadius: 5,
+        columnWidth: '42%',
+        dataLabels: {
+          total: {
+            enabled: true,
+            style: {
+              fontSize: '11px',
+              fontWeight: 800,
+              color: '#0f172a'
+            },
+            formatter: function (val) {
+              return val + ' מנויים';
+            }
+          }
+        }
       }
+    },
+    dataLabels: {
+      enabled: false
+    },
+    stroke: {
+      width: 1,
+      colors: ['#fff']
     },
     xaxis: {
       categories: seasonal.categories,
-      labels: { style: { colors: '#64748b', fontWeight: 600 } }
+      labels: {
+        style: {
+          colors: '#475569',
+          fontWeight: 700,
+          fontSize: '11px'
+        }
+      },
+      axisBorder: { show: false },
+      axisTicks: { show: false }
     },
     yaxis: {
-      title: { text: 'כמות מנויים פעילים', style: { color: '#64748b', fontSize: '11px' } },
-      labels: { style: { colors: '#64748b' } }
+      title: {
+        text: 'כמות מנויים פעילים',
+        style: { color: '#64748b', fontSize: '11px', fontWeight: 600 }
+      },
+      labels: {
+        style: { colors: '#64748b' },
+        formatter: (val) => Math.round(val)
+      }
     },
     legend: {
       position: 'top',
       horizontalAlign: 'right',
       fontSize: '11px',
-      labels: { colors: '#475569' }
+      fontWeight: 600,
+      labels: { colors: '#334155' },
+      itemMargin: { horizontal: 8, vertical: 4 }
     },
-    fill: { opacity: 1 },
-    dataLabels: { enabled: false },
-    tooltip: { shared: true, intersect: false }
+    fill: { opacity: 0.95 },
+    tooltip: {
+      shared: true,
+      intersect: false,
+      theme: 'light',
+      y: {
+        formatter: function (val) {
+          return val ? val + ' מנויים' : '0';
+        }
+      }
+    },
+    grid: {
+      borderColor: '#f1f5f9',
+      strokeDashArray: 4,
+      yaxis: { lines: { show: true } }
+    }
   };
 
   if (chartSeasonalMem) {
@@ -1584,6 +1640,39 @@ function renderSeasonalMembershipChart(seasonal) {
   }
   chartSeasonalMem = new ApexCharts(el, options);
   chartSeasonalMem.render();
+
+  // Populate Executive Quarterly Breakdown Table
+  const tableBody = document.getElementById('mem-quarterly-table-body');
+  if (tableBody && seasonal.quarterly_table && seasonal.quarterly_table.length > 0) {
+    tableBody.innerHTML = seasonal.quarterly_table.map((row, idx) => {
+      const isGrowth = row.delta_str.includes('+') || row.delta_str.includes('זינוק');
+      const badgeClass = isGrowth
+        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+        : (row.delta_str === 'עונתי' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-50 text-slate-600 border-slate-200');
+
+      return `
+        <tr class="hover:bg-slate-50/80 transition-colors">
+          <td class="py-2 px-2.5 font-bold text-slate-800 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full" style="background-color: ${options.colors[idx % options.colors.length]}"></span>
+            ${row.name}
+          </td>
+          <td class="py-2 px-2 text-center text-slate-600 font-semibold">${row.q1}</td>
+          <td class="py-2 px-2 text-center text-slate-600 font-semibold">${row.q2}</td>
+          <td class="py-2 px-2 text-center font-black text-indigo-900 bg-indigo-50/40">${row.q3}</td>
+          <td class="py-2 px-2 text-center font-black text-purple-900 bg-purple-50/40">${row.q4}</td>
+          <td class="py-2 px-2 text-center">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black border ${badgeClass}">
+              ${row.delta_str}
+            </span>
+          </td>
+          <td class="py-2 px-2 text-[10.5px] text-slate-500">
+            <span class="font-semibold text-slate-700">${row.trend_badge}</span>
+            <span class="text-slate-400 block text-[9.5px]">${row.note}</span>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
 }
 
 // -------------------------------------------------------------------------
