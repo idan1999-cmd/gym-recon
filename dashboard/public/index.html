@@ -683,11 +683,49 @@
         </div>
 
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
-          <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <i data-lucide="bar-chart-3" class="w-4 h-4 text-rose-600"></i>
-            צפי ביטולים עתידיים לפי חודשי סיום
-          </h3>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-2.5 gap-2">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <i data-lucide="bar-chart-3" class="w-4 h-4 text-rose-600"></i>
+                <span id="mem-cancellations-chart-title">צפי ביטולים עתידיים והחזרים חודשיים</span>
+              </h3>
+              <p class="text-[11px] text-slate-400 mt-0.5">ניתוח כמות ביטולים עתידיים וצפי החזר כספי חודשי מהדרייב</p>
+            </div>
+            <!-- Chart Mode Switcher -->
+            <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-[11px] font-bold text-slate-600">
+              <button onclick="switchCancellationsChartMode('refund')" id="btn-cancel-mode-refund" class="px-2.5 py-1 rounded-lg bg-white text-slate-900 shadow-2xs">💰 צפי החזר (₪)</button>
+              <button onclick="switchCancellationsChartMode('count')" id="btn-cancel-mode-count" class="px-2.5 py-1 rounded-lg hover:text-slate-900">כמות ביטולים</button>
+              <button onclick="switchCancellationsChartMode('combined')" id="btn-cancel-mode-combined" class="px-2.5 py-1 rounded-lg hover:text-slate-900">משולב</button>
+            </div>
+          </div>
           <div id="mem-cancellations-timeline-chart" class="w-full h-64"></div>
+        </div>
+      </div>
+
+      <!-- Executive Monthly Refund Schedule Panel (לוח צפי החזרים חודשי ותזרים יוצא מהדרייב) -->
+      <div id="monthly-refund-forecast-container" class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 gap-2">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-black border border-rose-100">
+              <i data-lucide="wallet" class="w-4.5 h-4.5"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-sm font-black text-slate-900">לוח צפי החזרים חודשי (תזרים מזומנים יוצא)</h3>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-200">לייב מהדרייב</span>
+              </div>
+              <p class="text-[11px] text-slate-400">ריכוז תזרימי חודשי של זיכויים מאושרים ומתוזמנים לפי חודשי פירעון ואמצעי תשלום</p>
+            </div>
+          </div>
+          <div id="refund-forecast-total-badge" class="bg-slate-900 text-white px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-2 shadow-2xs">
+            <i data-lucide="coins" class="w-3.5 h-3.5 text-rose-400"></i>
+            <span>סה״כ צפי החזרים: ₪16,813 (32 זיכויים)</span>
+          </div>
+        </div>
+
+        <!-- 4-Month Refund Cards Grid -->
+        <div id="refund-forecast-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <!-- Injected dynamically -->
         </div>
       </div>
 
@@ -1555,6 +1593,6 @@
     <span id="toast-message">הנתונים סונכרנו בהצלחה!</span>
   </div>
 
-  <script src="app.js?v=4.8"></script>
+  <script src="app.js?v=4.9"></script>
 </body>
 </html>

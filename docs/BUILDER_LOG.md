@@ -10,6 +10,32 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
 
+## 2026-09-05 — Monthly Refund Forecast & Cancellations Cash-Outflow Sync from Drive
+
+- **What changed:**
+  1. **Dynamic Monthly Refund Forecast Extraction (`dashboard/backend/data_service.py`):**
+     - Extracts the official monthly refund forecast directly from `'דשבורד הקפאות וביטולים'` and `'הקפאות וביטולים'` in `מכירות 2026.xlsx` (reconciled with Google Drive):
+       - **ספטמבר 2026:** ₪10,833.33 (9 זיכויים פעילים • ₪1,875 באשראי • ₪8,958 בהעברה בנקאית • מתוזמן ל-15/09/2026)
+       - **אוקטובר 2026:** ₪2,133.33 (8 זיכויים פעילים • ₪1,875 באשראי • ₪258 בהעברה בנקאית • מתוזמן ל-15/10/2026)
+       - **נובמבר 2026:** ₪2,133.33 (8 זיכויים פעילים • ₪1,875 באשראי • ₪258 בהעברה בנקאית • מתוזמן ל-15/11/2026)
+       - **דצמבר 2026 והלאה:** ₪1,713.33 (7 זיכויים פעילים • ₪1,455 באשראי • ₪258 בהעברה בנקאית • מתוזמן ל-15/12/2026)
+       - **סה״כ צפי החזרים כולל:** ₪16,813.32 (32 זיכויים פעילים • ₪7,080 אשראי • ₪9,733.32 העברה בנקאית)
+     - Implemented automatic raw-rows fallback calculation that sums columns 14, 15, 16, etc. if the dashboard tab is missing or updated, ensuring 100% continuous data extraction.
+     - Attached `monthly_refund_forecast` to `memberships` and `sales_cancellations` in `/api/data`.
+  2. **Multi-Mode Cancellations Chart & Executive Schedule Panel (`index.html` & `app.js`):**
+     - **Chart Switcher:** Added a 3-way toggle on the cancellations chart:
+       - 🔘 **💰 צפי החזר (₪):** Visualizes the exact monthly refund cash-outflow bars with full shekel data labels and credit card vs bank transfer tooltips.
+       - 🔘 **כמות ביטולים:** Visualizes the count of cancellations by contract end month (the previous view).
+       - 🔘 **משולב:** Dual-axis combo chart combining columns for monthly refund amounts (₪) and a line for active credits count.
+     - **Executive Monthly Refund Schedule Panel (`#monthly-refund-forecast-container`):**
+       - 4-card responsive grid directly below the chart detailing the exact monthly cash outflow, payment method breakdown (Credit Card vs Bank Transfer), and execution dates.
+       - Total header badge highlighting the ₪16,813 total cash refund forecast.
+     - Bumped script cache tag to `app.js?v=4.9`.
+- **Why (what Idan asked for, in his words):**
+  - *"חוץ מזה, אני רוצה שמלבד צפי ביטולים עתידיים לפי חודש סיום, תוסיף לגרף הזה או במקום אחר את הצפי החודשי להחזר חודשי, כמו שיש לך גם בגיליון בדרייב שאתה רואה. תגזור ממנו את הנתונים כל הזמן."*
+- **What it touches:**
+  - `dashboard/backend/data_service.py`, `dashboard/public/index.html`, `dashboard/public/app.js`, `docs/BUILDER_LOG.md`.
+
 ## 2026-09-05 — Live Revenue Pacing Tracker (מד קצב עמידה ביעדים - LIVE)
 
 - **What changed:**

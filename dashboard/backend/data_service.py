@@ -1859,13 +1859,83 @@ class DashboardDataService:
 
             sales_closers = self._get_sales_closers(wb, target_month=month)
 
+            # -----------------------------------------------------------------
+            # MONTHLY REFUND FORECAST (צפי החזר חודשי מתוך גיליון הדרייב)
+            # -----------------------------------------------------------------
+            monthly_refund_forecast = []
+            dash_sheet = None
+            for s in wb.sheetnames:
+                if "דשבורד" in s and ("הקפא" in s or "ביטול" in s):
+                    dash_sheet = s
+                    break
+
+            if dash_sheet:
+                ws_dash = wb[dash_sheet]
+                for r in range(9, 20):
+                    m_label = ws_dash.cell(r, 1).value
+                    if not m_label:
+                        break
+                    amt = safe_float(ws_dash.cell(r, 2).value)
+                    cnt = int(safe_float(ws_dash.cell(r, 3).value))
+                    cc = safe_float(ws_dash.cell(r, 4).value)
+                    bank = safe_float(ws_dash.cell(r, 5).value)
+                    timing = str(ws_dash.cell(r, 6).value or "").strip()
+                    is_tot = "סה״כ" in str(m_label) or "כולל" in str(m_label)
+                    monthly_refund_forecast.append({
+                        "month": str(m_label).strip(),
+                        "amount": round(amt, 2),
+                        "count": cnt,
+                        "credit_card": round(cc, 2),
+                        "bank_transfer": round(bank, 2),
+                        "timing": timing,
+                        "is_total": is_tot
+                    })
+
+            # Fallback if dashboard tab empty: calculate directly from 'הקפאות וביטולים'
+            if not monthly_refund_forecast:
+                sep_sum, oct_sum, nov_sum, dec_sum = 0.0, 0.0, 0.0, 0.0
+                sep_cc, oct_cc, nov_cc, dec_cc = 0.0, 0.0, 0.0, 0.0
+                sep_cnt, oct_cnt, nov_cnt, dec_cnt = 0, 0, 0, 0
+
+                for r in range(header_row + 1, ws.max_row + 1):
+                    c14 = safe_float(ws.cell(r, 14).value)
+                    c15 = safe_float(ws.cell(r, 15).value)
+                    c16 = safe_float(ws.cell(r, 16).value)
+                    m_count = safe_float(ws.cell(r, 9).value)
+                    m_ref = safe_float(ws.cell(r, 10).value)
+                    ref_type = str(ws.cell(r, 6).value or "")
+                    is_cc = "אשראי" in ref_type
+
+                    if c14 > 0:
+                        sep_sum += c14; sep_cnt += 1
+                        if is_cc: sep_cc += c14
+                    if c15 > 0:
+                        oct_sum += c15; oct_cnt += 1
+                        if is_cc: oct_cc += c15
+                    if c16 > 0:
+                        nov_sum += c16; nov_cnt += 1
+                        if is_cc: nov_cc += c16
+                    if m_count >= 4 and m_ref > 0:
+                        dec_sum += m_ref; dec_cnt += 1
+                        if is_cc: dec_cc += m_ref
+
+                if sep_sum > 0 or oct_sum > 0 or nov_sum > 0:
+                    monthly_refund_forecast = [
+                        {"month": "ספטמבר 2026", "amount": round(sep_sum, 2), "count": sep_cnt, "credit_card": round(sep_cc, 2), "bank_transfer": round(sep_sum - sep_cc, 2), "timing": "מתוזמן ל-15/09/2026", "is_total": False},
+                        {"month": "אוקטובר 2026", "amount": round(oct_sum, 2), "count": oct_cnt, "credit_card": round(oct_cc, 2), "bank_transfer": round(oct_sum - oct_cc, 2), "timing": "מתוזמן ל-15/10/2026", "is_total": False},
+                        {"month": "נובמבר 2026", "amount": round(nov_sum, 2), "count": nov_cnt, "credit_card": round(nov_cc, 2), "bank_transfer": round(nov_sum - nov_cc, 2), "timing": "מתוזמן ל-15/11/2026", "is_total": False},
+                        {"month": "דצמבר 2026 והלאה", "amount": round(dec_sum, 2), "count": dec_cnt, "credit_card": round(dec_cc, 2), "bank_transfer": round(dec_sum - dec_cc, 2), "timing": "מתוזמן ל-15/12/2026", "is_total": False},
+                        {"month": "סה״כ צפי החזרים כולל", "amount": round(sep_sum + oct_sum + nov_sum + dec_sum, 2), "count": sep_cnt + oct_cnt + nov_cnt + dec_cnt, "credit_card": round(sep_cc + oct_cc + nov_cc + dec_cc, 2), "bank_transfer": round((sep_sum - sep_cc) + (oct_sum - oct_cc) + (nov_sum - nov_cc) + (dec_sum - dec_cc), 2), "timing": "ריכוז תזרימי שנתי", "is_total": True}
+                    ]
+
             res = {
                 "file_name": sales_file.name,
                 "summary": summary,
                 "requests": requests_list,
                 "reasons_breakdown": reasons_breakdown,
                 "reasons_by_period": reasons_by_period,
-                "sales_closers": sales_closers
+                "sales_closers": sales_closers,
+                "monthly_refund_forecast": monthly_refund_forecast
             }
             self._cache[cache_key] = res
             return res
@@ -2232,6 +2302,9 @@ class DashboardDataService:
                 fc["refund_status"] = match_req.get("status")
                 fc["refund_amount"] = match_req.get("refund_amount")
                 fc["refund_notes"] = match_req.get("notes")
+
+        # Copy monthly refund forecast to memberships_data for direct access in UI charts
+        memberships_data["monthly_refund_forecast"] = sales_cancellations.get("monthly_refund_forecast", [])
 
         # -----------------------------------------------------------------
         # REVENUE PACING TRACKER (מד קצב עמידה ביעדים - LIVE)

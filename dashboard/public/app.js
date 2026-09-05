@@ -1543,6 +1543,9 @@ function renderMemberships(data) {
     }
   }
 
+  // Always render refund forecast grid from Drive sheet
+  renderRefundForecastGrid(mem.monthly_refund_forecast || []);
+
   // Render Analytics Cards & Cohorts
   filterMemTypes(currentMemTypeClub);
   filterReasonsPeriod(currentReasonPeriod);
@@ -2072,43 +2075,260 @@ function renderMembershipCharts(mem) {
     chartMemDist.render();
   }
 
-  // Chart 2: Timeline of Cancellations
-  const timeEl = document.getElementById('mem-cancellations-timeline-chart');
-  if (timeEl && mem.cancellations_by_month && mem.cancellations_by_month.length > 0) {
-    timeEl.innerHTML = '';
-    const categories = mem.cancellations_by_month.map(x => x.month);
-    const seriesData = mem.cancellations_by_month.map(x => x.count);
+  // Chart 2: Timeline of Cancellations & Monthly Refund Forecast
+  renderCancellationsTimelineChart(mem);
 
-    const timeOptions = {
-      series: [{ name: 'ביטולים מתוכננים', data: seriesData }],
-      chart: {
-        type: 'bar',
-        height: 250,
-        fontFamily: 'Heebo, sans-serif',
-        toolbar: { show: false }
-      },
-      plotOptions: {
+  // Executive Monthly Refund Schedule Panel (לוח צפי החזרים חודשי מהדרייב)
+  renderRefundForecastGrid(mem.monthly_refund_forecast || []);
+}
+
+let currentCancelChartMode = 'refund'; // 'refund' | 'count' | 'combined'
+
+function switchCancellationsChartMode(mode) {
+  currentCancelChartMode = mode;
+
+  const btnRefund = document.getElementById('btn-cancel-mode-refund');
+  const btnCount = document.getElementById('btn-cancel-mode-count');
+  const btnCombined = document.getElementById('btn-cancel-mode-combined');
+
+  [btnRefund, btnCount, btnCombined].forEach(btn => {
+    if (btn) {
+      btn.className = 'px-2.5 py-1 rounded-lg hover:text-slate-900 transition';
+    }
+  });
+
+  const activeBtn = mode === 'refund' ? btnRefund : (mode === 'count' ? btnCount : btnCombined);
+  if (activeBtn) {
+    activeBtn.className = 'px-2.5 py-1 rounded-lg bg-white text-slate-900 shadow-2xs font-bold';
+  }
+
+  if (dashboardData && dashboardData.memberships) {
+    renderCancellationsTimelineChart(dashboardData.memberships);
+  }
+}
+
+function renderCancellationsTimelineChart(mem) {
+  const timeEl = document.getElementById('mem-cancellations-timeline-chart');
+  if (!timeEl || !mem) return;
+
+  const forecast = mem.monthly_refund_forecast || [];
+  const validForecast = forecast.filter(x => !x.is_total);
+  const cancByMonth = mem.cancellations_by_month || [];
+
+  timeEl.innerHTML = '';
+
+  let series = [];
+  let categories = [];
+  let yaxis = {};
+  let colors = [];
+  let plotOptions = {};
+  let tooltip = {};
+
+  if (currentCancelChartMode === 'refund') {
+    if (validForecast.length > 0) {
+      categories = validForecast.map(x => x.month);
+      series = [{
+        name: 'צפי החזר חודשי (₪)',
+        type: 'column',
+        data: validForecast.map(x => x.amount)
+      }];
+      colors = ['#e11d48'];
+      plotOptions = {
+        bar: {
+          borderRadius: 6,
+          columnWidth: '42%'
+        }
+      };
+      yaxis = {
+        labels: {
+          style: { colors: '#64748b' },
+          formatter: (val) => formatNIS(val)
+        }
+      };
+      tooltip = {
+        y: {
+          formatter: (val, opt) => {
+            const item = validForecast[opt.dataPointIndex];
+            if (!item) return formatNIS(val);
+            return `${formatNIS(val)} (${item.count} זיכויים • אשראי: ${formatNIS(item.credit_card)} | בנק: ${formatNIS(item.bank_transfer)})`;
+          }
+        }
+      };
+    } else {
+      categories = cancByMonth.map(x => x.month);
+      series = [{ name: 'ביטולים מתוכננים', type: 'column', data: cancByMonth.map(x => x.count) }];
+      colors = ['#e11d48'];
+      plotOptions = { bar: { borderRadius: 6, columnWidth: '40%' } };
+      yaxis = { labels: { style: { colors: '#64748b' } } };
+    }
+  } else if (currentCancelChartMode === 'count') {
+    categories = cancByMonth.map(x => x.month);
+    series = [{
+      name: 'כמות ביטולים מתוכננים',
+      type: 'column',
+      data: cancByMonth.map(x => x.count)
+    }];
+    colors = ['#e11d48'];
+    plotOptions = {
+      bar: {
+        borderRadius: 6,
+        columnWidth: '40%'
+      }
+    };
+    yaxis = {
+      labels: {
+        style: { colors: '#64748b' },
+        formatter: (val) => `${Math.round(val)} מבוטלים`
+      }
+    };
+  } else {
+    // 'combined' mode: Combo Chart (Column for Refund ₪ + Line for Active Credits count)
+    if (validForecast.length > 0) {
+      categories = validForecast.map(x => x.month);
+      series = [
+        {
+          name: 'צפי החזר חודשי (₪)',
+          type: 'column',
+          data: validForecast.map(x => x.amount)
+        },
+        {
+          name: 'כמות זיכויים פעילים',
+          type: 'line',
+          data: validForecast.map(x => x.count)
+        }
+      ];
+      colors = ['#e11d48', '#4f46e5'];
+      plotOptions = {
         bar: {
           borderRadius: 6,
           columnWidth: '40%'
         }
-      },
-      colors: ['#e11d48'],
-      xaxis: {
-        categories: categories,
-        labels: { style: { colors: '#475569', fontWeight: 600 } }
-      },
-      yaxis: {
-        labels: { style: { colors: '#64748b' } }
-      },
-      dataLabels: { enabled: true, offsetY: -5 }
-    };
-    if (chartMemTimeline) {
-      try { chartMemTimeline.destroy(); } catch (e) {}
+      };
+      yaxis = [
+        {
+          title: { text: 'סכום החזר (₪)', style: { color: '#e11d48', fontSize: '11px', fontWeight: 600 } },
+          labels: {
+            style: { colors: '#e11d48' },
+            formatter: (val) => formatNIS(val)
+          }
+        },
+        {
+          opposite: true,
+          title: { text: 'כמות זיכויים', style: { color: '#4f46e5', fontSize: '11px', fontWeight: 600 } },
+          labels: {
+            style: { colors: '#4f46e5' },
+            formatter: (val) => `${Math.round(val)}`
+          }
+        }
+      ];
+      tooltip = {
+        y: {
+          formatter: (val, opt) => {
+            if (opt.seriesIndex === 0) {
+              const item = validForecast[opt.dataPointIndex];
+              return `${formatNIS(val)} ${item ? `(אשראי: ${formatNIS(item.credit_card)} | בנק: ${formatNIS(item.bank_transfer)})` : ''}`;
+            }
+            return `${Math.round(val)} זיכויים`;
+          }
+        }
+      };
     }
-    chartMemTimeline = new ApexCharts(timeEl, timeOptions);
-    chartMemTimeline.render();
   }
+
+  const timeOptions = {
+    series: series,
+    chart: {
+      height: 250,
+      type: currentCancelChartMode === 'combined' ? 'line' : 'bar',
+      fontFamily: 'Heebo, sans-serif',
+      toolbar: { show: false }
+    },
+    plotOptions: plotOptions,
+    colors: colors,
+    xaxis: {
+      categories: categories,
+      labels: { style: { colors: '#475569', fontWeight: 600 } }
+    },
+    yaxis: yaxis,
+    dataLabels: {
+      enabled: true,
+      offsetY: -5,
+      formatter: function(val, opt) {
+        if (currentCancelChartMode === 'refund' || (currentCancelChartMode === 'combined' && opt.seriesIndex === 0)) {
+          return formatNIS(val);
+        }
+        return val;
+      },
+      style: { fontSize: '10px', fontWeight: 'bold' }
+    },
+    tooltip: tooltip,
+    stroke: {
+      width: currentCancelChartMode === 'combined' ? [0, 3] : [0],
+      curve: 'smooth'
+    }
+  };
+
+  if (chartMemTimeline) {
+    try { chartMemTimeline.destroy(); } catch (e) {}
+  }
+  chartMemTimeline = new ApexCharts(timeEl, timeOptions);
+  chartMemTimeline.render();
+}
+
+function renderRefundForecastGrid(forecast) {
+  const grid = document.getElementById('refund-forecast-cards-grid');
+  const totalBadge = document.getElementById('refund-forecast-total-badge');
+  if (!grid) return;
+
+  const items = (forecast || []).filter(x => !x.is_total);
+  const totalItem = (forecast || []).find(x => x.is_total);
+
+  if (totalBadge && totalItem) {
+    totalBadge.innerHTML = `
+      <i data-lucide="coins" class="w-3.5 h-3.5 text-rose-400"></i>
+      <span>סה״כ צפי החזרים: ${formatNIS(totalItem.amount)} (${totalItem.count} זיכויים פעילים)</span>
+    `;
+  }
+
+  if (items.length === 0) {
+    grid.innerHTML = '<div class="col-span-4 text-center py-4 text-slate-400 text-xs">אין נתוני צפי החזרים לחודש זה</div>';
+    return;
+  }
+
+  grid.innerHTML = items.map(item => `
+    <div class="bg-slate-50/90 rounded-2xl p-4 border border-slate-200/90 space-y-2.5 hover:shadow-xs transition">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-black text-slate-900">${item.month}</span>
+        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200">
+          ${item.count} זיכויים
+        </span>
+      </div>
+      
+      <div>
+        <div class="text-lg font-black text-rose-600">${formatNIS(item.amount)}</div>
+        <div class="text-[10px] text-slate-400 font-medium">${item.timing || 'פירעון חודשי'}</div>
+      </div>
+
+      <div class="pt-2 border-t border-slate-200/80 space-y-1 text-[11px]">
+        <div class="flex justify-between text-slate-600 font-medium">
+          <span class="flex items-center gap-1">
+            <i data-lucide="credit-card" class="w-3 h-3 text-slate-400"></i>
+            אשראי:
+          </span>
+          <span class="font-bold text-slate-800">${formatNIS(item.credit_card)}</span>
+        </div>
+        <div class="flex justify-between text-slate-600 font-medium">
+          <span class="flex items-center gap-1">
+            <i data-lucide="building-2" class="w-3 h-3 text-slate-400"></i>
+            העברה בנקאית:
+          </span>
+          <span class="font-bold text-slate-800">${formatNIS(item.bank_transfer)}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  try { lucide.createIcons(); } catch (e) {}
 }
 
 function renderFutureCancellationsTable(list) {
