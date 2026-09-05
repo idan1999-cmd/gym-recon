@@ -10,6 +10,32 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
 
+## 2026-09-05 — Live Revenue Pacing Tracker (מד קצב עמידה ביעדים - LIVE)
+
+- **What changed:**
+  1. **Real-time Pacing Engine (`dashboard/backend/data_service.py`):**
+     - Computes monthly target benchmarks to date: $\text{Benchmark} = \frac{\text{Target}}{\text{DaysInMonth}} \times \text{CurrentDay}$.
+     - Computes live pacing gap: $\text{Gap} = \text{Actual} - \text{Benchmark}$ (positive = ahead, negative = behind).
+     - **Calculates required daily run rate for the remainder of the month:** $\text{Daily Rate Required} = \frac{\max(0, \text{Target} - \text{Actual})}{\max(1, \text{DaysRemaining})}$.
+     - Evaluates real-time pacing status (`ahead` 🚀, `on_track` 🎯, `behind` ⚠️, `completed`, `future`) and outputs dynamic management action insights to brief the sales and reception desk.
+     - Compares elapsed time percentage against financial progress percentage ($D/N$ vs $R_{\text{actual}} / R_{\text{target}}$).
+     - Integrated `pacing_tracker` into `/api/data` payload.
+  2. **Executive Pacing Cockpit UI (`dashboard/public/index.html` & `app.js`):**
+     - Positioned the dedicated Run-Rate Live Cockpit directly beneath the Top KPI strip for immediate operational visibility.
+     - 4-Card Pacing Grid:
+       - **יעד מצטבר להיום (Benchmark):** Expected revenue benchmark given elapsed days.
+       - **פער מול קצב צפוי:** Shekel delta vs benchmark with color-coded status badges.
+       - **קצב יומי נדרש לשאר החודש 🔥:** Prominently highlighted daily shekel target for the sales team.
+       - **צפי סגירה לסוף חודש:** Projected month-end total and percentage of target.
+     - **Dual Time vs Money Progress Bars:** Compares elapsed calendar days vs collected revenue percentage.
+     - **Dynamic Management Action Advice:** Contextual tactical directives for Idan and the team.
+     - Linked modal update ("🎯 עדכן יעד חודשי עם הבוס") to dynamically refresh pacing metrics in real-time.
+     - Bumped script cache tag to `app.js?v=4.8`.
+- **Why (what Idan asked for, in his words):**
+  - *"ממה שהצעת לי כאן, זה נשמע לי מצוין, גם איפה שרצית את זה בתוך הדשבורד. יש יעד הכנסות כולל בדרך כלל, אנחנו לא מפוצלים אותם לחדר כושר ופילאטיס, אבל אפשר לפצל. והנתון של קצב יומי נדרש לשאר החודש מאוד ישרת אותי, כי אז אני אוכל לנהל את זה בלייב. לך על זה."*
+- **What it touches:**
+  - `dashboard/backend/data_service.py`, `dashboard/public/index.html`, `dashboard/public/app.js`, `docs/BUILDER_LOG.md`, `docs/SYSTEM_MAP.md`.
+
 ## 2026-09-05 — Smart 3-Layer Financial Forecasting Methodology (חוזים, שכר ועונתיות תזרים)
 
 - **What changed:**

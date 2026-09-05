@@ -2233,6 +2233,76 @@ class DashboardDataService:
                 fc["refund_amount"] = match_req.get("refund_amount")
                 fc["refund_notes"] = match_req.get("notes")
 
+        # -----------------------------------------------------------------
+        # REVENUE PACING TRACKER (מד קצב עמידה ביעדים - LIVE)
+        # Calculates:
+        # - Benchmark to date (סכום שהיה אמור להיכנס להיום)
+        # - Required daily run rate for the remainder of the month (קצב יומי נדרש לשאר החודש)
+        # - Pacing gap (פער מול קצב צפוי)
+        # - Time progress vs Money progress
+        # - Status: ahead / on_track / behind
+        # -----------------------------------------------------------------
+        effective_rev_target = total_rev_budget
+        days_passed = max(1, current_day)
+        days_remaining = max(1, days_in_m - current_day)
+        time_elapsed_pct = round((current_day / days_in_m) * 100, 1)
+
+        benchmark_to_date = round((effective_rev_target / days_in_m) * current_day, 2)
+        revenue_gap_to_pace = round(total_rev_actual - benchmark_to_date, 2)
+        remaining_target_amount = max(0.0, effective_rev_target - total_rev_actual)
+        daily_rate_required = round(remaining_target_amount / days_remaining, 2) if days_remaining > 0 else 0.0
+        current_daily_pace = round(total_rev_actual / days_passed, 2)
+
+        money_progress_pct = round((total_rev_actual / effective_rev_target * 100), 1) if effective_rev_target > 0 else 0.0
+
+        if month < current_live_month and total_rev_actual > 0:
+            pacing_status = "completed"
+            pacing_label = "חודש סגור"
+            pacing_badge_color = "emerald"
+            pacing_insight = f"החודש הסתיים עם ביצוע כולל של {formatNIS(total_rev_actual) if 'formatNIS' in globals() else f'₪{total_rev_actual:,.0f}'}"
+        elif month > current_live_month:
+            pacing_status = "future"
+            pacing_label = "חודש עתידי"
+            pacing_badge_color = "blue"
+            pacing_insight = f"יעד מוגדר לחודש: {effective_rev_target:,.0f} ₪ (טרם החל)"
+        else:
+            pace_ratio = (total_rev_actual / benchmark_to_date) if benchmark_to_date > 0 else 1.0
+            if total_rev_actual >= benchmark_to_date * 1.02:
+                pacing_status = "ahead"
+                pacing_label = "מקדים את הקצב 🚀"
+                pacing_badge_color = "emerald"
+                pacing_insight = f"פלוס של ₪{abs(revenue_gap_to_pace):,.0f} מעל הקצב הצפוי להיום! קצב הסיום הצפוי עומד על ₪{total_rev_projected:,.0f}."
+            elif total_rev_actual >= benchmark_to_date * 0.97:
+                pacing_status = "on_track"
+                pacing_label = "בקצב היעד 🎯"
+                pacing_badge_color = "indigo"
+                pacing_insight = f"צמוד ליעד הצפוי להיום. נדרש לשמור על קצב מכירות של ₪{daily_rate_required:,.0f} ליום עד סוף החודש."
+            else:
+                pacing_status = "behind"
+                pacing_label = "פיגור בקצב – נדרשת האצה ⚠️"
+                pacing_badge_color = "rose"
+                pacing_insight = f"פער של ₪{abs(revenue_gap_to_pace):,.0f} מתחת לקצב הצפוי להיום. נדרש להאיץ לקצב של ₪{daily_rate_required:,.0f} ליום כדי לעמוד ביעד."
+
+        pacing_tracker = {
+            "target": round(effective_rev_target, 2),
+            "actual": round(total_rev_actual, 2),
+            "current_day": current_day,
+            "days_in_month": days_in_m,
+            "days_remaining": days_remaining,
+            "time_elapsed_pct": time_elapsed_pct,
+            "money_progress_pct": money_progress_pct,
+            "benchmark_to_date": benchmark_to_date,
+            "revenue_gap_to_pace": revenue_gap_to_pace,
+            "current_daily_pace": current_daily_pace,
+            "daily_rate_required": daily_rate_required,
+            "projected_month_end": round(total_rev_projected, 2),
+            "status": pacing_status,
+            "status_label": pacing_label,
+            "badge_color": pacing_badge_color,
+            "insight": pacing_insight,
+            "is_current_month": (month == current_live_month)
+        }
+
         return {
             "metadata": {
                 "month_index": month,
@@ -2280,7 +2350,8 @@ class DashboardDataService:
             "annual_trends": annual_trends,
             "smart_insights": smart_insights,
             "memberships": memberships_data,
-            "sales_cancellations": sales_cancellations
+            "sales_cancellations": sales_cancellations,
+            "pacing_tracker": pacing_tracker
         }
 
     def get_schedule_analytics(self, club_filter: str = "all", time_range: str = "1m", min_occurrences: int = 3, target_month: int | None = None) -> dict:

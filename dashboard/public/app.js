@@ -477,6 +477,9 @@ function renderDashboard(data) {
     customExpProjBadge.classList.toggle('hidden', !sum.total_expenses.is_custom_projected);
   }
 
+  // 0. Render Live Revenue Pacing Tracker (קצב יומי נדרש ופער מול היעד)
+  renderPacingTracker(data.pacing_tracker);
+
   // 1. Render AI Smart Insights
   renderSmartInsights(data.smart_insights);
 
@@ -495,6 +498,145 @@ function renderDashboard(data) {
 
   // 5. Render Matrix View (View 3)
   renderFinancialMatrix(data.incomes, data.variable_expenses, data.fixed_expenses);
+
+  try {
+    lucide.createIcons();
+  } catch (e) {}
+}
+
+function renderPacingTracker(pacing) {
+  const container = document.getElementById('pacing-tracker-container');
+  if (!container || !pacing) return;
+
+  // 1. Status Badge
+  const badge = document.getElementById('pacing-status-badge');
+  if (badge) {
+    badge.innerText = pacing.status_label || 'פעיל';
+    badge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-black border transition-colors';
+    if (pacing.status === 'ahead') {
+      badge.classList.add('bg-emerald-50', 'text-emerald-700', 'border-emerald-200');
+    } else if (pacing.status === 'on_track') {
+      badge.classList.add('bg-indigo-50', 'text-indigo-700', 'border-indigo-200');
+    } else if (pacing.status === 'behind') {
+      badge.classList.add('bg-rose-50', 'text-rose-700', 'border-rose-200');
+    } else if (pacing.status === 'completed') {
+      badge.classList.add('bg-slate-100', 'text-slate-700', 'border-slate-300');
+    } else {
+      badge.classList.add('bg-blue-50', 'text-blue-700', 'border-blue-200');
+    }
+  }
+
+  // 2. Subtitle
+  const subtitle = document.getElementById('pacing-subtitle-display');
+  if (subtitle) {
+    if (pacing.is_current_month) {
+      subtitle.innerText = `מעקב יומי שוטף לקבלת החלטות ותדרוך צוות מכירות • יום ${pacing.current_day} מתוך ${pacing.days_in_month}`;
+    } else {
+      subtitle.innerText = `סיכום ביצוע מול יעד מוגדר לחודש (${formatNIS(pacing.target)})`;
+    }
+  }
+
+  // 3. Benchmark to Date
+  const benchDisplay = document.getElementById('pacing-benchmark-display');
+  if (benchDisplay) {
+    benchDisplay.innerText = formatNIS(pacing.benchmark_to_date);
+  }
+  const benchSub = document.getElementById('pacing-benchmark-sub');
+  if (benchSub) {
+    benchSub.innerText = pacing.is_current_month 
+      ? `נורמה ל-${pacing.current_day} ימים שחלפו (${pacing.time_elapsed_pct}% מהחודש)`
+      : `יעד כולל לחודש מלא`;
+  }
+
+  // 4. Pacing Gap
+  const gapDisplay = document.getElementById('pacing-gap-display');
+  const gapSub = document.getElementById('pacing-gap-sub');
+  if (gapDisplay) {
+    const gap = pacing.revenue_gap_to_pace;
+    if (gap >= 0) {
+      gapDisplay.innerText = `+${formatNIS(gap)}`;
+      gapDisplay.className = 'text-lg font-black text-emerald-600';
+      if (gapSub) {
+        gapSub.innerText = 'עודף מעל קצב התקדמות הזמן 🚀';
+        gapSub.className = 'text-[10px] font-bold text-emerald-600';
+      }
+    } else {
+      gapDisplay.innerText = `-${formatNIS(Math.abs(gap))}`;
+      gapDisplay.className = 'text-lg font-black text-rose-600';
+      if (gapSub) {
+        gapSub.innerText = 'פער מול הנורמה להיום ⚠️';
+        gapSub.className = 'text-[10px] font-bold text-rose-600';
+      }
+    }
+  }
+
+  // 5. Required Daily Rate (CRITICAL FOR IDAN)
+  const reqRateDisplay = document.getElementById('pacing-required-rate-display');
+  const remDaysSub = document.getElementById('pacing-remaining-days-sub');
+  if (reqRateDisplay) {
+    if (pacing.status === 'completed') {
+      reqRateDisplay.innerText = 'החודש הושלם';
+      reqRateDisplay.className = 'text-lg font-black text-slate-600';
+    } else {
+      reqRateDisplay.innerText = `${formatNIS(pacing.daily_rate_required)} / יום`;
+      reqRateDisplay.className = 'text-lg font-black text-indigo-700';
+    }
+  }
+  if (remDaysSub) {
+    if (pacing.status === 'completed') {
+      remDaysSub.innerText = 'ביצוע סופי רשום';
+    } else {
+      remDaysSub.innerText = `יעד יומי לצוות מכירות (${pacing.days_remaining} ימים שנותרו)`;
+    }
+  }
+
+  // 6. Projected Month-End
+  const projEndDisplay = document.getElementById('pacing-projected-end-display');
+  const projPctSub = document.getElementById('pacing-projected-pct-sub');
+  if (projEndDisplay) {
+    projEndDisplay.innerText = formatNIS(pacing.projected_month_end);
+  }
+  if (projPctSub) {
+    const projPct = pacing.target > 0 ? Math.round((pacing.projected_month_end / pacing.target) * 100) : 100;
+    projPctSub.innerText = `צפי עמידה ביעד: ${projPct}% (${formatNIS(pacing.projected_month_end)} מתוך ${formatNIS(pacing.target)})`;
+  }
+
+  // 7. Dual Bar
+  const ratioLabel = document.getElementById('pacing-progress-ratio-label');
+  if (ratioLabel) {
+    ratioLabel.innerText = `יום ${pacing.current_day} מתוך ${pacing.days_in_month} • נותרו ${pacing.days_remaining} ימים לסגירת החודש`;
+  }
+
+  const timePctText = document.getElementById('pacing-time-pct-text');
+  const timeBar = document.getElementById('pacing-time-bar');
+  if (timePctText) timePctText.innerText = `${pacing.time_elapsed_pct}%`;
+  if (timeBar) timeBar.style.width = `${Math.min(100, Math.max(0, pacing.time_elapsed_pct))}%`;
+
+  const moneyPctText = document.getElementById('pacing-money-pct-text');
+  const moneyBar = document.getElementById('pacing-money-bar');
+  if (moneyPctText) {
+    moneyPctText.innerText = `${pacing.money_progress_pct}% (${formatNIS(pacing.actual)} מתוך ${formatNIS(pacing.target)})`;
+  }
+  if (moneyBar) {
+    moneyBar.style.width = `${Math.min(100, Math.max(0, pacing.money_progress_pct))}%`;
+    moneyBar.className = 'h-full rounded-full transition-all duration-500 shadow-2xs ' + 
+      (pacing.status === 'ahead' ? 'bg-emerald-500' : (pacing.status === 'behind' ? 'bg-rose-500' : 'bg-indigo-600'));
+  }
+
+  // 8. Management Action Insight
+  const insightText = document.getElementById('pacing-insight-text');
+  const insightContainer = document.getElementById('pacing-insight-container');
+  if (insightText) {
+    insightText.innerText = pacing.insight || '';
+  }
+  if (insightContainer) {
+    insightContainer.className = 'p-2.5 rounded-xl text-xs font-medium flex items-center gap-2.5 ' +
+      (pacing.status === 'ahead' 
+        ? 'bg-emerald-50 text-emerald-900 border border-emerald-200' 
+        : (pacing.status === 'behind'
+          ? 'bg-rose-50 text-rose-900 border border-rose-200'
+          : 'bg-indigo-50 text-indigo-900 border border-indigo-200'));
+  }
 
   try {
     lucide.createIcons();
