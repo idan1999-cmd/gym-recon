@@ -73,6 +73,18 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(analytics, ensure_ascii=False).encode("utf-8"))
             return
 
+        elif path == "/api/suppliers":
+            month_param = query.get("month", ["8"])[0]
+            month = int(month_param) if month_param.isdigit() else 8
+            suppliers_data = data_service.get_suppliers_dashboard(month=month)
+
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps(suppliers_data, ensure_ascii=False).encode("utf-8"))
+            return
+
         elif path == "/api/health":
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -97,7 +109,31 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         global data_service
         parsed = urllib.parse.urlparse(self.path)
         
-        if parsed.path == "/api/target":
+        if parsed.path == "/api/suppliers/state":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8"))
+                month = int(data.get("month", 8))
+                bank_balance = data.get("bank_balance")
+                approved_ids = data.get("approved_ids")
+                
+                updated = data_service.save_suppliers_state(month, bank_balance=bank_balance, approved_ids=approved_ids)
+                # Re-fetch full suppliers payload
+                payload = data_service.get_suppliers_dashboard(month=month)
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": True, "data": payload}, ensure_ascii=False).encode("utf-8"))
+                return
+            except Exception as e:
+                self.send_response(400)
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+                return
+
+        elif parsed.path == "/api/target":
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length)
             try:

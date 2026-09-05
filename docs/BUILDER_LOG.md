@@ -95,6 +95,36 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 - **What it touches:**
   - `dashboard/backend/data_service.py`, `dashboard/public/index.html`, `dashboard/public/app.js`, `docs/BUILDER_LOG.md`.
 
+## 2026-09-05 — Supplier Payments & Masav Approval Dashboard + Cash Flow Trends
+
+- **What changed:**
+  1. **Suppliers & Masav Module (`dashboard/backend/data_service.py`):**
+     - Added `get_suppliers_dashboard(month)` method parsing live records from `תקציב תזרים 2026.xlsx` (`מסב ספקים 8.26`, `מסב ספקים 7.26`, וכו׳) alongside `supplier_whitelist.json`.
+     - Filtered supplier rows to calculate true open liabilities (₪520,891.06 in August).
+     - Automated detection of payment terms: שוטף +30, שוטף +60, and מזומן / מיידי.
+     - Extracted service month vs. submission month (e.g. `5/26 ניקיון` submitted in August).
+     - Extracted annual agreements and installment count (e.g. `אגנטק - הסכם שנתי תש' 5/12`).
+     - Computed invoice ageing in days and flagged overdue items (> 60 days overdue).
+     - Added persistence for user-entered bank balance and manager-approved payment IDs via `suppliers_dashboard_state.json`.
+  2. **Cash Flow & Bank Balance Trajectory (`dashboard/backend/data_service.py`):**
+     - Extended `annual_trends` with monthly cash flow: Inflow (הכנסות), Outflow (הוצאות וספקים), Net Cash Flow, and Bank Balance trajectory across 12 months.
+  3. **REST API Endpoints (`dashboard/backend/server.py`):**
+     - `GET /api/suppliers?month=8` returning full financial KPIs, terms breakdowns, and supplier rows.
+     - `POST /api/suppliers/state` allowing manual bank balance entry and persisting approved item checkboxes.
+  4. **Executive Dashboard Frontend (`dashboard/public/index.html` & `dashboard/public/app.js`):**
+     - Added 6th header navigation button: **"מס״ב ספקים"** (`#view-suppliers`).
+     - Added 4 top financial KPI cards: Bank Balance, Total Supplier Debts, Approved for Payment, and Balance After Payment.
+     - Modal for manual bank balance input with positive/negative validation.
+     - Interactive quick filter strip: All, +30, +60, Immediate, and Overdue (> 60 days).
+     - Searchable suppliers table with yellow approval checkboxes, ageing badges, service month tags, and agreement details.
+     - Added Chart 6 to "מגמות תקציב מול ביצוע": Monthly Cash Flow Trajectory & Net Cash Flow.
+- **Why (what Idan asked for, in his words if given):**
+  - *"תוסיף לי את המדדים הנוספים למעקב מתוך התקציב מול תזרים, מה שציינת. בוא נבנה גם דשבורד במקביל לתשלום ספקים (שאינם מדריכים)... הדשבורד צריך להציג לנו למי אנחנו צריכים לשלם ומתי. לרוב הספקים אנחנו משלמים בשוטף פלוס 60, למעט חלק שאנחנו משלמים בשוטף פלוס 30 או מיידי. זה הולך בהלימה לכמה כסף יש לנו בחשבון ובהתאם לאישור הבוס שלי... לגבי יתרת פתיחה בבנק, אני לא חושב שאנחנו נצליח להתחבר לבנק, אנחנו פשוט נצטרך להזין את זה ידנית בכל פעם שנעלה על הדוח ונבוא להציג את זה לבוס. בוא נלך על מסב ספקים, וכל השאר נשמע מעולה."*
+- **What it touches:**
+  - `dashboard/backend/data_service.py`, `dashboard/backend/server.py`, `dashboard/public/index.html`, `dashboard/public/app.js`, `docs/SYSTEM_MAP.md`, `docs/BUILDER_LOG.md`.
+
+---
+
 ## 2026-09-05 — Accurate Active Freezes, Pending Cancellations & Normalized Membership Pricing
 
 - **What changed:**

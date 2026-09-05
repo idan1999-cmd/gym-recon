@@ -44,10 +44,10 @@ MONTHLY INPUTS DROP (input/)
    └── output/runs/<run_id>/ (stores manifest, SHA256 hashes, and execution logs)
          │
          ▼
-[4. INTERACTIVE EXECUTIVE DASHBOARD & MEMBERSHIP MONITOR]
-   ├── dashboard/backend/data_service.py (aggregates BvA, billing, trainer stats, Arbox memberships, sales cancellations & weekly schedule attendance analytics)
-   ├── dashboard/backend/server.py (local HTTP REST API server on port 3000, serving /api/months, /api/data, /api/target, /api/schedule_analytics)
-   └── dashboard/public/ (modern Hebrew RTL executive web UI with cards, charts, 12-month matrix, memberships module & weekly timetable grid)
+[4. INTERACTIVE EXECUTIVE DASHBOARD, MEMBERSHIP MONITOR & MASAV SUPPLIERS]
+   ├── dashboard/backend/data_service.py (aggregates BvA, billing, trainer stats, Arbox memberships, sales cancellations, weekly schedule attendance & monthly supplier payments/cashflow)
+   ├── dashboard/backend/server.py (local HTTP REST API server on port 3000, serving /api/months, /api/data, /api/target, /api/schedule_analytics, /api/suppliers, /api/suppliers/state)
+   └── dashboard/public/ (modern Hebrew RTL executive web UI with cards, charts, 12-month matrix, memberships module, weekly timetable grid & masav suppliers approval module)
 ```
 
 ---

@@ -16,6 +16,7 @@ let chartTrainer = null;
 let chartPT = null;
 let chartUtilities = null;
 let chartOverhead = null;
+let chartCashflow = null;
 let chartMemDist = null;
 let chartMemTimeline = null;
 let chartMemJoins = null;
@@ -65,8 +66,14 @@ function switchView(viewName) {
   if (schedCont) {
     schedCont.classList.toggle('hidden', viewName !== 'schedule');
   }
+  const supCont = document.getElementById('view-container-suppliers');
+  if (supCont) {
+    supCont.classList.toggle('hidden', viewName !== 'suppliers');
+  }
 
-  if (viewName === 'schedule') {
+  if (viewName === 'suppliers') {
+    loadSuppliersDashboard();
+  } else if (viewName === 'schedule') {
     loadScheduleAnalytics();
   } else if (viewName === 'charts' && dashboardData) {
     try {
@@ -807,6 +814,58 @@ function renderAnnualCharts(trends) {
     overheadEl.innerHTML = '';
     chartOverhead = new ApexCharts(overheadEl, overheadOpts);
     chartOverhead.render();
+  }
+
+  // Chart 6: Cash Flow Trajectory & Net Flow (תזרים נכנס מול יוצא ויתרות בנק)
+  const cashflowEl = document.querySelector("#cashflow-trend-chart");
+  if (cashflowEl && trends.cash_flow) {
+    const cf = trends.cash_flow;
+    const cashflowOpts = {
+      series: [
+        { name: 'תזרים נכנס (הכנסות)', type: 'column', data: cf.inflow },
+        { name: 'תזרים יוצא (הוצאות וספקים)', type: 'column', data: cf.outflow },
+        { name: 'תזרים נקי (Net)', type: 'line', data: cf.net }
+      ],
+      chart: {
+        height: 280,
+        type: 'line',
+        stacked: false,
+        fontFamily: 'Heebo, sans-serif',
+        toolbar: { show: false }
+      },
+      stroke: {
+        width: [0, 0, 3],
+        curve: 'smooth'
+      },
+      plotOptions: {
+        bar: {
+          columnWidth: '55%',
+          borderRadius: 4
+        }
+      },
+      colors: ['#10b981', '#f43f5e', '#6366f1'],
+      xaxis: {
+        categories: trends.months_labels,
+        labels: { style: { fontWeight: 600 } }
+      },
+      yaxis: {
+        labels: { formatter: (val) => '₪' + (val / 1000).toFixed(0) + 'k' }
+      },
+      legend: {
+        position: 'top',
+        horizontalAlign: 'right',
+        fontSize: '12px',
+        fontWeight: 600
+      },
+      tooltip: {
+        y: { formatter: (val) => formatNIS(val) }
+      }
+    };
+
+    if (chartCashflow) { try { chartCashflow.destroy(); } catch (e) {} }
+    cashflowEl.innerHTML = '';
+    chartCashflow = new ApexCharts(cashflowEl, cashflowOpts);
+    chartCashflow.render();
   }
 }
 
@@ -1839,6 +1898,341 @@ function renderTrainerAnalytics(trainers) {
   });
 }
 
+// =============================================================================
+// MODULE 6: SUPPLIER PAYMENTS & MASAV DASHBOARD (מס״ב ספקים)
+// =============================================================================
+
+let suppliersData = null;
+let currentSuppliersMonth = 8;
+let currentSupplierTermsFilter = 'all';
+
+async function loadSuppliersDashboard(month = null) {
+  if (month) currentSuppliersMonth = month;
+  try {
+    const res = await fetch(`/api/suppliers?month=${currentSuppliersMonth}`);
+    suppliersData = await res.json();
+    renderSuppliersDashboard(suppliersData);
+  } catch (err) {
+    console.error('Error loading suppliers dashboard:', err);
+    showToast('שגיאה בטעינת נתוני מס״ב ספקים');
+  }
+}
+
+function renderSuppliersDashboard(data) {
+  if (!data) return;
+  const kpis = data.financial_kpis || {};
+  const byTerms = data.by_terms || {};
+
+  // Top KPIs
+  const bankBalEl = document.getElementById('sup-kpi-bank-balance');
+  if (bankBalEl) {
+    bankBalEl.innerText = formatNIS(kpis.bank_balance);
+    bankBalEl.className = kpis.bank_balance >= 0 ? 'text-2xl font-black text-emerald-600' : 'text-2xl font-black text-rose-600';
+  }
+
+  const bankSourceEl = document.getElementById('sup-kpi-bank-source');
+  if (bankSourceEl) {
+    bankSourceEl.innerText = kpis.is_manual_balance ? 'הזנה ידנית (מותאם)' : 'מתוך גיליון תזרים';
+  }
+
+  const debtsEl = document.getElementById('sup-kpi-total-debts');
+  if (debtsEl) debtsEl.innerText = formatNIS(kpis.total_debts);
+
+  const countEl = document.getElementById('sup-kpi-count');
+  if (countEl) countEl.innerText = `${kpis.suppliers_count || 0} שורות`;
+
+  const approvedEl = document.getElementById('sup-kpi-approved-amount');
+  if (approvedEl) approvedEl.innerText = formatNIS(kpis.total_approved);
+
+  const approvedCountEl = document.getElementById('sup-kpi-approved-count');
+  if (approvedCountEl) approvedCountEl.innerText = `${kpis.approved_count || 0} מאושרים לתשלום`;
+
+  const balanceAfterEl = document.getElementById('sup-kpi-balance-after');
+  if (balanceAfterEl) {
+    balanceAfterEl.innerText = formatNIS(kpis.balance_after_payment);
+    balanceAfterEl.className = kpis.balance_after_payment >= 0 ? 'text-2xl font-black text-emerald-600' : 'text-2xl font-black text-rose-600';
+  }
+
+  const balanceTagEl = document.getElementById('sup-kpi-balance-tag');
+  if (balanceTagEl) {
+    if (kpis.balance_after_payment >= 0) {
+      balanceTagEl.innerText = 'יתרה חיובית';
+      balanceTagEl.className = 'text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md';
+    } else {
+      balanceTagEl.innerText = 'חריגה / גירעון צפוי';
+      balanceTagEl.className = 'text-[11px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md';
+    }
+  }
+
+  const monthLabel = document.getElementById('sup-kpi-month-label');
+  if (monthLabel) monthLabel.innerText = `חודש ${data.month_name} 2026`;
+
+  // Filter Buttons Amounts
+  const countAllEl = document.getElementById('sup-term-count-all');
+  if (countAllEl) countAllEl.innerText = kpis.suppliers_count || 0;
+
+  const amt30El = document.getElementById('sup-term-amount-30');
+  if (amt30El) amt30El.innerText = formatNIS(byTerms['+30'] || 0);
+
+  const amt60El = document.getElementById('sup-term-amount-60');
+  if (amt60El) amt60El.innerText = formatNIS(byTerms['+60'] || 0);
+
+  const amtImmEl = document.getElementById('sup-term-amount-immediate');
+  if (amtImmEl) amtImmEl.innerText = formatNIS(byTerms['immediate'] || 0);
+
+  const amtOverdueEl = document.getElementById('sup-term-amount-overdue');
+  if (amtOverdueEl) amtOverdueEl.innerText = formatNIS(byTerms['overdue'] || 0);
+
+  // Render Month Selector
+  const monthsContainer = document.getElementById('sup-months-selector');
+  if (monthsContainer && data.available_months) {
+    const monthNamesMap = { 5: "מאי", 6: "יוני", 7: "יולי", 8: "אוגוסט" };
+    monthsContainer.innerHTML = data.available_months.map(m => `
+      <button onclick="loadSuppliersDashboard(${m})" class="px-2.5 py-1 rounded-lg transition ${m === currentSuppliersMonth ? 'bg-rose-600 text-white shadow-2xs' : 'text-zinc-600 hover:text-zinc-900'}">
+        ${monthNamesMap[m] || m}
+      </button>
+    `).join('');
+  }
+
+  renderSuppliersTable();
+  if (window.lucide) lucide.createIcons();
+}
+
+function setSupplierTermsFilter(filter) {
+  currentSupplierTermsFilter = filter;
+  document.querySelectorAll('.sup-term-btn').forEach(btn => {
+    btn.className = 'sup-term-btn px-3.5 py-1.5 rounded-xl text-xs font-bold text-zinc-600 hover:bg-zinc-100 transition';
+  });
+
+  const activeBtn = document.getElementById(`sup-filter-${filter === '+30' ? '30' : filter === '+60' ? '60' : filter}`);
+  if (activeBtn) {
+    activeBtn.className = 'sup-term-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-zinc-900 text-white transition shadow-2xs';
+  }
+  renderSuppliersTable();
+}
+
+function filterSuppliersTable() {
+  renderSuppliersTable();
+}
+
+function renderSuppliersTable() {
+  if (!suppliersData || !suppliersData.suppliers) return;
+  const tbody = document.getElementById('suppliers-table-body');
+  if (!tbody) return;
+
+  const searchTerm = (document.getElementById('sup-search-input')?.value || '').trim().toLowerCase();
+  
+  let filtered = suppliersData.suppliers.filter(s => {
+    // Terms filter
+    if (currentSupplierTermsFilter === '+30' && s.payment_terms !== '+30') return false;
+    if (currentSupplierTermsFilter === '+60' && s.payment_terms !== '+60') return false;
+    if (currentSupplierTermsFilter === 'immediate' && !('מזומן' in s.payment_terms || 'מיידי' in s.payment_terms)) return false;
+    if (currentSupplierTermsFilter === 'overdue' && !s.is_overdue) return false;
+
+    // Search term
+    if (searchTerm) {
+      const matchName = s.supplier_name.toLowerCase().includes(searchTerm);
+      const matchDesc = s.description.toLowerCase().includes(searchTerm);
+      const matchCat = s.category.toLowerCase().includes(searchTerm);
+      if (!matchName && !matchDesc && !matchCat) return false;
+    }
+    return true;
+  });
+
+  const countEl = document.getElementById('sup-showing-count');
+  if (countEl) countEl.innerText = filtered.length;
+
+  const approvedSum = filtered.filter(s => s.approved).reduce((acc, s) => acc + s.amount, 0);
+  const totalApprovedEl = document.getElementById('sup-table-approved-total');
+  if (totalApprovedEl) totalApprovedEl.innerText = formatNIS(approvedSum);
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9" class="text-center py-8 text-zinc-400">לא נמצאו ספקים התואמים את הסינון</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(s => {
+    const termsBadge = s.payment_terms === '+30' ? 'bg-blue-50 text-blue-800 border-blue-200' :
+                       s.payment_terms === '+60' ? 'bg-purple-50 text-purple-800 border-purple-200' :
+                       'bg-zinc-100 text-zinc-800 border-zinc-200';
+
+    const overdueBadge = s.is_overdue ? 
+      `<span class="inline-flex items-center gap-1 text-[10px] font-black text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">חריגה: ${s.days_overdue} יום</span>` :
+      `<span class="text-[11px] text-zinc-500 font-medium">${s.approx_days} ימים</span>`;
+
+    const contractBadge = s.is_contract ?
+      `<span class="inline-flex items-center gap-1 text-[10px] font-black text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">📋 ${s.installment_details || 'הסכם'}</span>` :
+      `<span class="text-zinc-300">—</span>`;
+
+    const serviceBadge = (s.service_month !== s.submission_month) ?
+      `<div class="flex items-center gap-1">
+        <span class="font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 text-[10px]">${s.service_month}</span>
+        <span class="text-[10px] text-zinc-400">(הגשה: ${s.submission_month})</span>
+      </div>` :
+      `<span class="text-xs font-semibold text-zinc-700">${s.service_month}</span>`;
+
+    return `
+      <tr class="hover:bg-zinc-50/80 transition-colors ${s.approved ? 'bg-amber-50/20' : ''}">
+        <!-- Yellow Approval Checkbox -->
+        <td class="py-3 px-4 text-center">
+          <input type="checkbox" onchange="toggleSupplierApproval('${s.id}')" ${s.approved ? 'checked' : ''} class="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 border-zinc-300 cursor-pointer accent-amber-400" />
+        </td>
+        <!-- Supplier Name -->
+        <td class="py-3 px-4">
+          <div class="font-black text-zinc-900 text-xs">${s.supplier_name}</div>
+        </td>
+        <!-- Amount -->
+        <td class="py-3 px-4 text-left font-black text-zinc-900 text-xs">
+          ${formatNIS(s.amount)}
+        </td>
+        <!-- Payment Terms -->
+        <td class="py-3 px-4">
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-md border ${termsBadge}">
+            ${s.payment_terms}
+          </span>
+        </td>
+        <!-- Ageing / Overdue -->
+        <td class="py-3 px-4">
+          ${overdueBadge}
+        </td>
+        <!-- Service Month vs Submission Month -->
+        <td class="py-3 px-4">
+          ${serviceBadge}
+        </td>
+        <!-- Annual Agreement / Installment -->
+        <td class="py-3 px-4">
+          ${contractBadge}
+        </td>
+        <!-- Line Description -->
+        <td class="py-3 px-4 text-zinc-600 max-w-xs truncate" title="${s.description}">
+          ${s.description}
+        </td>
+        <!-- Category -->
+        <td class="py-3 px-4 text-zinc-500 text-[11px]">
+          ${s.category}
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  if (window.lucide) lucide.createIcons();
+}
+
+async function toggleSupplierApproval(supplierId) {
+  if (!suppliersData || !suppliersData.suppliers) return;
+  const item = suppliersData.suppliers.find(s => s.id === supplierId);
+  if (!item) return;
+
+  item.approved = !item.approved;
+
+  // Compute new approved list
+  const approvedIds = suppliersData.suppliers.filter(s => s.approved).map(s => s.id);
+  
+  // Update local KPIs immediately for snappy UI
+  const approvedSum = suppliersData.suppliers.filter(s => s.approved).reduce((acc, s) => acc + s.amount, 0);
+  suppliersData.financial_kpis.total_approved = approvedSum;
+  suppliersData.financial_kpis.approved_count = approvedIds.length;
+  suppliersData.financial_kpis.balance_after_payment = suppliersData.financial_kpis.bank_balance - approvedSum;
+
+  renderSuppliersDashboard(suppliersData);
+
+  // Persist state to backend
+  try {
+    await fetch('/api/suppliers/state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        month: currentSuppliersMonth,
+        approved_ids: approvedIds
+      })
+    });
+  } catch (err) {
+    console.error('Error persisting approval:', err);
+  }
+}
+
+async function approveAllFilteredSuppliers() {
+  if (!suppliersData || !suppliersData.suppliers) return;
+  suppliersData.suppliers.forEach(s => s.approved = true);
+
+  const approvedIds = suppliersData.suppliers.map(s => s.id);
+  const approvedSum = suppliersData.suppliers.reduce((acc, s) => acc + s.amount, 0);
+  suppliersData.financial_kpis.total_approved = approvedSum;
+  suppliersData.financial_kpis.approved_count = approvedIds.length;
+  suppliersData.financial_kpis.balance_after_payment = suppliersData.financial_kpis.bank_balance - approvedSum;
+
+  renderSuppliersDashboard(suppliersData);
+
+  try {
+    await fetch('/api/suppliers/state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        month: currentSuppliersMonth,
+        approved_ids: approvedIds
+      })
+    });
+    showToast('כל הספקים אושרו לתשלום');
+  } catch (err) {
+    console.error('Error saving approvals:', err);
+  }
+}
+
+// Bank Balance Modal Handlers
+function openBankBalanceModal() {
+  const modal = document.getElementById('bank-balance-modal');
+  const input = document.getElementById('bank-balance-input');
+  if (suppliersData && suppliersData.financial_kpis && input) {
+    input.value = suppliersData.financial_kpis.bank_balance || '';
+  }
+  if (modal) {
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+      modal.classList.remove('opacity-0');
+      document.getElementById('bank-balance-modal-card')?.classList.remove('scale-95');
+    }, 10);
+  }
+}
+
+function closeBankBalanceModal() {
+  const modal = document.getElementById('bank-balance-modal');
+  if (modal) {
+    modal.classList.add('opacity-0');
+    document.getElementById('bank-balance-modal-card')?.classList.add('scale-95');
+    setTimeout(() => modal.classList.add('hidden'), 200);
+  }
+}
+
+async function saveBankBalance() {
+  const input = document.getElementById('bank-balance-input');
+  const val = parseFloat(input?.value);
+  if (isNaN(val)) {
+    showToast('נא להזין מספר תקין');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/suppliers/state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        month: currentSuppliersMonth,
+        bank_balance: val
+      })
+    });
+    const result = await res.json();
+    if (result.success && result.data) {
+      suppliersData = result.data;
+      renderSuppliersDashboard(suppliersData);
+      closeBankBalanceModal();
+      showToast('יתרת הבנק עודכנה בהצלחה');
+    }
+  } catch (err) {
+    console.error('Error saving bank balance:', err);
+    showToast('שגיאה בשמירת יתרת הבנק');
+  }
+}
+
 function initDashboard() {
   const modalEl = document.getElementById('drilldown-modal');
   if (modalEl) {
@@ -1847,7 +2241,10 @@ function initDashboard() {
     });
   }
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeModal();
+    if (e.key === 'Escape') {
+      closeModal();
+      closeBankBalanceModal();
+    }
   });
   fetchDashboardData();
 }
@@ -1857,3 +2254,4 @@ if (document.readyState === 'loading') {
 } else {
   initDashboard();
 }
+

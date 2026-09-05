@@ -162,6 +162,10 @@
           <i data-lucide="calendar-days" class="w-3.5 h-3.5 text-rose-600"></i>
           <span>מערכת שעות ותפוסה</span>
         </button>
+        <button id="view-suppliers" onclick="switchView('suppliers')" class="view-btn px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-zinc-700 hover:bg-white">
+          <i data-lucide="credit-card" class="w-3.5 h-3.5 text-rose-600"></i>
+          <span>מס״ב ספקים</span>
+        </button>
       </div>
 
     </div>
@@ -712,6 +716,31 @@
         <div id="overhead-trend-chart" class="w-full h-64"></div>
       </div>
 
+      <!-- Chart 6: Cash Flow Trajectory & Net Flow (תזרים מזומנים חודשי ויתרות בנק) -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-100 pb-3">
+          <div>
+            <h3 class="text-sm font-black text-zinc-900 flex items-center gap-2">
+              <i data-lucide="trending-up" class="w-4 h-4 text-emerald-600"></i>
+              <span>מגמת תזרים מזומנים חודשי ויתרות בנק (ספר תזרים 2026)</span>
+            </h3>
+            <p class="text-xs text-zinc-500">מעקב תזרים נכנס (הכנסות מנויים וסליקה) מול תזרים יוצא (ספקים ושכר) ויתרת פתיחה בבנק</p>
+          </div>
+          <div class="flex items-center gap-2 text-[11px] font-bold text-zinc-600">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span> תזרים נכנס (הכנסות)
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 text-rose-800 border border-rose-200">
+              <span class="w-2 h-2 rounded-full bg-rose-500"></span> תזרים יוצא (הוצאות)
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-800 border border-indigo-200">
+              <span class="w-2 h-2 rounded-full bg-indigo-500"></span> תזרים נקי (Net)
+            </span>
+          </div>
+        </div>
+        <div id="cashflow-trend-chart" class="w-full h-72"></div>
+      </div>
+
     </div>
 
     <!-- ========================================================================= -->
@@ -873,7 +902,209 @@
 
     </div>
 
+    <!-- ========================================================================= -->
+    <!-- VIEW 6: SUPPLIER PAYMENTS & MASAV DASHBOARD (מס״ב ספקים)                  -->
+    <!-- ========================================================================= -->
+    <div id="view-container-suppliers" class="space-y-6 hidden">
+
+      <!-- Top Financial KPIs Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- KPI 1: Bank Balance (Editable / Configurable) -->
+        <div class="app-card p-5 space-y-3 bg-white border-l-4 border-l-emerald-500 relative">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">יתרת בנק לפירעון</span>
+            <button onclick="openBankBalanceModal()" title="ערוך יתרת בנק נוכחית" class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 flex items-center justify-center transition">
+              <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+          <div class="flex items-baseline justify-between">
+            <span class="text-2xl font-black text-slate-900" id="sup-kpi-bank-balance">₪ 0</span>
+            <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md" id="sup-kpi-bank-tag">זמין בחשבון</span>
+          </div>
+          <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-slate-500">
+            <span>סטטוס: <strong class="text-slate-700 font-bold" id="sup-kpi-bank-source">הזנה ידנית / תזרים</strong></span>
+            <button onclick="openBankBalanceModal()" class="text-rose-600 hover:underline font-bold text-[11px]">עדכן יתרה</button>
+          </div>
+        </div>
+
+        <!-- KPI 2: Total Supplier Debts -->
+        <div class="app-card p-5 space-y-3 bg-white border-l-4 border-l-slate-800">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">סה״כ חובות ספקים</span>
+            <div class="w-7 h-7 rounded-lg bg-slate-100 text-slate-800 flex items-center justify-center">
+              <i data-lucide="receipt" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline justify-between">
+            <span class="text-2xl font-black text-slate-900" id="sup-kpi-total-debts">₪ 0</span>
+            <span class="text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md" id="sup-kpi-count">0 שורות</span>
+          </div>
+          <div class="pt-2 border-t border-slate-100 text-xs text-slate-500 flex justify-between">
+            <span>שוטף +30 / +60 / מיידי</span>
+            <span class="font-bold text-slate-700" id="sup-kpi-month-label">חודש אוגוסט</span>
+          </div>
+        </div>
+
+        <!-- KPI 3: Approved For Payment -->
+        <div class="app-card p-5 space-y-3 bg-white border-l-4 border-l-amber-500">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">מוצע / מאושר לתשלום</span>
+            <div class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+              <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline justify-between">
+            <span class="text-2xl font-black text-amber-600" id="sup-kpi-approved-amount">₪ 0</span>
+            <span class="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md" id="sup-kpi-approved-count">0 מאושרים</span>
+          </div>
+          <div class="pt-2 border-t border-slate-100 text-xs text-slate-500 flex justify-between">
+            <span>ממתין לשחרור במס״ב</span>
+            <button onclick="approveAllFilteredSuppliers()" class="text-amber-700 hover:underline font-bold text-[11px]">סמן הכל</button>
+          </div>
+        </div>
+
+        <!-- KPI 4: Balance After Payment -->
+        <div class="app-card p-5 space-y-3 bg-white border-l-4 border-l-indigo-500">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">יתרה צפויה לאחר תשלום</span>
+            <div class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <i data-lucide="wallet" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline justify-between">
+            <span class="text-2xl font-black text-slate-900" id="sup-kpi-balance-after">₪ 0</span>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-md" id="sup-kpi-balance-tag">מצב תקין</span>
+          </div>
+          <div class="pt-2 border-t border-slate-100 text-xs text-slate-500 flex justify-between">
+            <span>תמונת מצב מנהלית לבוס</span>
+            <span class="font-bold text-slate-700">בזמן אמת</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Quick Terms Filter & Summary Strip -->
+      <div class="bg-white p-4 rounded-3xl border border-zinc-200/80 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+        
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="text-xs font-bold text-zinc-500 ml-1">סינון לפי תנאי אשראי:</span>
+          <button id="sup-filter-all" onclick="setSupplierTermsFilter('all')" class="sup-term-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-zinc-900 text-white transition shadow-2xs">
+            הכל (<span id="sup-term-count-all">0</span>)
+          </button>
+          <button id="sup-filter-30" onclick="setSupplierTermsFilter('+30')" class="sup-term-btn px-3.5 py-1.5 rounded-xl text-xs font-bold text-zinc-600 hover:bg-zinc-100 transition">
+            שוטף +30 (<span id="sup-term-amount-30">₪ 0</span>)
+          </button>
+          <button id="sup-filter-60" onclick="setSupplierTermsFilter('+60')" class="sup-term-btn px-3.5 py-1.5 rounded-xl text-xs font-bold text-zinc-600 hover:bg-zinc-100 transition">
+            שוטף +60 (<span id="sup-term-amount-60">₪ 0</span>)
+          </button>
+          <button id="sup-filter-immediate" onclick="setSupplierTermsFilter('immediate')" class="sup-term-btn px-3.5 py-1.5 rounded-xl text-xs font-bold text-zinc-600 hover:bg-zinc-100 transition">
+            מזומן / מיידי (<span id="sup-term-amount-immediate">₪ 0</span>)
+          </button>
+          <button id="sup-filter-overdue" onclick="setSupplierTermsFilter('overdue')" class="sup-term-btn px-3.5 py-1.5 rounded-xl text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 transition border border-rose-200">
+            ⚠️ בחריגה מעל 60 יום (<span id="sup-term-amount-overdue">₪ 0</span>)
+          </button>
+        </div>
+
+        <!-- Month Switcher for Suppliers -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-zinc-500">חודש מס״ב:</span>
+          <div class="flex items-center gap-1 bg-zinc-100 p-1 rounded-xl border border-zinc-200 text-xs font-bold" id="sup-months-selector">
+            <!-- Injected dynamically -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Main Suppliers Table Container -->
+      <div class="bg-white rounded-3xl border border-zinc-200/80 shadow-2xs overflow-hidden">
+        
+        <div class="p-5 border-b border-zinc-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-zinc-50/50">
+          <div>
+            <h3 class="text-base font-black text-zinc-900 flex items-center gap-2">
+              <i data-lucide="layers" class="w-4 h-4 text-rose-600"></i>
+              <span>רשימת ספקים ואישור תשלום מנהל (מס״ב חודשי)</span>
+            </h3>
+            <p class="text-xs text-zinc-500 mt-0.5">לחץ על התיבה הצהובה כדי לאשר/לבטל שחרור תשלום לספק בלייב</p>
+          </div>
+          
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <input type="text" id="sup-search-input" onkeyup="filterSuppliersTable()" placeholder="חפש ספק, קטגוריה או פירוט..." class="px-3.5 py-1.5 rounded-xl border border-zinc-200 text-xs font-medium text-zinc-800 focus:outline-none focus:ring-2 focus:ring-rose-500 w-full sm:w-64 bg-white shadow-2xs" />
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-right border-collapse text-xs">
+            <thead>
+              <tr class="bg-zinc-100/80 text-zinc-600 font-bold border-b border-zinc-200">
+                <th class="py-3 px-4 w-12 text-center">אישור</th>
+                <th class="py-3 px-4">שם ספק</th>
+                <th class="py-3 px-4 text-left">סכום לתשלום</th>
+                <th class="py-3 px-4">תנאי תשלום</th>
+                <th class="py-3 px-4">ותק חשבונית (ימים)</th>
+                <th class="py-3 px-4">חודש שירות</th>
+                <th class="py-3 px-4">הסכם / מספר תשלום</th>
+                <th class="py-3 px-4">תיאור ופירוט</th>
+                <th class="py-3 px-4">קטגוריה</th>
+              </tr>
+            </thead>
+            <tbody id="suppliers-table-body" class="divide-y divide-zinc-100 text-zinc-800 font-medium">
+              <!-- Dynamically populated via renderSuppliersTable -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="p-4 bg-zinc-50 border-t border-zinc-200/80 flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-500 gap-2">
+          <div>
+            מוצגות <strong class="text-zinc-800 font-bold" id="sup-showing-count">0</strong> שורות ספקים
+          </div>
+          <div class="flex items-center gap-3">
+            <span>סה״כ מאושר לתשלום: <strong class="text-amber-700 font-black text-sm" id="sup-table-approved-total">₪ 0</strong></span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
   </main>
+
+  <!-- Bank Balance Editor Modal -->
+  <div id="bank-balance-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/70 backdrop-blur-xs transition-opacity duration-200 hidden opacity-0">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-zinc-200 transform scale-95 transition-transform duration-200" id="bank-balance-modal-card">
+      <div class="flex items-center justify-between border-b border-zinc-100 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black border border-emerald-100">
+            <i data-lucide="wallet" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-black text-zinc-900">הזנת יתרת בנק עדכנית</h3>
+            <p class="text-[11px] text-zinc-400 font-medium">עבור חישוב יתרה חזויה מול הבוס</p>
+          </div>
+        </div>
+        <button onclick="closeBankBalanceModal()" class="w-7 h-7 rounded-full bg-zinc-100 text-zinc-500 hover:bg-zinc-200 flex items-center justify-center transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-zinc-800">יתרת עו״ש בבנק (₪):</label>
+          <input type="number" id="bank-balance-input" placeholder="לדוגמה: 152477.76 או -50000" class="w-full px-3.5 py-2.5 rounded-xl border border-zinc-300 text-sm font-bold text-zinc-900 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          <p class="text-[10px] text-zinc-400">ניתן להזין גם יתרה שלילית (אוברדראפט). היתרה תישמר עבור החודש הנבחר.</p>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button onclick="closeBankBalanceModal()" class="px-4 py-2 text-xs font-bold text-zinc-500 hover:text-zinc-800 transition">
+            ביטול
+          </button>
+          <button onclick="saveBankBalance()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-2xs transition">
+            שמור יתרה
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ========================================================================= -->
   <!-- DRILLDOWN MODAL (EXACT MATCH TO USER SCREENSHOT IMAGE 2)                   -->
@@ -1060,6 +1291,6 @@
     <span id="toast-message">הנתונים סונכרנו בהצלחה!</span>
   </div>
 
-  <script src="app.js?v=3.9"></script>
+  <script src="app.js?v=4.0"></script>
 </body>
 </html>
