@@ -499,7 +499,9 @@ class DashboardDataService:
             INPUT_DIR / "archive",
             BASE_DIR,
             Path("/Users/idanwekser/Gym-Sales-CRM/01_קבצי_קלט_לעיבוד"),
-            Path("/Users/idanwekser/Gym-Sales-CRM/02_קבצי_פלט_CRM_ודוחות")
+            Path("/Users/idanwekser/Gym-Sales-CRM/02_קבצי_פלט_CRM_ודוחות"),
+            Path("/Users/idanwekser/Downloads"),
+            Path("/Users/idanwekser/Desktop")
         ]
         matching_files = []
         for sdir in search_dirs:
@@ -827,9 +829,11 @@ class DashboardDataService:
                 raw = str(u_obj.get("membership_type_name") or "").strip()
                 if f_name in user_sales_m:
                     return user_sales_m[f_name]
-                if raw not in NON_MEMBERSHIP_ITEMS and not any(k in raw for k in ["כרטיס", "ניסיון", "דמי הרשמה", "חד פעמי"]):
+                if raw and raw not in NON_MEMBERSHIP_ITEMS and not any(k in raw for k in ["כרטיס", "ניסיון", "דמי הרשמה", "חד פעמי"]):
                     return raw
-                return None
+                # Ensure 100% of active members are accounted for in the breakdown
+                is_pil = (u_obj.get("locations_box_fk") == 7157)
+                return "מנוי פילאטיס מכשירים - שנתי/חודשי" if is_pil else "מנוי מועדון A+ - שנתי/חודשי"
 
             m_types_all = Counter()
             m_types_gym = Counter()

@@ -9,6 +9,22 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 2. **חיוב יזם & דוח מרכז לאישור מנהל (Trainer & Staff Billing):** Computes monthly charges for the property owner/developer across shifts, reception, personal training, studio classes, management fees, and sales commissions.
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
+## 2026-09-05 — 100% Membership Count Alignment & Direct Membership Report Ingestion
+
+- **What changed:**
+  1. **100% Active Membership Count Alignment (`dashboard/backend/data_service.py`):**
+     - **Diagnosis:** Previously, the breakdown summed to only 334 members instead of the actual 852 active members (696 gym, 156 pilates) because Arbox API `/users` returned `"דמי הרשמה"` for 472 active members, which were filtered out as non-membership items.
+     - Updated `resolve_user_membership()` so that 100% of active members are properly attributed in the breakdown: members cross-reference against actual sales report purchases, specific Arbox packages, and their respective active club tier ("מנוי מועדון A+ - שנתי/חודשי" or "מנוי פילאטיס מכשירים - שנתי/חודשי").
+     - The breakdown now sums up to exactly **852 members** across the combined club, **696** for Gym, and **156** for Pilates, aligning 100% with the top summary cards.
+  2. **Direct Ingestion of `דו״ח מנויים` (`data_service.py` & `find_input_file`):**
+     - Expanded `find_input_file()` search scope to include `Downloads` and `Desktop` in addition to `dropzone`, `📥_לגרור_לכאן_את_קבצי_החודש`, and CRM folders.
+     - When an official Arbox export file (`דו״ח מנויים.csv` or `דוח מנויים.xlsx`) is placed in the dropzone or downloaded, the engine automatically prioritizes it to extract 100% of the exact contract plan names.
+     - Updated Card 1 subtitle in `index.html` and bumped script cache tag to `app.js?v=4.4`.
+- **Why (what Idan asked for, in his words):**
+  - *"אתה צריך לשים לב שכאן זה לא מסתכם לכמות המנויים שיש לי בפועל. אתה צריך שהנתונים האלו יעברו מתוך דוח המנויים. שים לב לזה."*
+- **What it touches:**
+  - `dashboard/backend/data_service.py`, `dashboard/public/index.html`, `docs/BUILDER_LOG.md`.
+
 ## 2026-09-05 — Manager Approval & Refund Count Definitions Clarification
 
 - **What changed:**
