@@ -522,18 +522,47 @@ class DashboardDataService:
                             exp_d = str(ws_c.cell(r, headers_c.get("תאריך צפוי להחזר", 11)).value or "").strip()
                             refund = safe_float(ws_c.cell(r, headers_c.get("סכום החזר כולל (₪)", headers_c.get("סכום החזר", 8))).value)
                             note = str(ws_c.cell(r, headers_c.get("סיבת הפנייה והערות הנציג", headers_c.get("הערות", 5))).value or "")
+                            mgr_status = str(ws_c.cell(r, headers_c.get("סטטוס טיפול מנהל", 13)).value or "").strip()
 
                             branch_key = "pilates" if "פילאטיס" in note else "gym"
+
+                            # 1. Filter Freezes: only currently active or pending manager/client freezes
                             if "הקפא" in req_type:
-                                if branch_key == "pilates":
-                                    frozen_pil += 1
+                                if mgr_status in ["נדחה / לא אושר", "אין צורך לטפל"]:
+                                    continue
+                                is_active_freeze = False
+                                if "ממתין" in mgr_status:
+                                    is_active_freeze = True
                                 else:
-                                    frozen_gym += 1
+                                    # Check if freeze end date extends into current/future period (>= Sep 2026)
+                                    m_dates = re.findall(r"(\d{1,2})[\./](\d{1,2})", note)
+                                    if m_dates:
+                                        try:
+                                            d_val, mo_val = int(m_dates[-1][0]), int(m_dates[-1][1])
+                                            if mo_val >= 9 or (mo_val == 8 and d_val >= 31):
+                                                is_active_freeze = True
+                                        except Exception:
+                                            pass
+                                    if not is_active_freeze and any(k in note for k in ["ספטמבר", "אוקטובר", "נובמבר", "דצמבר", "בהריון"]):
+                                        is_active_freeze = True
+
+                                if is_active_freeze:
+                                    if branch_key == "pilates":
+                                        frozen_pil += 1
+                                    else:
+                                        frozen_gym += 1
+
+                            # 2. Filter Cancellations: only pending manager/client or waiting for financial refund
                             elif "ביטול" in req_type:
+                                # Historical cancellations already done in Arbox months ago are excluded
+                                if mgr_status not in ["אושר וממתין לזיכוי", "ממתין לאישור מנהל", "ממתין לאישור לקוח"]:
+                                    continue
+
                                 if branch_key == "pilates":
                                     cancels_pil += 1
                                 else:
                                     cancels_gym += 1
+
                                 mo_key = "2026-08"
                                 m_end = re.search(r"(\d{2})/(\d{2})/(\d{4})", exp_d or req_d)
                                 if m_end:
@@ -556,18 +585,37 @@ class DashboardDataService:
                         if ("ייבוא" in s and "ארבוקס" in s) or "דוח מכירות" in s:
                             ws_p = wb_s[s]
                             break
+                    gym_monthly_prices = []
+                    pil_monthly_prices = []
                     if ws_p:
                         headers_p = {str(ws_p.cell(1, c).value).strip(): c for c in range(1, ws_p.max_column + 1) if ws_p.cell(1, c).value}
                         for r in range(2, ws_p.max_row + 1):
+                            item_type = str(ws_p.cell(r, headers_p.get("סוג פריט", 8)).value or "").strip()
+                            item_name = str(ws_p.cell(r, headers_p.get("פריט", 9)).value or "").strip()
                             branch = str(ws_p.cell(r, headers_p.get("סניף", 16)).value or "")
                             price_val = safe_float(ws_p.cell(r, headers_p.get("מחיר מכירה", 10)).value)
                             paid_val = safe_float(ws_p.cell(r, headers_p.get("שולם", 12)).value)
                             amt = price_val if price_val > 0 else paid_val
-                            if amt > 0:
+
+                            # Only look at genuine memberships (not single passes, registration fees, accessories)
+                            if item_type == "מנויים" and amt > 0:
+                                duration = 12.0
+                                if any(k in item_name for k in ["3 חודש", "שלושה חודשים", "רבעון"]):
+                                    duration = 3.0
+                                elif any(k in item_name for k in ["חצי שנתי", "6 חודש", "ששה חודשים"]):
+                                    duration = 6.0
+                                elif any(k in item_name for k in ["חודש", "חודשי"]) and not any(k in item_name for k in ["12", "שנה", "שנתי"]):
+                                    duration = 1.0
+                                elif amt < 1200:
+                                    duration = 3.0 if amt >= 700 else 1.0
+
+                                m_cost = round(amt / duration, 1)
                                 if "פילאטיס" in branch:
                                     pil_prices.append(amt)
+                                    pil_monthly_prices.append(m_cost)
                                 else:
                                     gym_prices.append(amt)
+                                    gym_monthly_prices.append(m_cost)
 
                     # C. Check for monthly sales tabs
                     crm_file = self.find_input_file(["*קובץ מכירות והקפאות*.xlsx"])
@@ -591,14 +639,15 @@ class DashboardDataService:
                     print("Error parsing sales CRM for memberships:", e)
 
             # Fallbacks if prices list empty
-            gym_avg = round(sum(gym_prices) / len(gym_prices), 1) if gym_prices else 1209.5
-            pil_avg = round(sum(pil_prices) / len(pil_prices), 1) if pil_prices else 3355.7
+            gym_avg = round(sum(gym_prices) / len(gym_prices), 1) if gym_prices else 1980.0
+            pil_avg = round(sum(pil_prices) / len(pil_prices), 1) if pil_prices else 3850.0
             all_p = gym_prices + pil_prices
-            all_avg = round(sum(all_p) / len(all_p), 1) if all_p else 1442.5
+            all_avg = round(sum(all_p) / len(all_p), 1) if all_p else 2280.0
 
-            gym_monthly = round(gym_avg / 12, 1)
-            pil_monthly = round(pil_avg / 12, 1)
-            all_monthly = round(all_avg / 12, 1)
+            gym_monthly = round(sum(gym_monthly_prices) / len(gym_monthly_prices), 1) if gym_monthly_prices else 291.7
+            pil_monthly = round(sum(pil_monthly_prices) / len(pil_monthly_prices), 1) if pil_monthly_prices else 369.6
+            all_m_list = gym_monthly_prices + pil_monthly_prices
+            all_monthly = round(sum(all_m_list) / len(all_m_list), 1) if all_m_list else 304.2
 
             stats = {
                 "all": {

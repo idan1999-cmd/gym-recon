@@ -95,6 +95,23 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 - **What it touches:**
   - `dashboard/backend/data_service.py`, `dashboard/public/index.html`, `dashboard/public/app.js`, `docs/BUILDER_LOG.md`.
 
+## 2026-09-05 — Accurate Active Freezes, Pending Cancellations & Normalized Membership Pricing
+
+- **What changed:**
+  1. **Backend Membership Analytics (`dashboard/backend/data_service.py`):**
+     - **Active Freezes Filter:** Filtered the cumulative 7-month log (211 historical records) strictly for currently active or pending freezes (6 pending manager/client + 18 with approved dates extending into September 2026 or later, total 24 active freezes). Past resolved freezes from May–July that already returned to activity are now properly excluded.
+     - **Pending Cancellations Filter:** Filtered the historical log (154 cumulative records) strictly for pending cancellations (10 awaiting manager approval, 2 awaiting client confirmation, 16 approved and awaiting financial refund/credit, total 28 active cancellations: 27 Gym, 1 Pilates).
+     - **Membership Price & Monthly Normalization:** Filtered sales items strictly for genuine memberships (`סוג פריט == 'מנויים'`), excluding single-visit passes, registration fees, and gear. Calculated real duration per item (annual = 12 mo, semi-annual = 6 mo, quarterly = 3 mo, monthly = 1 mo) to produce accurate average full contract value and true monthly cost:
+       - **Main Gym:** ₪1,980.9 avg contract / **₪291.7/mo** (previously distorted at ₪101/mo).
+       - **Pilates Studio:** ₪3,850.0 avg contract / **₪369.6/mo**.
+       - **All Club:** ₪2,280.0 avg contract / **₪304.2/mo**.
+  2. **Frontend UI Clarification (`dashboard/public/index.html`):**
+     - Updated KPI subtitles to clearly state "הקפאות פעילות בהווה / ממתינות לאישור" and "ממתינים לאישור מנהל או זיכוי כספי".
+- **Why (what Idan asked for, in his words if given):**
+  - *"אני די בטוח שיש לך טעות כאן בסנכרון מול ה-Drive. שים לב שאין סיכוי שיש לנו 211 מנויים בהקפאה ו-148 ביטולים, אולי מדובר על ביטולים ישנים. שים לב רק לביטולים עתידיים ורק למנויים בהקפאה. המחיר הממוצע לחודש ומחיר המנוי הממוצע לא נשמע לי. תראה שאתה שולט בנתונים כמו שצריך, ואם צריך תשאל אותי ונווט את הדברים."*
+- **What it touches:**
+  - `dashboard/backend/data_service.py`, `dashboard/public/index.html`, `docs/BUILDER_LOG.md`.
+
 ---
 
 ## 2026-09-04 — Weekly Schedule Attendance Grid & Trainer Analytics in Executive Dashboard
