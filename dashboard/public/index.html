@@ -227,7 +227,7 @@
         </div>
         <div class="text-2xl font-black text-white mt-1" id="strip-rev-proj">₪0</div>
         <div class="text-[10px] text-rose-400 font-semibold mt-1 flex items-center justify-between">
-          <span>מבוסס קצב יומי ועונתיות</span>
+          <span>משקלל MRR, ארבוקס ומכירות</span>
           <span id="strip-rev-proj-custom-badge" class="hidden text-[9px] bg-rose-600 text-white px-1.5 py-0.5 rounded-md font-black shadow-2xs">מוגדר</span>
         </div>
       </div>
@@ -242,7 +242,7 @@
         </div>
         <div class="text-2xl font-black text-zinc-900 mt-1" id="strip-exp-proj">₪0</div>
         <div class="text-[10px] text-zinc-500 mt-1 flex items-center justify-between">
-          <span>משקלל שיעורי ארבוקס וחילנט</span>
+          <span>משקלל חוזים, חילנט ועונתיות תזרים</span>
           <span id="strip-exp-proj-custom-badge" class="hidden text-[9px] bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded-md font-black">מוגדר</span>
         </div>
       </div>
@@ -1401,12 +1401,23 @@
         <!-- Calculated projection box -->
         <div class="bg-zinc-50 p-3.5 rounded-2xl border border-zinc-200/80 flex items-center justify-between">
           <div>
-            <div class="text-[11px] font-bold text-zinc-500">תחזית מחושבת (קצב / ביצוע)</div>
+            <div class="text-[11px] font-bold text-zinc-500" id="projection-calc-label">תחזית מחושבת (מודל 3 שכבות)</div>
             <div class="text-base font-black text-zinc-900" id="calculated-projection-display">₪ 0</div>
           </div>
           <button onclick="applyCalculatedProjection()" class="text-xs px-3.5 py-1.5 bg-white hover:bg-zinc-100 text-zinc-800 font-bold rounded-xl border border-zinc-300 shadow-2xs transition">
             החל תחזית מחושבת
           </button>
+        </div>
+
+        <!-- 3-Layer Methodology Breakdown Display -->
+        <div id="projection-breakdown-box" class="bg-slate-50/70 p-3.5 rounded-2xl border border-slate-200 text-[11px] space-y-2">
+          <div class="font-bold text-slate-800 flex items-center gap-1.5 border-b border-slate-200/80 pb-1.5">
+            <i data-lucide="layers" class="w-3.5 h-3.5 text-indigo-600"></i>
+            <span>פירוט רכיבי התחזית (מודל משוקלל חכם):</span>
+          </div>
+          <div id="projection-breakdown-items" class="space-y-1.5 font-medium text-slate-600">
+            <!-- Dynamically populated based on revenue vs expenses -->
+          </div>
         </div>
 
         <!-- Custom projection input box -->
@@ -1430,6 +1441,6 @@
     <span id="toast-message">הנתונים סונכרנו בהצלחה!</span>
   </div>
 
-  <script src="app.js?v=4.6"></script>
+  <script src="app.js?v=4.7"></script>
 </body>
 </html>

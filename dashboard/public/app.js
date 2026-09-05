@@ -320,6 +320,50 @@ function openProjectionModal(type) {
   if (calcDisplay) calcDisplay.innerText = formatNIS(calcVal);
   if (inputEl) inputEl.value = Math.round(targetObj.projected);
 
+  // Render 3-layer methodology breakdown
+  const breakdownItemsEl = document.getElementById('projection-breakdown-items');
+  const calcLabelEl = document.getElementById('projection-calc-label');
+  if (calcLabelEl) {
+    calcLabelEl.innerText = isRev ? 'תחזית הכנסות מחושבת (שקלול ערוצים)' : 'תחזית הוצאות מחושבת (מודל 3 שכבות)';
+  }
+
+  if (breakdownItemsEl) {
+    const b = targetObj.breakdown;
+    if (isRev && b) {
+      breakdownItemsEl.innerHTML = `
+        <div class="flex items-center justify-between py-1 border-b border-slate-100">
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> <strong>מנויים מתחדשים (MRR ארבוקס):</strong></span>
+          <span class="font-bold text-slate-800">${formatNIS(b.stream1_mrr || 0)}</span>
+        </div>
+        <div class="flex items-center justify-between py-1 border-b border-slate-100">
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-indigo-500"></span> <strong>אימונים אישיים וכרטיסיות:</strong></span>
+          <span class="font-bold text-slate-800">${formatNIS(b.stream2_pt || 0)}</span>
+        </div>
+        <div class="flex items-center justify-between py-1">
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500"></span> <strong>דמי הרשמה, סטודיו והכנסות נוספות:</strong></span>
+          <span class="font-bold text-slate-800">${formatNIS(b.stream3_other || 0)}</span>
+        </div>
+      `;
+    } else if (!isRev && b) {
+      breakdownItemsEl.innerHTML = `
+        <div class="flex items-center justify-between py-1 border-b border-slate-100">
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-indigo-500"></span> <strong>שכבה 1: חוזים קבועים (שכירות, ניהול, ארנונה):</strong></span>
+          <span class="font-bold text-slate-800">${formatNIS(b.layer1_fixed || 0)}</span>
+        </div>
+        <div class="flex items-center justify-between py-1 border-b border-slate-100">
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-blue-500"></span> <strong>שכבה 2: שכר ומאמנים (ארבוקס + חילנט):</strong></span>
+          <span class="font-bold text-slate-800">${formatNIS(b.layer2_staff || 0)}</span>
+        </div>
+        <div class="flex items-center justify-between py-1">
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500"></span> <strong>שכבה 3: תפעול, חשמל עונתי ועמלות:</strong></span>
+          <span class="font-bold text-slate-800">${formatNIS(b.layer3_ops || 0)}</span>
+        </div>
+      `;
+    } else {
+      breakdownItemsEl.innerHTML = `<div class="text-slate-400 py-1">משקלל נתוני ביצוע מאומתים ושיעורי ארבוקס</div>`;
+    }
+  }
+
   const modal = document.getElementById('projection-modal');
   const card = document.getElementById('projection-modal-card');
   modal.classList.remove('hidden');

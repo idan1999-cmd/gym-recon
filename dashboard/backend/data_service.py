@@ -1974,7 +1974,7 @@ class DashboardDataService:
             var_exp_list.extend(pilates_data.get("variable_expenses", []))
             fix_exp_list.extend(pilates_data.get("fixed_expenses", []))
 
-        current_live_month = 8
+        current_live_month = datetime.now().month
         days_in_m = get_days_in_month(self.year, month)
         current_day = min(datetime.now().day, days_in_m)
         day_ratio = current_day / days_in_m
@@ -1992,11 +1992,12 @@ class DashboardDataService:
             b = m_info["budget"]
             a = m_info["actual"]
             
-            # Forecast: past closed months equal actual, current live month applies run rate
-            if month < current_live_month:
+            # Forecast: closed months with finalized actuals equal actuals; live/unfinalized months with zero or partial recording use budget/run-rate
+            is_finalized_closed = (month < current_live_month) and (a > 0)
+            if is_finalized_closed:
                 proj = a
-            elif month == current_live_month:
-                proj = round(a * run_rate_factor, 2) if a > 0 else b
+            elif a > 0 and run_rate_factor < 5.0:
+                proj = round(a * run_rate_factor, 2)
             else:
                 proj = b
 
@@ -2064,11 +2065,13 @@ class DashboardDataService:
             b = m_info["budget"]
             a = m_info["actual"]
 
-            # Forecast: past closed months equal actual, current live month applies run rate
-            if month < current_live_month:
+            # Forecast: closed months with finalized ledger transactions equal actuals; live/unfinalized months with partial recording use budget/actual max
+            is_finalized_closed = (month < current_live_month) and (a > 0)
+            if is_finalized_closed:
                 proj = a
-            elif month == current_live_month:
-                proj = round(a * run_rate_factor, 2) if a > 0 else b
+            elif a > 0:
+                # If partial invoice already recorded in live/opening month, take the max of budget and recorded actual
+                proj = max(a, b)
             else:
                 proj = b
 
@@ -2113,7 +2116,8 @@ class DashboardDataService:
             m_info = item["months"].get(month, {"budget": 0.0, "actual": 0.0})
             b = m_info["budget"]
             a = m_info["actual"]
-            proj = a if month < current_live_month else b
+            is_finalized_closed = (month < current_live_month) and (a > 0)
+            proj = a if is_finalized_closed else max(a, b)
 
             total_exp_budget += b
             total_exp_actual += a
@@ -2155,9 +2159,38 @@ class DashboardDataService:
             total_rev_budget = float(self.custom_targets[rev_override_key])
             is_custom_rev = True
 
-        # Base calculated projections (for closed/recorded months, equals actuals)
-        calc_rev_projected = total_rev_actual if total_rev_actual > 0 else total_rev_budget
-        calc_exp_projected = total_exp_actual if total_exp_actual > 0 else total_exp_budget
+        # -----------------------------------------------------------------
+        # SMART 3-LAYER FINANCIAL FORECASTING METHODOLOGY
+        # Layer 1: Fixed Contracts & Retainers (Rent, Arnona, Management, Software)
+        # Layer 2: Salaries & Trainers (Hourly shifts, Studio classes, Hilan gross)
+        # Layer 3: Seasonal Operations & Utilities (Electricity seasonality, cleaning, credit fees)
+        # -----------------------------------------------------------------
+        # A month is only treated as historically finalized if actual revenue/expenses represent full closure (> 50% of budget), not partial opening entries
+        is_closed_rev = (month < current_live_month) and (total_rev_actual >= (total_rev_budget * 0.5))
+        is_closed_exp = (month < current_live_month) and (total_exp_actual >= (total_exp_budget * 0.5))
+
+        # 1. EXPENSES: 3-Layer Smart Forecast
+        exp_layer1_fixed = sum(p.get("projected", 0) for p in processed_fix_exp)
+        exp_layer2_staff = sum(p.get("projected", 0) for p in processed_var_exp if any(k in p["name"] for k in ["מאמנ", "מדריכ", "שכר", "חוג", "סטודיו", "קבלה"]))
+        exp_layer3_ops = sum(p.get("projected", 0) for p in processed_var_exp if not any(k in p["name"] for k in ["מאמנ", "מדריכ", "שכר", "חוג", "סטודיו", "קבלה"]))
+        
+        if is_closed_exp:
+            calc_exp_projected = total_exp_actual
+        else:
+            calc_exp_projected = exp_layer1_fixed + exp_layer2_staff + exp_layer3_ops
+
+        # 2. REVENUE: 3-Stream Smart Forecast
+        # Stream 1: Recurring MRR memberships
+        # Stream 2: Personal Training & Multi-passes
+        # Stream 3: Registration fees, Studio rentals, Other
+        rev_stream1_mrr = sum(p.get("projected", 0) for p in processed_incomes if "מנוי" in p["name"])
+        rev_stream2_pt = sum(p.get("projected", 0) for p in processed_incomes if any(k in p["name"] for k in ["אישי", "אימון אישי", "כרטיסי"]))
+        rev_stream3_other = sum(p.get("projected", 0) for p in processed_incomes if not ("מנוי" in p["name"] or any(k in p["name"] for k in ["אישי", "אימון אישי", "כרטיסי"])))
+
+        if is_closed_rev:
+            calc_rev_projected = total_rev_actual
+        else:
+            calc_rev_projected = rev_stream1_mrr + rev_stream2_pt + rev_stream3_other
 
         # Check for custom revenue forecast override
         is_custom_rev_proj = False
@@ -2220,7 +2253,12 @@ class DashboardDataService:
                     "projected": total_rev_projected,
                     "calculated_projected": calc_rev_projected,
                     "is_custom_projected": is_custom_rev_proj,
-                    "pct": round((total_rev_actual / total_rev_budget * 100), 1) if total_rev_budget > 0 else 0
+                    "pct": round((total_rev_actual / total_rev_budget * 100), 1) if total_rev_budget > 0 else 0,
+                    "breakdown": {
+                        "stream1_mrr": round(rev_stream1_mrr, 2),
+                        "stream2_pt": round(rev_stream2_pt, 2),
+                        "stream3_other": round(rev_stream3_other, 2)
+                    }
                 },
                 "total_expenses": {
                     "budget": total_exp_budget,
@@ -2228,7 +2266,12 @@ class DashboardDataService:
                     "projected": total_exp_projected,
                     "calculated_projected": calc_exp_projected,
                     "is_custom_projected": is_custom_exp_proj,
-                    "pct": round((total_exp_actual / total_exp_budget * 100), 1) if total_exp_budget > 0 else 0
+                    "pct": round((total_exp_actual / total_exp_budget * 100), 1) if total_exp_budget > 0 else 0,
+                    "breakdown": {
+                        "layer1_fixed": round(exp_layer1_fixed, 2),
+                        "layer2_staff": round(exp_layer2_staff, 2),
+                        "layer3_ops": round(exp_layer3_ops, 2)
+                    }
                 }
             },
             "incomes": processed_incomes,

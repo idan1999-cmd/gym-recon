@@ -10,6 +10,30 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
 
+## 2026-09-05 — Smart 3-Layer Financial Forecasting Methodology (חוזים, שכר ועונתיות תזרים)
+
+- **What changed:**
+  1. **Smart 3-Layer Expense Forecast Model (`dashboard/backend/data_service.py`):**
+     - **Diagnosis:** Incomplete or opening accounting ledger snapshots (like August `כרטסת 31.8.26` which only recorded ₪64,504 of initial invoices) previously collapsed the expense forecast because the engine defaulted to `actual > 0`. This omitted ~₪140,000+ of payroll, trainer shifts, and utilities.
+     - Implemented the 3-layer expense forecast methodology:
+       - **Layer 1: Fixed Contracts & Retainers (~₪96,700):** Rent (₪22k gym + ₪8.3k pil), Mall management fees (₪15.7k + ₪1.9k), Arnona (~₪12.2k), Club & Professional management fees (₪21k + ₪3k + ₪10k), Insurance, Software & IT (Arbox, Technogym, internet), accounting.
+       - **Layer 2: Salaries & Trainers (~₪80,700):** Hourly shifts and reception, studio class rates (based on Arbox scheduled classes), and salaried employee employer costs (Hilan).
+       - **Layer 3: Seasonal Operations & Utilities (~₪107,500):** Summer HVAC & electricity seasonality (historical July-August surge to ~₪17.5k), cleaning, equipment maintenance, credit card clearing fees (1.3%-1.5% of gross revenues).
+       - Combined realistic monthly expense forecast: **~₪284,800** (reconciled with full operating reality).
+  2. **Smart 3-Stream Revenue Forecast Model (`dashboard/backend/data_service.py`):**
+     - **Stream 1: Recurring MRR Memberships (~₪229,200):** Active contract base from Arbox and Sales Report.
+     - **Stream 2: Personal Training & Multi-passes (~₪95,400):** Scheduled & held sessions times average session rate plus external passes (FreeFit).
+     - **Stream 3: Registration Fees & Studio Rentals (~₪4,800).**
+     - Combined realistic monthly revenue forecast: **~₪329,400**.
+  3. **Transparency & Breakdown Modal in Dashboard UI (`index.html` & `app.js`):**
+     - Clicking on "ערוך תחזית" on the Top KPI cards now reveals an executive breakdown modal displaying the exact figures for each of the 3 layers/streams.
+     - Updated card subtitles to: *"משקלל MRR, ארבוקס ומכירות"* (Revenue) and *"משקלל חוזים, חילנט ועונתיות תזרים"* (Expenses).
+     - Bumped script cache tag to `app.js?v=4.7`.
+- **Why (what Idan asked for, in his words):**
+  - *"ואהבתי את המתדולוגיה שהצעת לי כאן לעדכון של צפי הביצוע שלי בהכנסות, לך על זה."*
+- **What it touches:**
+  - `dashboard/backend/data_service.py`, `dashboard/public/index.html`, `dashboard/public/app.js`, `docs/BUILDER_LOG.md`.
+
 ## 2026-09-05 — 4-Quarter Membership Trends Evolution (שני רבעונים אחורה, קודם, נוכחי וצפי קדימה)
 
 - **What changed:**
