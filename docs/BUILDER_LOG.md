@@ -10,6 +10,36 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
 
+## 2026-09-05 — Arbox Attendance & Retention Report Integration & Club Consistency Standards
+
+- **What changed:**
+  1. **Automated Arbox Attendance Report Ingestion (`dashboard/backend/data_service.py`):**
+     - Implemented `parse_arbox_attendance()`: Automatically detects and parses attendance/retention reports (`*התמדה*.xlsx/csv`, `*נוכחות*.xlsx/csv`, `*כניסות*.xlsx/csv`, `*retention*.xlsx/csv`, `*attendance*.xlsx/csv`) from `dropzone`, `input`, `Downloads`, and `Desktop`.
+     - Extracts customer name, total monthly check-ins/visits, weekly average, and last visit timestamp into an in-memory cached lookup.
+  2. **Club Consistency Standards & Churn Risk Engine (`data_service.py`):**
+     - Evaluates subscriber workout activity against official club benchmarks:
+       - **חדר כושר (Gym):** Standard $\ge 8$ workouts/month ($\ge 2$/week).
+       - **פילאטיס מכשירים (Pilates):** Standard $\ge 6$ workouts/month ($\ge 1.5$/week).
+       - $\ge$ Standard: `low` churn risk, `עומד בסטנדרט 🎯 (X אימונים)`.
+       - 4 to 7 workouts: `medium` churn risk, `התמדה בינונית (גבולי)`.
+       - $< 4$ workouts: `high` churn risk, `מתחת לסטנדרט ⚠️ (<4 אימונים)`.
+     - When attendance report has not yet been dropped:
+       - Stopped penalizing subscribers solely based on short-term/summer plan duration (e.g. `עילאי אביר` and `זיו סלע` now labeled based on RFID chip status and onboarding orientation rather than arbitrary penalty).
+       - Displays clear badge: `יעד: 8+ בחודש` / `יעד: 6+ בחודש` with status `"ממתין לדוח התמדה Arbox"`.
+  3. **Expiring Memberships Cohort Table Layout Upgrade (`index.html` & `app.js`):**
+     - Added dedicated column: **`אימונים והתמדה (ארבוקס)`** displaying exact workout counts and weekly frequency.
+     - Updated header to **`עמידה בסטנדרט מועדון`** with color-coded badges (Emerald for meeting standard, Amber for borderline, Crimson for below standard).
+     - Bumped script cache tag to `app.js?v=5.0`.
+- **Why (what Idan asked for, in his words):**
+  - *"אני רוצה שמלבד לסמן לי אותם לפי משך המנוי, תיכנס לדוח התמדה בארבוקס ותמשוך משם את המידע שאומר כמה פעמים הם באמת מתמידים בשיעורים. האם זה עומד בסטנדרט של מה שאנחנו מצפים?"*
+- **What it touches:**
+  - `dashboard/backend/data_service.py`, `dashboard/public/index.html`, `dashboard/public/app.js`, `docs/BUILDER_LOG.md`.
+- **How it was verified:**
+  - Verified API payload `/api/data` includes `visits`, `weekly_avg`, `visits_str`, and `standard_badge`.
+  - Ran test suite: `test_idan_fixes.py` (27/27) and `test_resilience.py` (11/11) passed.
+
+---
+
 ## 2026-09-05 — Monthly Refund Forecast & Cancellations Cash-Outflow Sync from Drive
 
 - **What changed:**

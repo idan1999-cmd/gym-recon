@@ -1917,13 +1917,20 @@ function renderExpiringCohorts(members) {
     const isHighRisk = (item.persistence_risk === 'high');
     const isMedRisk = (item.persistence_risk === 'medium');
 
-    let riskBadge = '';
+    let standardBadge = '';
     if (isHighRisk) {
-      riskBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-200 flex items-center gap-1 w-fit shadow-2xs"><i data-lucide="alert-triangle" class="w-3 h-3 text-rose-600"></i> סיכון נשירה (התמדה נמוכה)</span>`;
+      standardBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-200 flex items-center gap-1 w-fit shadow-2xs"><i data-lucide="alert-triangle" class="w-3 h-3 text-rose-600"></i> ${item.persistence_label}</span>`;
     } else if (isMedRisk) {
-      riskBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1 w-fit"><i data-lucide="clock" class="w-3 h-3 text-amber-600"></i> התמדה בינונית</span>`;
+      standardBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1 w-fit"><i data-lucide="clock" class="w-3 h-3 text-amber-600"></i> ${item.persistence_label}</span>`;
     } else {
-      riskBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1 w-fit"><i data-lucide="check" class="w-3 h-3 text-emerald-600"></i> התמדה גבוהה (יציב)</span>`;
+      standardBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1 w-fit"><i data-lucide="check" class="w-3 h-3 text-emerald-600"></i> ${item.persistence_label}</span>`;
+    }
+
+    let attDisplay = '';
+    if (item.has_real_attendance) {
+      attDisplay = `<span class="font-bold text-slate-800">${item.visits_str}</span>`;
+    } else {
+      attDisplay = `<span class="text-slate-400 text-[10px] flex items-center justify-center gap-1" title="ניתן לגרור דוח התמדה מ-Arbox לנתוני אמת"><i data-lucide="activity" class="w-3 h-3 text-amber-500"></i> ${item.visits_str}</span>`;
     }
 
     const rowClass = isHighRisk
@@ -1939,7 +1946,8 @@ function renderExpiringCohorts(members) {
             ${item.branch}
           </span>
         </td>
-        <td class="p-2.5">${riskBadge}</td>
+        <td class="p-2.5 text-center text-xs">${attDisplay}</td>
+        <td class="p-2.5">${standardBadge}</td>
         <td class="p-2.5 text-left font-mono font-black ${isHighRisk ? 'text-rose-700' : 'text-amber-700'}">${item.end_date}</td>
       </tr>
     `;

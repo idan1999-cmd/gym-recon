@@ -45,9 +45,9 @@ MONTHLY INPUTS DROP (input/)
          │
          ▼
 [4. INTERACTIVE EXECUTIVE DASHBOARD, MEMBERSHIP MONITOR & PACING COCKPIT]
-   ├── dashboard/backend/data_service.py (aggregates BvA, billing, trainer stats, Arbox memberships, sales cancellations, weekly schedule attendance, monthly supplier payments/cashflow & live revenue pacing tracker)
+   ├── dashboard/backend/data_service.py (aggregates BvA, billing, trainer stats, Arbox memberships, Arbox attendance & consistency standards, sales cancellations, weekly schedule attendance, monthly supplier payments/cashflow & live revenue pacing tracker)
    ├── dashboard/backend/server.py (local HTTP REST API server on port 3000, serving /api/months, /api/data, /api/target, /api/schedule_analytics, /api/suppliers, /api/suppliers/state)
-   └── dashboard/public/ (modern Hebrew RTL executive web UI with cards, charts, 12-month matrix, memberships module, weekly timetable grid, masav suppliers approval & live revenue pacing cockpit)
+   └── dashboard/public/ (modern Hebrew RTL executive web UI with cards, charts, 12-month matrix, memberships module, attendance/retention consistency, weekly timetable grid, masav suppliers approval & live revenue pacing cockpit)
 ```
 
 ---

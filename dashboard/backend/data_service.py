@@ -517,6 +517,78 @@ class DashboardDataService:
             return matching_files[0]
         return None
 
+    def parse_arbox_attendance(self) -> dict:
+        """
+        Parses Arbox attendance/retention report (דוח התמדה / נוכחות מתאמנים)
+        Extracts member visits count, weekly average, last visit date, and checks against club standard.
+        """
+        att_file = self.find_input_file([
+            "*התמדה*.xlsx", "*התמדה*.csv", "*נוכחות*.xlsx", "*נוכחות*.csv",
+            "*כניסות*.xlsx", "*כניסות*.csv", "*attendance*.xlsx", "*attendance*.csv",
+            "*retention*.xlsx", "*retention*.csv"
+        ])
+        if not att_file or not att_file.exists():
+            return {}
+
+        mtime = att_file.stat().st_mtime
+        cache_key = f"attendance_{att_file}_{mtime}"
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+
+        attendance_map = {}
+        try:
+            if att_file.suffix.lower() == ".csv":
+                for enc in ["utf-8-sig", "utf-8", "cp1255", "iso-8859-8"]:
+                    try:
+                        with open(att_file, encoding=enc) as f:
+                            reader = csv.DictReader(f)
+                            for r in reader:
+                                name = (r.get("שם") or r.get("שם לקוח") or r.get("מתאמן") or r.get("שם מלא") or "").strip()
+                                visits = safe_float(r.get("כניסות") or r.get("כמות כניסות") or r.get("נוכחות") or r.get("אימונים") or r.get("סה״כ שיעורים") or 0)
+                                weekly = safe_float(r.get("ממוצע שבועי") or r.get("אימונים לשבוע") or (visits / 4.0 if visits else 0))
+                                last_v = (r.get("ביקור אחרון") or r.get("תאריך אחרון") or "").strip()
+                                if name:
+                                    attendance_map[name] = {
+                                        "visits": int(visits),
+                                        "weekly_avg": round(weekly, 1),
+                                        "last_visit": last_v
+                                    }
+                            if attendance_map:
+                                break
+                    except Exception:
+                        continue
+            else:
+                wb = openpyxl.load_workbook(str(att_file), data_only=True)
+                ws = wb.active
+                headers = {}
+                for c in range(1, ws.max_column + 1):
+                    v = ws.cell(1, c).value
+                    if v:
+                        headers[str(v).strip()] = c
+
+                name_col = headers.get("שם") or headers.get("שם לקוח") or headers.get("מתאמן") or headers.get("שם מלא")
+                visits_col = headers.get("כניסות") or headers.get("כמות כניסות") or headers.get("נוכחות") or headers.get("אימונים") or headers.get("סה״כ שיעורים")
+                weekly_col = headers.get("ממוצע שבועי") or headers.get("אימונים לשבוע")
+                last_col = headers.get("ביקור אחרון") or headers.get("תאריך אחרון")
+
+                if name_col and visits_col:
+                    for r in range(2, ws.max_row + 1):
+                        name = str(ws.cell(r, name_col).value or "").strip()
+                        visits = safe_float(ws.cell(r, visits_col).value or 0)
+                        weekly = safe_float(ws.cell(r, weekly_col).value) if weekly_col else round(visits / 4.0, 1)
+                        last_v = str(ws.cell(r, last_col).value or "").strip() if last_col else ""
+                        if name:
+                            attendance_map[name] = {
+                                "visits": int(visits),
+                                "weekly_avg": round(weekly, 1),
+                                "last_visit": last_v
+                            }
+        except Exception as e:
+            print("Error parsing Arbox attendance report:", e)
+
+        self._cache[cache_key] = attendance_map
+        return attendance_map
+
     def parse_membership_data(self, selected_tab: str | None = None) -> dict:
         mem_file = self.find_input_file([
             "*מנוי*.csv", "*מנוי*.xlsx", "*מנויים*.csv", "*מנויים*.xlsx",
@@ -843,6 +915,7 @@ class DashboardDataService:
             m_types_pil = Counter()
 
             expiring_members_list = []
+            attendance_map = self.parse_arbox_attendance()
 
             for u in users:
                 m_clean = resolve_user_membership(u)
@@ -869,33 +942,57 @@ class DashboardDataService:
                     try:
                         d_exp = datetime.strptime(str(end_str)[:10], "%Y-%m-%d").date()
                         if d_exp >= datetime(2026, 9, 1).date():
-                            # Persistence & Churn Risk scoring
-                            risk_score = 0
+                            att_info = attendance_map.get(f_name)
                             m_lower = (m_clean or "").lower()
-                            if any(k in m_lower for k in ["קיץ", "כרטיס", "בוטיק", "1 חודש", "חד פעמי"]):
-                                risk_score += 4
-                            elif any(k in m_lower for k in ["3 חודש", "שלושה"]):
-                                risk_score += 2
-                            if not u.get("rfid"):
-                                risk_score += 2
-                            st_val = str(u.get("start") or "")[:10]
-                            if st_val:
-                                try:
-                                    st_date = datetime.strptime(st_val, "%Y-%m-%d").date()
-                                    if (d_exp - st_date).days <= 100:
-                                        risk_score += 2
-                                except Exception:
-                                    pass
 
-                            if risk_score >= 4:
-                                p_risk = "high"
-                                p_label = "סיכון נשירה גבוה (התמדה נמוכה)"
-                            elif risk_score >= 2:
-                                p_risk = "medium"
-                                p_label = "התמדה בינונית"
+                            if att_info:
+                                visits = att_info["visits"]
+                                weekly = att_info["weekly_avg"]
+                                last_v = att_info["last_visit"]
+                                has_real_att = True
+                                threshold = 6 if is_pilates else 8
+
+                                if visits >= threshold:
+                                    p_risk = "low"
+                                    p_label = f"עומד בסטנדרט 🎯 ({visits} אימונים)"
+                                    standard_badge = f"עומד בסטנדרט ({weekly}/שבוע)"
+                                elif visits >= 4:
+                                    p_risk = "medium"
+                                    p_label = f"התמדה בינונית ({visits} אימונים)"
+                                    standard_badge = f"גבולי ({weekly}/שבוע)"
+                                else:
+                                    p_risk = "high"
+                                    p_label = f"מתחת לסטנדרט ⚠️ ({visits} אימונים)"
+                                    standard_badge = f"מתחת לסטנדרט (<4)"
+                                visits_str = f"{visits} אימונים ({weekly}/שבוע)"
                             else:
-                                p_risk = "low"
-                                p_label = "התמדה גבוהה (יציב)"
+                                # Attendance file not yet uploaded: use orientation, RFID & plan type
+                                has_real_att = False
+                                visits = None
+                                weekly = None
+                                last_v = None
+                                threshold = 6 if is_pilates else 8
+                                standard_badge = f"יעד: {threshold}+ בחודש"
+                                visits_str = "ממתין לדוח התמדה Arbox"
+
+                                # Refined scoring: do not unfairly brand summer members as high risk
+                                has_rfid = bool(u.get("rfid"))
+                                has_orientation = bool(u.get("has_professional_meeting") or u.get("medical_cert"))
+
+                                if "קיץ" in m_lower or "3 חודש" in m_lower:
+                                    if has_rfid and has_orientation:
+                                        p_risk = "medium"
+                                        p_label = "התמדה פעילה (מנוי קצר)"
+                                    else:
+                                        p_risk = "high"
+                                        p_label = "סיכון נשירה (קצר ללא צ׳יפ)"
+                                else:
+                                    if has_rfid:
+                                        p_risk = "low"
+                                        p_label = "התמדה גבוהה (מנוי שנתי)"
+                                    else:
+                                        p_risk = "medium"
+                                        p_label = "התמדה שנתית (ללא צ׳יפ)"
 
                             expiring_members_list.append({
                                 "name": f_name or "לקוח",
@@ -907,7 +1004,12 @@ class DashboardDataService:
                                 "month": d_exp.strftime("%Y-%m"),
                                 "persistence_risk": p_risk,
                                 "persistence_label": p_label,
-                                "risk_score": risk_score
+                                "visits": visits,
+                                "weekly_avg": weekly,
+                                "last_visit": last_v,
+                                "visits_str": visits_str,
+                                "standard_badge": standard_badge,
+                                "has_real_attendance": has_real_att
                             })
                     except Exception:
                         pass
