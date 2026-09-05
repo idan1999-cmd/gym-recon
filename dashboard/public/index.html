@@ -580,14 +580,21 @@
       <!-- 4-Card Analytics Grid: Membership Types, New Joins, Reasons, Sales Reps -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         
-        <!-- Card 1: Top Active Membership Types -->
+        <!-- Card 1: Top Active Membership Types with Real Purchases -->
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
-          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
-            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <i data-lucide="layers" class="w-4 h-4 text-indigo-600"></i>
-              פילוח סוגי מנויים מובילים
-            </h3>
-            <span class="text-[11px] text-slate-400">לפי מנויים פעילים</span>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-2.5 gap-2">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <i data-lucide="layers" class="w-4 h-4 text-indigo-600"></i>
+                פילוח סוגי מנויים מובילים
+              </h3>
+              <p class="text-[11px] text-slate-400 mt-0.5">מוצלם ומסונכרן מול רכישות בפועל (ללא דמי הרשמה / ניסיונות)</p>
+            </div>
+            <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-[11px] font-bold text-slate-600">
+              <button onclick="filterMemTypes('all')" id="mem-type-tab-all" class="px-2.5 py-1 rounded-lg bg-white text-slate-900 shadow-2xs">הכל</button>
+              <button onclick="filterMemTypes('gym')" id="mem-type-tab-gym" class="px-2.5 py-1 rounded-lg hover:text-slate-900">חד״כ</button>
+              <button onclick="filterMemTypes('pilates')" id="mem-type-tab-pilates" class="px-2.5 py-1 rounded-lg hover:text-slate-900">פילאטיס</button>
+            </div>
           </div>
           <div id="mem-types-list" class="space-y-2.5 max-h-60 overflow-y-auto custom-scrollbar pr-1">
             <!-- Injected dynamically -->
@@ -606,14 +613,23 @@
           <div id="mem-joins-chart" class="w-full h-56"></div>
         </div>
 
-        <!-- Card 3: Cancellation & Freeze Reasons Breakdown -->
+        <!-- Card 3: Cancellation & Freeze Reasons Breakdown with Time Filters -->
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
-          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
-            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <i data-lucide="help-circle" class="w-4 h-4 text-amber-600"></i>
-              פילוח סיבות ביטול והקפאה
-            </h3>
-            <span class="text-[11px] text-slate-400">מתוך דו״ח מכירות והקפאות</span>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-2.5 gap-2">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <i data-lucide="help-circle" class="w-4 h-4 text-amber-600"></i>
+                פילוח סיבות ביטול והקפאה
+              </h3>
+              <p class="text-[11px] text-slate-400 mt-0.5">ניתוח סיבות מתוך דוח מכירות והקפאות</p>
+            </div>
+            <!-- Time Filter Pills -->
+            <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-[11px] font-bold text-slate-600">
+              <button onclick="filterReasonsPeriod('1m')" id="reason-tab-1m" class="px-2 py-1 rounded-lg hover:text-slate-900">חודש</button>
+              <button onclick="filterReasonsPeriod('3m')" id="reason-tab-3m" class="px-2 py-1 rounded-lg hover:text-slate-900">3 חודשים</button>
+              <button onclick="filterReasonsPeriod('1y')" id="reason-tab-1y" class="px-2 py-1 rounded-lg hover:text-slate-900">שנה</button>
+              <button onclick="filterReasonsPeriod('all')" id="reason-tab-all" class="px-2 py-1 rounded-lg bg-white text-slate-900 shadow-2xs">הכל</button>
+            </div>
           </div>
           <div id="mem-reasons-list" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
             <!-- Injected dynamically -->
@@ -631,6 +647,64 @@
           </div>
           <div id="sales-closers-list" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
             <!-- Injected dynamically -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Advanced Intelligence Section: Seasonal Membership Evolution & Expiring Cohorts -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        
+        <!-- Left: Seasonal Membership Evolution Chart -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <i data-lucide="trending-up" class="w-4 h-4 text-indigo-600"></i>
+                מגמת סוגי מנויים מובילים לפי תקופות השנה
+              </h3>
+              <p class="text-[11px] text-slate-400 mt-0.5">מעקב חי אחר השינוי בביקוש למנויים (שנתי, 3 חודשים, קיץ, פרמיום, פילאטיס)</p>
+            </div>
+            <span class="px-2.5 py-0.5 text-[10px] font-black bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-full">לייב מהדרייב</span>
+          </div>
+          <div id="mem-seasonal-chart" class="w-full h-72"></div>
+        </div>
+
+        <!-- Right: Upcoming Expiring Memberships Cohort (מנויים שעומדים להסתיים) -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <i data-lucide="hourglass" class="w-4 h-4 text-amber-600"></i>
+                מנויים קיימים שעומדים להסתיים בקרוב (צפי חידוש)
+              </h3>
+              <p class="text-[11px] text-slate-400 mt-0.5">סנכרון דוח מנויים - לקוחות יעד לשימור וחידוש חודש-בחודשו</p>
+            </div>
+            <span class="text-xs font-black bg-amber-50 text-amber-800 px-2.5 py-1 rounded-xl border border-amber-200" id="mem-expiring-total-badge">
+              0 מנויים
+            </span>
+          </div>
+
+          <!-- Cohort Month Pills -->
+          <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs font-bold" id="mem-expiring-month-pills">
+            <!-- Injected dynamically -->
+          </div>
+
+          <!-- Table of Members Expiring in Selected Month -->
+          <div class="overflow-hidden rounded-xl border border-slate-200 max-h-56 overflow-y-auto custom-scrollbar">
+            <table class="w-full text-right text-xs">
+              <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 sticky top-0">
+                <tr>
+                  <th class="p-2.5">שם הלקוח</th>
+                  <th class="p-2.5">סוג מנוי נוכחי</th>
+                  <th class="p-2.5">סניף</th>
+                  <th class="p-2.5 text-left">תאריך סיום</th>
+                </tr>
+              </thead>
+              <tbody id="mem-expiring-table-body" class="divide-y divide-slate-100">
+                <!-- Injected dynamically -->
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -1308,6 +1382,6 @@
     <span id="toast-message">הנתונים סונכרנו בהצלחה!</span>
   </div>
 
-  <script src="app.js?v=4.1"></script>
+  <script src="app.js?v=4.2"></script>
 </body>
 </html>

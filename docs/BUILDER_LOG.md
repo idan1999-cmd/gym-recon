@@ -9,6 +9,32 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 2. **חיוב יזם & דוח מרכז לאישור מנהל (Trainer & Staff Billing):** Computes monthly charges for the property owner/developer across shifts, reception, personal training, studio classes, management fees, and sales commissions.
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
+## 2026-09-05 — Clean Membership Breakdown, Reason Time Filters, Seasonal Trends & Expiring Cohorts
+
+- **What changed:**
+  1. **Clean Genuine Membership Types & Cross-Referencing (`dashboard/backend/data_service.py`):**
+     - **Diagnosis:** In the raw Arbox user export, 472 users were tagged with `"דמי הרשמה"` (Registration Fee) as their primary membership name, and others had `"אימון ניסיון לכולם"` or single passes, which completely skewed the breakdown chart.
+     - Filtered out all registration fees, trial sessions, single passes, and accessories.
+     - Cross-referenced users with real membership purchases from the sales import sheet (`ייבוא ארבוקס אוגוסט 2026` / `מכירות 2026.xlsx`) to retrieve the exact plan purchased (e.g. מנוי שנתי, מנוי 3 חודשים, מנוי פילאטיס, מנוי קיץ).
+     - Segmented clean membership types across Combined Club, Main Gym, and Pilates Studio with a quick filter toggle.
+  2. **Time-Filtered Cancellation & Freeze Reasons (`dashboard/backend/data_service.py` & `app.js`):**
+     - Added dynamic period segmentation for cancellation and freeze reasons based on request date (`תאריך פנייה`):
+       - **חודש (1m - 31 ימים אחורה):** 65 פניות (מובילות: חו״ל וחופשות 38.5%, עומס/חוסר זמן 20.0%, רפואי 7.7%).
+       - **3 חודשים (3m - 92 ימים אחורה):** 253 פניות (חו״ל וחופשות 40.7%, עומס 9.9%, רפואי 9.9%).
+       - **שנה (1y - 366 ימים אחורה):** 380 פניות.
+       - **הכל (all):** 383 פניות היסטוריות.
+     - Added time filter buttons (`חודש`, `3 חודשים`, `שנה`, `הכל`) in Card 3 that update the progress bars and counts instantly without page reloads.
+  3. **Live Seasonal Membership Evolution Chart (`dashboard/public/index.html` & `app.js`):**
+     - Added a dedicated stacked column chart **"מגמת סוגי מנויים מובילים לפי תקופות השנה"** showing how demand evolved across seasonal quarters (`עד 2025`, `2026-Q1 חורף`, `2026-Q2 אביב`, `2026-Q3 קיץ`).
+  4. **Upcoming Expiring Memberships Cohort Table (`dashboard/public/index.html` & `app.js`):**
+     - Extracted active members whose contracts are scheduled to expire in upcoming months (Sep 2026, Oct 2026, Nov 2026, etc.).
+     - Built an interactive cohort table displaying member name, current plan, branch, and exact expiration date, organized by month pill selectors (`ספטמבר 2026`, `אוקטובר 2026`, וכו׳) for targeted renewal and retention outreach.
+     - Bumped script cache tag to `app.js?v=4.2`.
+- **Why (what Idan asked for, in his words):**
+  - *"תשים לב לעוד שני דברים נוספים שאני רוצה שתטפל בהם: פילוח לפי סוגי מנויים מובילים. תצטרך לוודא על מה הוא שילם ולהצליב את המידע מול קובץ המכירות שאתה שולף ממנו את הנתונים בדרייב. צריך להסתכל בצורה יותר נקודתית על סוגי המנויים שיש לפי דוח מנויים ולא לפי מנויים אחרים, אז תשים לב לזה. לגבי דוח מכירות והקפאות, אני רוצה שתעשה לי סינון מסוים, אלה כל הסיבות לתקופה מסוימת אחורה. אני רוצה שיהיה דוח לסיבה מסוימת חודש אחורה, שלושה חודשים אחורה, שנה אחורה. כנל גם לגבי סוגי מנויים מובילים, האמת שאפילו בוא ניצור איזשהו גרף או איזשהי תצוגה שתרצה לי סוגי המנויים המובילים לפי תקופות השנה שמתעדכן בלייב ככל שאנחנו מתקדמים. דוח המנויים הרי הולך להציג לך כל הזמן מה הם המנויים הקיימים ומה הם המנויים שעומדים להסתיים. בוא ננסה להוציא ממנו מידע יותר יעיל שיעזור לי להבין את המגמות אצלי בתוך המועדון."*
+- **What it touches:**
+  - `dashboard/backend/data_service.py`, `dashboard/public/index.html`, `dashboard/public/app.js`, `docs/BUILDER_LOG.md`.
+
 ## 2026-09-05 — Pending Requests Tracking & High-Priority Angry Customer Alerts Banner
 
 - **What changed:**

@@ -693,8 +693,9 @@ class DashboardDataService:
                                     "monthly_price": 0.0
                                 })
 
-                    # B. Parse Prices from Arbox Import
+                    # B. Parse Prices & Membership Purchases from Sales Import
                     ws_p = None
+                    user_sales_m = {}
                     for s in wb_s.sheetnames:
                         if ("ייבוא" in s and "ארבוקס" in s) or "דוח מכירות" in s:
                             ws_p = wb_s[s]
@@ -704,12 +705,17 @@ class DashboardDataService:
                     if ws_p:
                         headers_p = {str(ws_p.cell(1, c).value).strip(): c for c in range(1, ws_p.max_column + 1) if ws_p.cell(1, c).value}
                         for r in range(2, ws_p.max_row + 1):
+                            buyer_name = str(ws_p.cell(r, headers_p.get("שם", 2)).value or "").strip()
                             item_type = str(ws_p.cell(r, headers_p.get("סוג פריט", 8)).value or "").strip()
                             item_name = str(ws_p.cell(r, headers_p.get("פריט", 9)).value or "").strip()
                             branch = str(ws_p.cell(r, headers_p.get("סניף", 16)).value or "")
                             price_val = safe_float(ws_p.cell(r, headers_p.get("מחיר מכירה", 10)).value)
                             paid_val = safe_float(ws_p.cell(r, headers_p.get("שולם", 12)).value)
                             amt = price_val if price_val > 0 else paid_val
+
+                            # Map actual membership purchase to user
+                            if item_type == "מנויים" and buyer_name and item_name:
+                                user_sales_m[buyer_name] = item_name
 
                             # Only look at genuine memberships (not single passes, registration fees, accessories)
                             if item_type == "מנויים" and amt > 0:
@@ -751,6 +757,8 @@ class DashboardDataService:
                             pass
                 except Exception as e:
                     print("Error parsing sales CRM for memberships:", e)
+            else:
+                user_sales_m = {}
 
             # Fallbacks if prices list empty
             gym_avg = round(sum(gym_prices) / len(gym_prices), 1) if gym_prices else 1980.0
@@ -798,15 +806,123 @@ class DashboardDataService:
                 }
             }
 
-            m_types_counter = Counter()
+            # -----------------------------------------------------------------
+            # CLEAN MEMBERSHIP BREAKDOWN (FILTER OUT REGISTRATION FEES & ACCESSORIES)
+            # Cross-referenced with real sales report purchases
+            # -----------------------------------------------------------------
+            NON_MEMBERSHIP_ITEMS = [
+                "דמי הרשמה", "אימון ניסיון לכולם", "אימון ניסיון", "שבוע ניסיון",
+                "כניסה חד פעמית", "אימון ילדים", "תכנית אימון", "freefit", "בודיגארד -פיילוט",
+                "None", "", "כרטיסיה 20 כניסות מועדון", "כרטיסיה קיץ 25 - 12 כניסות",
+                "כרטיסייה 10 אימונים אישיים", "כרטיסייה 10 כניסות חדר כושר - 26",
+                "כרטיסייה 20 אימוני בוטיק", "כרטיסייה 4 אימוני בוטיק", "כרטיסייה 5 אימונים אשיים",
+                "פילאטיס - 20 כניסות מנויות", "פילאטיס מכשירים כרטיסיית 10 כניסות למנויות/נערות - 26",
+                "פילאטיס מכשירים- 20 כניסות למנויות"
+            ]
+
+            def resolve_user_membership(u_obj):
+                fn = u_obj.get("first_name", "") or ""
+                ln = u_obj.get("last_name", "") or ""
+                f_name = f"{fn} {ln}".strip()
+                raw = str(u_obj.get("membership_type_name") or "").strip()
+                if f_name in user_sales_m:
+                    return user_sales_m[f_name]
+                if raw not in NON_MEMBERSHIP_ITEMS and not any(k in raw for k in ["כרטיס", "ניסיון", "דמי הרשמה", "חד פעמי"]):
+                    return raw
+                return None
+
+            m_types_all = Counter()
+            m_types_gym = Counter()
+            m_types_pil = Counter()
+
+            expiring_members_list = []
+            seasonal_trends = {
+                "עד 2025": Counter(),
+                "2026-Q1 (חורף)": Counter(),
+                "2026-Q2 (אביב)": Counter(),
+                "2026-Q3 (קיץ)": Counter()
+            }
+
             for u in users:
-                m_name = u.get("membership_type_name")
-                if m_name:
-                    m_types_counter[str(m_name).strip()] += 1
+                m_clean = resolve_user_membership(u)
+                if not m_clean:
+                    continue
+
+                is_pilates = (u.get("locations_box_fk") == 7157) or ("פילאטיס" in m_clean)
+                m_types_all[m_clean] += 1
+                if is_pilates:
+                    m_types_pil[m_clean] += 1
+                else:
+                    m_types_gym[m_clean] += 1
+
+                # Upcoming Expirations Tracking (מנויים שעומדים להסתיים)
+                end_str = u.get("end")
+                fn = u.get("first_name", "") or ""
+                ln = u.get("last_name", "") or ""
+                f_name = f"{fn} {ln}".strip()
+                if end_str:
+                    try:
+                        d_exp = datetime.strptime(str(end_str)[:10], "%Y-%m-%d").date()
+                        if d_exp >= datetime(2026, 9, 1).date():
+                            expiring_members_list.append({
+                                "name": f_name or "לקוח",
+                                "membership": m_clean,
+                                "branch": "פילאטיס מכשירים" if is_pilates else "מועדון A+",
+                                "branch_key": "pilates" if is_pilates else "gym",
+                                "end_date": d_exp.strftime("%d/%m/%Y"),
+                                "month": d_exp.strftime("%Y-%m")
+                            })
+                    except Exception:
+                        pass
+
+                # Seasonal Trends by Start Period
+                st_val = u.get("start")
+                st_s = str(st_val)[:10] if st_val else ""
+                if not st_s or st_s < "2026-01-01":
+                    p_key = "עד 2025"
+                elif st_s <= "2026-03-31":
+                    p_key = "2026-Q1 (חורף)"
+                elif st_s <= "2026-06-30":
+                    p_key = "2026-Q2 (אביב)"
+                else:
+                    p_key = "2026-Q3 (קיץ)"
+                seasonal_trends[p_key][m_clean] += 1
+
+            # Format top membership types by club
+            total_clean_all = max(sum(m_types_all.values()), 1)
+            total_clean_gym = max(sum(m_types_gym.values()), 1)
+            total_clean_pil = max(sum(m_types_pil.values()), 1)
 
             top_membership_types = [
-                {"name": name, "count": count, "pct": round(count / max(active_total, 1) * 100, 1)}
-                for name, count in m_types_counter.most_common(8)
+                {"name": name, "count": count, "pct": round(count / total_clean_all * 100, 1)}
+                for name, count in m_types_all.most_common(10)
+            ]
+            top_membership_types_gym = [
+                {"name": name, "count": count, "pct": round(count / total_clean_gym * 100, 1)}
+                for name, count in m_types_gym.most_common(8)
+            ]
+            top_membership_types_pil = [
+                {"name": name, "count": count, "pct": round(count / total_clean_pil * 100, 1)}
+                for name, count in m_types_pil.most_common(8)
+            ]
+
+            # Format seasonal timeline for chart
+            seasonal_chart_data = {
+                "categories": ["עד 2025", "2026-Q1 (חורף)", "2026-Q2 (אביב)", "2026-Q3 (קיץ)"],
+                "series": []
+            }
+            top_5_fams = [name for name, _ in m_types_all.most_common(5)]
+            for fam in top_5_fams:
+                seasonal_chart_data["series"].append({
+                    "name": fam,
+                    "data": [seasonal_trends[p].get(fam, 0) for p in seasonal_chart_data["categories"]]
+                })
+
+            # Expirations summary by month
+            expiring_by_month = Counter(x["month"] for x in expiring_members_list)
+            expiring_timeline = [
+                {"month": k, "count": v}
+                for k, v in sorted(expiring_by_month.items())[:6]
             ]
 
             new_joins_list = [
@@ -831,6 +947,14 @@ class DashboardDataService:
                 "future_cancellations": future_cancel_members,
                 "cancellations_by_month": sorted([{"month": k, "count": v} for k, v in cancellations_by_month.items()], key=lambda x: x["month"]),
                 "membership_types": top_membership_types,
+                "membership_types_by_club": {
+                    "all": top_membership_types,
+                    "gym": top_membership_types_gym,
+                    "pilates": top_membership_types_pil
+                },
+                "expiring_memberships": expiring_members_list,
+                "expiring_timeline": expiring_timeline,
+                "seasonal_trends": seasonal_chart_data,
                 "new_joins_timeline": new_joins_list
             }
             self._cache[cache_key] = res
@@ -1419,10 +1543,49 @@ class DashboardDataService:
                 summary["completed_refund_amount"] = round(summary["completed_refund_amount"], 2)
                 summary["total_refund_amount"] = round(summary["total_refund_amount"], 2)
 
-                reasons_breakdown = [
-                    {"reason": cat, "count": count, "pct": round(count / max(len(requests_list), 1) * 100, 1)}
-                    for cat, count in reasons_counter.most_common()
-                ]
+                # -----------------------------------------------------------------
+                # REASONS BREAKDOWN BY TIME PERIODS (חודש אחורה, 3 חודשים, שנה, הכל)
+                # -----------------------------------------------------------------
+                ref_date = datetime(2026, 8, 31).date()
+                periods_def = {
+                    "1m": 31,
+                    "3m": 92,
+                    "1y": 366,
+                    "all": 99999
+                }
+                reasons_by_period = {}
+
+                for p_key, max_days in periods_def.items():
+                    p_counter = Counter()
+                    p_total = 0
+                    for item in requests_list:
+                        d_str = item.get("req_date")
+                        cat = item.get("reason_category", "אחר / שונות")
+                        if d_str:
+                            try:
+                                if "/" in d_str:
+                                    p_parts = d_str.split("/")
+                                    item_d = datetime(int(p_parts[2]), int(p_parts[1]), int(p_parts[0])).date()
+                                else:
+                                    item_d = datetime.strptime(d_str[:10], "%Y-%m-%d").date()
+                                delta_days = (ref_date - item_d).days
+                                if 0 <= delta_days <= max_days:
+                                    p_counter[cat] += 1
+                                    p_total += 1
+                            except Exception:
+                                if p_key == "all":
+                                    p_counter[cat] += 1
+                                    p_total += 1
+                        elif p_key == "all":
+                            p_counter[cat] += 1
+                            p_total += 1
+
+                    reasons_by_period[p_key] = [
+                        {"reason": cat, "count": count, "pct": round(count / max(p_total, 1) * 100, 1)}
+                        for cat, count in p_counter.most_common()
+                    ]
+
+                reasons_breakdown = reasons_by_period["all"]
 
                 # Look up sales closers from main sales workbook if available
                 sales_closers = []
@@ -1439,6 +1602,7 @@ class DashboardDataService:
                     "summary": summary,
                     "requests": requests_list,
                     "reasons_breakdown": reasons_breakdown,
+                    "reasons_by_period": reasons_by_period,
                     "sales_closers": sales_closers
                 }
                 self._cache[cache_key] = res
@@ -1548,10 +1712,50 @@ class DashboardDataService:
             summary["completed_refund_amount"] = round(summary["completed_refund_amount"], 2)
             summary["total_refund_amount"] = round(summary["total_refund_amount"], 2)
 
-            reasons_breakdown = [
-                {"reason": cat, "count": count, "pct": round(count / max(len(requests_list), 1) * 100, 1)}
-                for cat, count in reasons_counter.most_common()
-            ]
+            # -----------------------------------------------------------------
+            # REASONS BREAKDOWN BY TIME PERIODS (חודש אחורה, 3 חודשים, שנה, הכל)
+            # -----------------------------------------------------------------
+            ref_date = datetime(2026, 8, 31).date()
+            periods_def = {
+                "1m": 31,
+                "3m": 92,
+                "1y": 366,
+                "all": 99999
+            }
+            reasons_by_period = {}
+
+            for p_key, max_days in periods_def.items():
+                p_counter = Counter()
+                p_total = 0
+                for item in requests_list:
+                    d_str = item.get("req_date")
+                    cat = item.get("reason_category", "אחר / שונות")
+                    if d_str:
+                        try:
+                            # dd/mm/yyyy or yyyy-mm-dd
+                            if "/" in d_str:
+                                p_parts = d_str.split("/")
+                                item_d = datetime(int(p_parts[2]), int(p_parts[1]), int(p_parts[0])).date()
+                            else:
+                                item_d = datetime.strptime(d_str[:10], "%Y-%m-%d").date()
+                            delta_days = (ref_date - item_d).days
+                            if 0 <= delta_days <= max_days:
+                                p_counter[cat] += 1
+                                p_total += 1
+                        except Exception:
+                            if p_key == "all":
+                                p_counter[cat] += 1
+                                p_total += 1
+                    elif p_key == "all":
+                        p_counter[cat] += 1
+                        p_total += 1
+
+                reasons_by_period[p_key] = [
+                    {"reason": cat, "count": count, "pct": round(count / max(p_total, 1) * 100, 1)}
+                    for cat, count in p_counter.most_common()
+                ]
+
+            reasons_breakdown = reasons_by_period["all"]
 
             sales_closers = self._get_sales_closers(wb, target_month=month)
 
@@ -1560,6 +1764,7 @@ class DashboardDataService:
                 "summary": summary,
                 "requests": requests_list,
                 "reasons_breakdown": reasons_breakdown,
+                "reasons_by_period": reasons_by_period,
                 "sales_closers": sales_closers
             }
             self._cache[cache_key] = res

@@ -20,6 +20,11 @@ let chartCashflow = null;
 let chartMemDist = null;
 let chartMemTimeline = null;
 let chartMemJoins = null;
+let chartSeasonalMem = null;
+
+let currentReasonPeriod = 'all';
+let currentMemTypeClub = 'all';
+let currentExpiringMonth = null;
 
 const MONTH_NAMES = [
   'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
@@ -1345,14 +1350,16 @@ function renderMemberships(data) {
     try {
       renderMembershipCharts(mem);
       renderNewJoinsChart(mem.new_joins_timeline || []);
+      renderSeasonalMembershipChart(mem.seasonal_trends);
     } catch (err) {
       console.warn('Membership charts warning:', err);
     }
   }
 
-  // Render Analytics Cards
-  renderMembershipTypesList(mem.membership_types || []);
-  renderReasonsList(sales ? (sales.reasons_breakdown || []) : []);
+  // Render Analytics Cards & Cohorts
+  filterMemTypes(currentMemTypeClub);
+  filterReasonsPeriod(currentReasonPeriod);
+  renderExpiringCohorts(mem.expiring_memberships || []);
   renderSalesClosersList(sales ? (sales.sales_closers || []) : [], data.metadata ? data.metadata.month_name : 'יוני');
 }
 
@@ -1422,6 +1429,31 @@ function renderUrgentAlertsBanner(alerts) {
   if (window.lucide) lucide.createIcons();
 }
 
+// -------------------------------------------------------------------------
+// MEMBERSHIP TYPES FILTER & RENDER
+// -------------------------------------------------------------------------
+function filterMemTypes(club) {
+  currentMemTypeClub = club;
+  ['all', 'gym', 'pilates'].forEach(c => {
+    const btn = document.getElementById(`mem-type-tab-${c}`);
+    if (btn) {
+      if (c === club) {
+        btn.className = 'px-2.5 py-1 rounded-lg bg-white text-slate-900 shadow-2xs font-bold';
+      } else {
+        btn.className = 'px-2.5 py-1 rounded-lg hover:text-slate-900 font-semibold';
+      }
+    }
+  });
+
+  if (!dashboardData || !dashboardData.memberships) return;
+  const mem = dashboardData.memberships;
+  let types = mem.membership_types || [];
+  if (mem.membership_types_by_club && mem.membership_types_by_club[club]) {
+    types = mem.membership_types_by_club[club];
+  }
+  renderMembershipTypesList(types);
+}
+
 function renderMembershipTypesList(types) {
   const container = document.getElementById('mem-types-list');
   if (!container) return;
@@ -1443,6 +1475,182 @@ function renderMembershipTypesList(types) {
       </div>
     </div>
   `).join('');
+}
+
+// -------------------------------------------------------------------------
+// REASONS BREAKDOWN FILTER & RENDER
+// -------------------------------------------------------------------------
+function filterReasonsPeriod(period) {
+  currentReasonPeriod = period;
+  ['1m', '3m', '1y', 'all'].forEach(p => {
+    const btn = document.getElementById(`reason-tab-${p}`);
+    if (btn) {
+      if (p === period) {
+        btn.className = 'px-2 py-1 rounded-lg bg-white text-slate-900 shadow-2xs font-bold';
+      } else {
+        btn.className = 'px-2 py-1 rounded-lg hover:text-slate-900 font-semibold';
+      }
+    }
+  });
+
+  if (!dashboardData || !dashboardData.sales_cancellations) return;
+  const sales = dashboardData.sales_cancellations;
+  let reasons = sales.reasons_breakdown || [];
+  if (sales.reasons_by_period && sales.reasons_by_period[period]) {
+    reasons = sales.reasons_by_period[period];
+  }
+  renderReasonsList(reasons);
+}
+
+function renderReasonsList(reasons) {
+  const container = document.getElementById('mem-reasons-list');
+  if (!container) return;
+  if (!reasons || reasons.length === 0) {
+    container.innerHTML = '<div class="text-center py-4 text-slate-400 text-xs">אין נתוני סיבות לתקופה זו</div>';
+    return;
+  }
+  const colorMap = {
+    'חו״ל וחופשות': 'bg-blue-500',
+    'רפואי ובריאותי': 'bg-rose-500',
+    'חוסר זמן / עומס': 'bg-amber-500',
+    'מעבר דירה ומגורים': 'bg-purple-500',
+    'שירות צבאי ומילואים': 'bg-emerald-500',
+    'שיקול כלכלי ומחיר': 'bg-cyan-500',
+    'אחר / שונות': 'bg-slate-400'
+  };
+  container.innerHTML = reasons.map(r => `
+    <div class="space-y-1">
+      <div class="flex justify-between items-center text-xs">
+        <span class="font-medium text-slate-700">${r.reason}</span>
+        <div class="flex items-center gap-1.5">
+          <span class="font-bold text-slate-900">${r.count} פניות</span>
+          <span class="text-[10px] text-slate-400">(${r.pct}%)</span>
+        </div>
+      </div>
+      <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+        <div class="${colorMap[r.reason] || 'bg-blue-500'} h-full rounded-full transition-all duration-500" style="width: ${Math.min(r.pct * 2.2, 100)}%"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// -------------------------------------------------------------------------
+// SEASONAL MEMBERSHIP TRENDS EVOLUTION (AREA CHART)
+// -------------------------------------------------------------------------
+function renderSeasonalMembershipChart(seasonal) {
+  const el = document.getElementById('mem-seasonal-chart');
+  if (!el || !seasonal || !seasonal.series || seasonal.series.length === 0) return;
+  el.innerHTML = '';
+
+  const options = {
+    series: seasonal.series,
+    chart: {
+      type: 'bar',
+      height: 270,
+      stacked: true,
+      fontFamily: 'Heebo, sans-serif',
+      toolbar: { show: false }
+    },
+    colors: ['#4f46e5', '#06b6d4', '#10b981', '#f59e0b', '#ec4899'],
+    plotOptions: {
+      bar: {
+        horizontal: false,
+        borderRadius: 4,
+        columnWidth: '45%'
+      }
+    },
+    xaxis: {
+      categories: seasonal.categories,
+      labels: { style: { colors: '#64748b', fontWeight: 600 } }
+    },
+    yaxis: {
+      title: { text: 'כמות מנויים פעילים', style: { color: '#64748b', fontSize: '11px' } },
+      labels: { style: { colors: '#64748b' } }
+    },
+    legend: {
+      position: 'top',
+      horizontalAlign: 'right',
+      fontSize: '11px',
+      labels: { colors: '#475569' }
+    },
+    fill: { opacity: 1 },
+    dataLabels: { enabled: false },
+    tooltip: { shared: true, intersect: false }
+  };
+
+  if (chartSeasonalMem) {
+    try { chartSeasonalMem.destroy(); } catch (e) {}
+  }
+  chartSeasonalMem = new ApexCharts(el, options);
+  chartSeasonalMem.render();
+}
+
+// -------------------------------------------------------------------------
+// UPCOMING EXPIRING MEMBERSHIPS COHORTS
+// -------------------------------------------------------------------------
+function renderExpiringCohorts(members) {
+  const badgeEl = document.getElementById('mem-expiring-total-badge');
+  const pillsContainer = document.getElementById('mem-expiring-month-pills');
+  const tableBody = document.getElementById('mem-expiring-table-body');
+  if (!pillsContainer || !tableBody) return;
+
+  if (badgeEl) {
+    badgeEl.innerText = `${members.length} מנויים לסיום`;
+  }
+
+  if (!members || members.length === 0) {
+    pillsContainer.innerHTML = '';
+    tableBody.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-slate-400">אין מנויים שעומדים להסתיים</td></tr>';
+    return;
+  }
+
+  // Group by month
+  const byMonth = {};
+  members.forEach(m => {
+    const mo = m.month || '2026-09';
+    if (!byMonth[mo]) byMonth[mo] = [];
+    byMonth[mo].push(m);
+  });
+
+  const sortedMonths = Object.keys(byMonth).sort();
+  if (!currentExpiringMonth || !byMonth[currentExpiringMonth]) {
+    currentExpiringMonth = sortedMonths[0];
+  }
+
+  // Render Month Pills
+  pillsContainer.innerHTML = sortedMonths.map(mo => {
+    const [yr, mNum] = mo.split('-');
+    const label = `${MONTH_NAMES[parseInt(mNum) - 1]} ${yr}`;
+    const isAct = (mo === currentExpiringMonth);
+    return `
+      <button onclick="selectExpiringCohort('${mo}')" class="px-3 py-1.5 rounded-xl transition whitespace-nowrap flex items-center gap-1.5 ${isAct ? 'bg-amber-500 text-white font-black shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+        <span>${label}</span>
+        <span class="px-1.5 py-0.2 text-[10px] rounded-full ${isAct ? 'bg-amber-700 text-amber-100' : 'bg-slate-200 text-slate-700'}">${byMonth[mo].length}</span>
+      </button>
+    `;
+  }).join('');
+
+  // Render Active Month Table Rows
+  const cohortList = byMonth[currentExpiringMonth] || [];
+  tableBody.innerHTML = cohortList.map(item => `
+    <tr class="hover:bg-slate-50/80 transition">
+      <td class="p-2.5 font-bold text-slate-900">${item.name}</td>
+      <td class="p-2.5 text-slate-700">${item.membership}</td>
+      <td class="p-2.5">
+        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${item.branch_key === 'pilates' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'}">
+          ${item.branch}
+        </span>
+      </td>
+      <td class="p-2.5 text-left font-mono font-bold text-amber-700">${item.end_date}</td>
+    </tr>
+  `).join('');
+}
+
+function selectExpiringCohort(monthKey) {
+  currentExpiringMonth = monthKey;
+  if (dashboardData && dashboardData.memberships) {
+    renderExpiringCohorts(dashboardData.memberships.expiring_memberships || []);
+  }
 }
 
 function renderNewJoinsChart(timeline) {
@@ -1485,38 +1693,6 @@ function renderNewJoinsChart(timeline) {
   }
   chartMemJoins = new ApexCharts(el, options);
   chartMemJoins.render();
-}
-
-function renderReasonsList(reasons) {
-  const container = document.getElementById('mem-reasons-list');
-  if (!container) return;
-  if (!reasons || reasons.length === 0) {
-    container.innerHTML = '<div class="text-center py-4 text-slate-400 text-xs">אין נתוני סיבות</div>';
-    return;
-  }
-  const colorMap = {
-    'חו״ל וחופשות': 'bg-blue-500',
-    'רפואי ובריאותי': 'bg-rose-500',
-    'חוסר זמן / עומס': 'bg-amber-500',
-    'מעבר דירה ומגורים': 'bg-purple-500',
-    'שירות צבאי ומילואים': 'bg-emerald-500',
-    'שיקול כלכלי ומחיר': 'bg-cyan-500',
-    'אחר / שונות': 'bg-slate-400'
-  };
-  container.innerHTML = reasons.map(r => `
-    <div class="space-y-1">
-      <div class="flex justify-between items-center text-xs">
-        <span class="font-medium text-slate-700">${r.reason}</span>
-        <div class="flex items-center gap-1.5">
-          <span class="font-bold text-slate-900">${r.count} פניות</span>
-          <span class="text-[10px] text-slate-400">(${r.pct}%)</span>
-        </div>
-      </div>
-      <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-        <div class="${colorMap[r.reason] || 'bg-blue-500'} h-full rounded-full transition-all duration-500" style="width: ${Math.min(r.pct * 2.2, 100)}%"></div>
-      </div>
-    </div>
-  `).join('');
 }
 
 function renderSalesClosersList(closers, monthName) {
