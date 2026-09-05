@@ -9,6 +9,23 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 2. **חיוב יזם & דוח מרכז לאישור מנהל (Trainer & Staff Billing):** Computes monthly charges for the property owner/developer across shifts, reception, personal training, studio classes, management fees, and sales commissions.
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
+## 2026-09-05 — High-Contrast Club Switcher & Visual Filter Separation
+
+- **What changed:**
+  1. **Fixed Active/Inactive CSS State Toggle (`dashboard/public/app.js`):**
+     - In `setClub(club)`, replaced mismatched class removal (`bg-slate-900` vs `bg-zinc-900`) with a clean reset that clears inactive styles and applies uniform high-contrast styling (`bg-zinc-950 text-white shadow-md ring-1 ring-black/10`).
+     - Added colored branch indicator dots (Emerald for Combined, Blue for Gym, Purple for Pilates) inside both the switcher pills and the active overview badge.
+  2. **Active Filter Header Badge (`dashboard/public/index.html`):**
+     - Added `#active-club-strip-badge` with `#active-club-strip-text` directly above the 4 main financial KPI cards, giving immediate feedback on whether figures represent Combined, Gym, or Pilates.
+  3. **Contextual Banner Subtitles:**
+     - Updated `renderMemberships()` in `app.js` so the membership snapshot subtitle dynamically reads "מנויי חדר כושר בלבד", "מנויי פילאטיס מכשירים בלבד", or "מועדון • פילאטיס" depending on the active club filter.
+  4. **Browser Cache Busting:**
+     - Updated script version tag to `app.js?v=3.7`.
+- **Why (what Idan asked for, in his words):**
+  - *"החלק הזה שבו בוחרים האם זה כל המועדון, חדר כושר או פילאטיס קצת לא נלחץ כמו שצריך, כשלוחצים על חדר כושר עדיין מופיע כל המועדון. תעשה שתהיה הפרדה יותר ברורה בזמן הלחיצה."*
+- **What it touches:**
+  - `dashboard/public/index.html`, `dashboard/public/app.js`, `docs/BUILDER_LOG.md`.
+
 ## 2026-09-04 — Direct Arbox API & Google Drive CRM Integration for Memberships, Freezes & Cancellations
 
 - **What changed:**

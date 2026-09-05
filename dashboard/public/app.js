@@ -84,15 +84,52 @@ function switchView(viewName) {
 
 function setClub(club) {
   currentClub = club;
+
+  // Club metadata configuration for distinct badges and labels
+  const CLUB_CONFIG = {
+    all: {
+      label: 'כל המועדון (מאוחד)',
+      dotColor: 'bg-emerald-400',
+      badgeBg: 'bg-zinc-950 text-white border-zinc-800'
+    },
+    gym: {
+      label: 'חדר כושר',
+      dotColor: 'bg-blue-400',
+      badgeBg: 'bg-blue-950 text-blue-100 border-blue-800'
+    },
+    pilates: {
+      label: 'פילאטיס מכשירים',
+      dotColor: 'bg-purple-400',
+      badgeBg: 'bg-purple-950 text-purple-100 border-purple-800'
+    }
+  };
+
+  // Reset all buttons to inactive state
   document.querySelectorAll('.club-tab-btn').forEach(btn => {
-    btn.classList.remove('bg-slate-900', 'text-white', 'font-bold', 'shadow-xs');
-    btn.classList.add('text-slate-600', 'hover:bg-slate-200');
+    btn.className = 'club-tab-btn px-4 py-1.5 rounded-lg transition-all text-xs font-semibold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/70 flex items-center gap-1.5';
+    const dot = btn.querySelector('span:first-child');
+    if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-transparent';
   });
 
+  // Activate chosen button
   const activeBtn = document.getElementById(`club-${club}`);
   if (activeBtn) {
-    activeBtn.classList.remove('text-slate-600', 'hover:bg-slate-200');
-    activeBtn.classList.add('bg-slate-900', 'text-white', 'font-bold', 'shadow-xs');
+    activeBtn.className = 'club-tab-btn px-4 py-1.5 rounded-lg transition-all text-xs font-black bg-zinc-950 text-white shadow-md ring-1 ring-black/10 flex items-center gap-1.5';
+    const dot = activeBtn.querySelector('span:first-child');
+    if (dot) {
+      const cfg = CLUB_CONFIG[club] || CLUB_CONFIG.all;
+      dot.className = `w-1.5 h-1.5 rounded-full ${cfg.dotColor}`;
+    }
+  }
+
+  // Update strip badge
+  const cfg = CLUB_CONFIG[club] || CLUB_CONFIG.all;
+  const stripBadge = document.getElementById('active-club-strip-badge');
+  const stripText = document.getElementById('active-club-strip-text');
+  if (stripText) stripText.innerText = cfg.label;
+  if (stripBadge) {
+    const dot = stripBadge.querySelector('span:first-child');
+    if (dot) dot.className = `w-1.5 h-1.5 rounded-full ${cfg.dotColor}`;
   }
 
   fetchDashboardData();
@@ -1078,22 +1115,47 @@ function renderMemberships(data) {
 
   // Update Home View Banner Elements (View 1)
   const homeBadge = document.getElementById('home-mem-snapshot-badge');
-  if (homeBadge) homeBadge.innerText = `Snapshot ${mem.active_tab || ''}`;
+  const clubLabelText = (currentClub === 'gym') ? 'חדר כושר' : ((currentClub === 'pilates') ? 'פילאטיס' : 'מאוחד');
+  if (homeBadge) homeBadge.innerText = `Snapshot ${mem.active_tab || ''} • ${clubLabelText}`;
 
   const homeActive = document.getElementById('home-mem-active');
   const homeActiveSub = document.getElementById('home-mem-active-sub');
   if (homeActive) homeActive.innerText = curStats.active.toLocaleString('he-IL');
-  if (homeActiveSub) homeActiveSub.innerText = `${gymStats.active} מועדון • ${pilStats.active} פילאטיס`;
+  if (homeActiveSub) {
+    if (currentClub === 'gym') {
+      homeActiveSub.innerText = `${gymStats.active} מנויי חדר כושר בלבד`;
+    } else if (currentClub === 'pilates') {
+      homeActiveSub.innerText = `${pilStats.active} מנויי פילאטיס מכשירים בלבד`;
+    } else {
+      homeActiveSub.innerText = `${gymStats.active} מועדון • ${pilStats.active} פילאטיס`;
+    }
+  }
 
   const homeFrozen = document.getElementById('home-mem-frozen');
   const homeFrozenSub = document.getElementById('home-mem-frozen-sub');
   if (homeFrozen) homeFrozen.innerText = curStats.frozen.toLocaleString('he-IL');
-  if (homeFrozenSub) homeFrozenSub.innerText = `${gymStats.frozen} מועדון • ${pilStats.frozen} פילאטיס`;
+  if (homeFrozenSub) {
+    if (currentClub === 'gym') {
+      homeFrozenSub.innerText = `${gymStats.frozen} מנויי חדר כושר בהקפאה`;
+    } else if (currentClub === 'pilates') {
+      homeFrozenSub.innerText = `${pilStats.frozen} מנויי פילאטיס בהקפאה`;
+    } else {
+      homeFrozenSub.innerText = `${gymStats.frozen} מועדון • ${pilStats.frozen} פילאטיס`;
+    }
+  }
 
   const homeCancels = document.getElementById('home-mem-cancels');
   const homeCancelsSub = document.getElementById('home-mem-cancels-sub');
   if (homeCancels) homeCancels.innerText = curStats.future_cancellations.toLocaleString('he-IL');
-  if (homeCancelsSub) homeCancelsSub.innerText = `${gymStats.future_cancellations} מועדון • ${pilStats.future_cancellations} פילאטיס`;
+  if (homeCancelsSub) {
+    if (currentClub === 'gym') {
+      homeCancelsSub.innerText = `${gymStats.future_cancellations} ביטולים בחדר כושר`;
+    } else if (currentClub === 'pilates') {
+      homeCancelsSub.innerText = `${pilStats.future_cancellations} ביטולים בפילאטיס`;
+    } else {
+      homeCancelsSub.innerText = `${gymStats.future_cancellations} מועדון • ${pilStats.future_cancellations} פילאטיס`;
+    }
+  }
 
   const homeRefund = document.getElementById('home-mem-refund');
   if (homeRefund && sales && sales.summary) {
