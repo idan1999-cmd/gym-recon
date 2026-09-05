@@ -9,6 +9,26 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 2. **חיוב יזם & דוח מרכז לאישור מנהל (Trainer & Staff Billing):** Computes monthly charges for the property owner/developer across shifts, reception, personal training, studio classes, management fees, and sales commissions.
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
+## 2026-09-05 — Facility Utilities & Maintenance Multi-Trend Tracking in Executive View
+
+- **What changed:**
+  1. **Backend 12-Month Trends Pipeline (`dashboard/backend/data_service.py`):**
+     - Extended `get_annual_trends()` to compute 12-month trend arrays for facility operational categories across both branches:
+       - **חשמל ומז״א (`22609`):** Full 12-month progression (showing the sharp summer spike from ~₪3.5k in winter to ~₪18.3k in July).
+       - **מים (`22610`):** Monthly consumption trajectory across the club.
+       - **הסכם שירות מיזוג אוויר (`22102`, `22607`):** Quarterly maintenance fee installments.
+       - **ציוד, אחזקה ותקלות (`22618`, `22627`):** Technogym equipment, pilates beds, and facility fix expenditures.
+       - **שיווק ופרסום (`22506`), ניקיון וחומרים (`22614`, `22613`), ארנונה (`22611`).**
+  2. **Frontend Multi-Chart Visualizations (`dashboard/public/index.html` & `app.js`):**
+     - Added **Chart 4: "מעקב הוצאות תפעול ומבנה: חשמל, מים, מיזוג, אחזקה ותקלות"** — ApexCharts multi-series column chart with color-coded legend tags (Amber for Electricity, Cyan for Water, Blue for HVAC, Rose for Maintenance/Equipment).
+     - Added **Chart 5: "מגמת שיווק, ניקיון וארנונה לאורך השנה"** — Smooth multi-line chart for marketing and operational overhead.
+     - Wired both charts to re-render seamlessly when switching between Combined Club, Main Gym, and Pilates Studio.
+     - Bumped script cache tag to `app.js?v=3.8`.
+- **Why (what Idan asked for, in his words):**
+  - *"במגמות תקציב מול ביצוע, אני רוצה שנוסיף עוד כמה מדדים למעקב. אני רוצה שתר-אה לי גרף שמראה לי שינויים בהוצאות המשתנות שלי בהתאם לשנה, דברים כמו חשמל, מים, מיזוג אוויר, תקלות ואחזקה, שיופיע בתוך איזשהו גרף אחד מסודר, ככה יהיה לנו מעקב. ואם אתה רואה לנכון להוסיף עוד דברים שיהיו רלוונטיים מתוך התקציב מול תזרים, אז תשאל אותי כאן ובוא נוסיף."*
+- **What it touches:**
+  - `dashboard/backend/data_service.py`, `dashboard/public/index.html`, `dashboard/public/app.js`, `docs/BUILDER_LOG.md`.
+
 ## 2026-09-05 — High-Contrast Club Switcher & Visual Filter Separation
 
 - **What changed:**

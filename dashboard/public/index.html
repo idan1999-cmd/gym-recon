@@ -659,6 +659,59 @@
 
       </div>
 
+      <!-- Chart 4: Facility Utilities & Operational Maintenance Trend (חשמל, מים, מיזוג, אחזקה ותקלות) -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-100 pb-3">
+          <div>
+            <h3 class="text-sm font-black text-zinc-900 flex items-center gap-2">
+              <i data-lucide="zap" class="w-4 h-4 text-amber-500"></i>
+              <span>מעקב הוצאות תפעול ומבנה: חשמל, מים, מיזוג, אחזקה ותקלות</span>
+            </h3>
+            <p class="text-xs text-zinc-500">מעקב רב-חודשי אחר שינויים ותנודות בהוצאות המשתנות של המועדון</p>
+          </div>
+          <div class="flex items-center gap-2 text-[11px] font-bold text-zinc-600">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200">
+              <span class="w-2 h-2 rounded-full bg-amber-500"></span> חשמל ומז״א
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-50 text-cyan-800 border border-cyan-200">
+              <span class="w-2 h-2 rounded-full bg-cyan-500"></span> מים
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-800 border border-blue-200">
+              <span class="w-2 h-2 rounded-full bg-blue-500"></span> שירות מיזוג
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 text-rose-800 border border-rose-200">
+              <span class="w-2 h-2 rounded-full bg-rose-500"></span> אחזקה, ציוד ותקלות
+            </span>
+          </div>
+        </div>
+        <div id="utilities-trend-chart" class="w-full h-72"></div>
+      </div>
+
+      <!-- Chart 5: Operating Expenses & Overhead Trend (שיווק, ניקיון, ארנונה) -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-100 pb-3">
+          <div>
+            <h3 class="text-sm font-black text-zinc-900 flex items-center gap-2">
+              <i data-lucide="building" class="w-4 h-4 text-indigo-600"></i>
+              <span>מגמת שיווק, ניקיון וארנונה לאורך השנה</span>
+            </h3>
+            <p class="text-xs text-zinc-500">הוצאות תפעול נוספות מתוך ספר התקציב והכרטסת</p>
+          </div>
+          <div class="flex items-center gap-2 text-[11px] font-bold text-zinc-600">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-800 border border-indigo-200">
+              <span class="w-2 h-2 rounded-full bg-indigo-600"></span> שיווק ופרסום
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">
+              <span class="w-2 h-2 rounded-full bg-emerald-600"></span> ניקיון וחומרים
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-50 text-violet-800 border border-violet-200">
+              <span class="w-2 h-2 rounded-full bg-violet-600"></span> ארנונה
+            </span>
+          </div>
+        </div>
+        <div id="overhead-trend-chart" class="w-full h-64"></div>
+      </div>
+
     </div>
 
     <!-- ========================================================================= -->
@@ -1007,6 +1060,6 @@
     <span id="toast-message">הנתונים סונכרנו בהצלחה!</span>
   </div>
 
-  <script src="app.js?v=3.7"></script>
+  <script src="app.js?v=3.8"></script>
 </body>
 </html>

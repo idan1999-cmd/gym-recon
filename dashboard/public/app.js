@@ -14,6 +14,8 @@ let activeModalItem = null;
 let chartMain = null;
 let chartTrainer = null;
 let chartPT = null;
+let chartUtilities = null;
+let chartOverhead = null;
 let chartMemDist = null;
 let chartMemTimeline = null;
 let chartMemJoins = null;
@@ -703,6 +705,105 @@ function renderAnnualCharts(trends) {
     ptEl.innerHTML = '';
     chartPT = new ApexCharts(ptEl, ptOpts);
     chartPT.render();
+  }
+
+  // Chart 4: Utilities & Facility Maintenance (חשמל, מים, מיזוג, אחזקה ותקלות)
+  const utilEl = document.querySelector("#utilities-trend-chart");
+  if (utilEl && trends.utilities) {
+    const u = trends.utilities;
+    const utilOpts = {
+      series: [
+        { name: 'חשמל ומז״א', data: u.electricity },
+        { name: 'מים', data: u.water },
+        { name: 'הסכם שירות מיזוג', data: u.hvac },
+        { name: 'אחזקה, ציוד ותקלות', data: u.maintenance }
+      ],
+      chart: {
+        type: 'bar',
+        height: 280,
+        stacked: false,
+        fontFamily: 'Heebo, sans-serif',
+        toolbar: { show: false }
+      },
+      colors: ['#f59e0b', '#06b6d4', '#3b82f6', '#f43f5e'],
+      plotOptions: {
+        bar: {
+          horizontal: false,
+          columnWidth: '60%',
+          borderRadius: 4
+        }
+      },
+      dataLabels: { enabled: false },
+      stroke: { show: true, width: 2, colors: ['transparent'] },
+      xaxis: {
+        categories: trends.months_labels,
+        labels: { style: { fontWeight: 600 } }
+      },
+      yaxis: {
+        labels: { formatter: (val) => '₪' + (val / 1000).toFixed(0) + 'k' }
+      },
+      legend: {
+        position: 'top',
+        horizontalAlign: 'right',
+        fontSize: '12px',
+        fontWeight: 600
+      },
+      tooltip: {
+        y: { formatter: (val) => formatNIS(val) }
+      }
+    };
+
+    if (chartUtilities) { try { chartUtilities.destroy(); } catch (e) {} }
+    utilEl.innerHTML = '';
+    chartUtilities = new ApexCharts(utilEl, utilOpts);
+    chartUtilities.render();
+  }
+
+  // Chart 5: Operational Overhead (שיווק ופרסום, ניקיון, ארנונה)
+  const overheadEl = document.querySelector("#overhead-trend-chart");
+  if (overheadEl && trends.utilities) {
+    const u = trends.utilities;
+    const overheadOpts = {
+      series: [
+        { name: 'שיווק ופרסום', data: u.marketing },
+        { name: 'ניקיון וחומרים', data: u.cleaning },
+        { name: 'ארנונה', data: u.arnona }
+      ],
+      chart: {
+        type: 'line',
+        height: 250,
+        fontFamily: 'Heebo, sans-serif',
+        toolbar: { show: false }
+      },
+      colors: ['#4f46e5', '#059669', '#7c3aed'],
+      stroke: {
+        width: [3, 3, 2.5],
+        curve: 'smooth',
+        dashArray: [0, 0, 4]
+      },
+      dataLabels: { enabled: false },
+      xaxis: {
+        categories: trends.months_labels,
+        labels: { style: { fontWeight: 600 } }
+      },
+      yaxis: {
+        labels: { formatter: (val) => '₪' + (val / 1000).toFixed(0) + 'k' }
+      },
+      legend: {
+        position: 'top',
+        horizontalAlign: 'right',
+        fontSize: '12px',
+        fontWeight: 600
+      },
+      tooltip: {
+        y: { formatter: (val) => formatNIS(val) }
+      }
+    };
+
+    if (chartOverhead) { try { chartOverhead.destroy(); } catch (e) {} }
+    overheadEl.innerHTML = '';
+    chartOverhead = new ApexCharts(overheadEl, overheadOpts);
+    chartOverhead.render();
   }
 }
 

@@ -345,6 +345,15 @@ class DashboardDataService:
         pt_rev_trend = []
         pt_cost_trend = []
 
+        # Facility & operational trends requested by Idan
+        elec_trend = []
+        water_trend = []
+        hvac_trend = []
+        maint_trend = []
+        clean_trend = []
+        marketing_trend = []
+        arnona_trend = []
+
         for m in range(1, 13):
             r_act = sum(x["months"].get(m, {}).get("actual", 0) for x in incomes)
             r_bud = sum(x["months"].get(m, {}).get("budget", 0) for x in incomes)
@@ -366,13 +375,51 @@ class DashboardDataService:
             pt_rev_trend.append(round(pt_r))
             pt_cost_trend.append(round(pt_c))
 
+            # Facility utilities & maintenance tracking:
+            # 1. Electricity (חשמל ומז"א - 22609)
+            e_val = sum(x["months"].get(m, {}).get("actual", 0) for x in var_exp if str(x.get("code")).strip() == "22609")
+            elec_trend.append(round(e_val))
+
+            # 2. Water (מים - 22610)
+            w_val = sum(x["months"].get(m, {}).get("actual", 0) for x in var_exp if str(x.get("code")).strip() == "22610")
+            water_trend.append(round(w_val))
+
+            # 3. HVAC / Air conditioning service (הסכם שירות מיזוג אוויר 22102, אחזקת מז"א 22607)
+            h_val = sum(x["months"].get(m, {}).get("actual", 0) for x in var_exp if str(x.get("code")).strip() in ["22102", "22607"])
+            hvac_trend.append(round(h_val))
+
+            # 4. Maintenance, repairs & equipment (ציוד ואחזקה מכשירי חדר כושר 22618, אחזקת מכשירים פילאטיס 22618, חומרי אחזקה 22627)
+            m_val = sum(x["months"].get(m, {}).get("actual", 0) for x in var_exp if str(x.get("code")).strip() in ["22618", "22627"])
+            maint_trend.append(round(m_val))
+
+            # 5. Cleaning & hygiene (ניקיון וחומרים 22614, 22613)
+            c_val = sum(x["months"].get(m, {}).get("actual", 0) for x in var_exp if str(x.get("code")).strip() in ["22614", "22613"])
+            clean_trend.append(round(c_val))
+
+            # 6. Marketing & Advertising (שיווק ופרסום 22506)
+            mkt_val = sum(x["months"].get(m, {}).get("actual", 0) for x in var_exp if str(x.get("code")).strip() == "22506")
+            marketing_trend.append(round(mkt_val))
+
+            # 7. Arnona / Municipal Tax (ארנונה 22611)
+            arn_val = sum(x["months"].get(m, {}).get("actual", 0) for x in var_exp if str(x.get("code")).strip() == "22611")
+            arnona_trend.append(round(arn_val))
+
         return {
             "months_labels": months_labels,
             "revenue": {"actual": monthly_rev_actual, "budget": monthly_rev_budget},
             "expenses": {"actual": monthly_exp_actual, "budget": monthly_exp_budget},
             "profit": monthly_profit,
             "trainers": trainer_trend,
-            "pt": {"revenue": pt_rev_trend, "cost": pt_cost_trend}
+            "pt": {"revenue": pt_rev_trend, "cost": pt_cost_trend},
+            "utilities": {
+                "electricity": elec_trend,
+                "water": water_trend,
+                "hvac": hvac_trend,
+                "maintenance": maint_trend,
+                "cleaning": clean_trend,
+                "marketing": marketing_trend,
+                "arnona": arnona_trend
+            }
         }
 
     def find_input_file(self, patterns: str | list[str]) -> Path | None:
