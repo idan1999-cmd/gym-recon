@@ -807,15 +807,15 @@
       <!-- Advanced Intelligence Section: Seasonal Membership Evolution & Expiring Cohorts -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         
-        <!-- Left: Seasonal Membership Evolution Chart & Quarterly Breakdown -->
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+        <!-- Left: Seasonal Membership Evolution & Quarterly Breakdown (Q1–Q4) -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3.5">
           <div class="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
               <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <i data-lucide="bar-chart-3" class="w-4 h-4 text-indigo-600"></i>
-                פילוח מגמות מנויים מובילים לפי רבעונים
+                <i data-lucide="calendar-range" class="w-4 h-4 text-indigo-600"></i>
+                פילוח מגמות וכמויות מנויים לפי רבעונים (Q1–Q4)
               </h3>
-              <p class="text-[11px] text-slate-400 mt-0.5">מעקב התפתחות כמויות מנויים בפועל: שני רבעונים אחורה, רבעון קודם, נוכחי וצפי קדימה</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">מעקב התפתחות כמויות מנויים פעילים לפי סוג מנוי, מגמות צמיחה ותחזיות קדימה</p>
             </div>
             <div class="flex items-center gap-2">
               <span class="px-2.5 py-1 text-[11px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg flex items-center gap-1">
@@ -825,47 +825,49 @@
             </div>
           </div>
 
-          <!-- ApexChart Bar -->
-          <div id="mem-seasonal-chart" class="w-full h-72"></div>
+          <!-- Year Filter Tabs & Controls -->
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-1 p-1 bg-slate-100/90 rounded-xl border border-slate-200/70 text-xs font-bold" id="quarterly-year-selector">
+              <button onclick="selectQuarterlyYear('2026')" data-year="2026" class="quarterly-year-btn px-3 py-1 rounded-lg transition-all bg-white text-slate-900 shadow-xs border border-slate-200">
+                2026 (נוכחית 🎯)
+              </button>
+              <button onclick="selectQuarterlyYear('2025')" data-year="2025" class="quarterly-year-btn px-3 py-1 rounded-lg transition-all text-slate-500 hover:text-slate-900">
+                2025 (היסטוריה)
+              </button>
+              <button onclick="selectQuarterlyYear('2027')" data-year="2027" class="quarterly-year-btn px-3 py-1 rounded-lg transition-all text-slate-500 hover:text-slate-900">
+                2027 (צפי 🔮)
+              </button>
+              <button onclick="selectQuarterlyYear('compare')" data-year="compare" class="quarterly-year-btn px-3 py-1 rounded-lg transition-all text-slate-500 hover:text-slate-900">
+                שנה פר שנה (YoY)
+              </button>
+            </div>
+            <span id="quarterly-active-note" class="text-[10.5px] text-slate-400 font-medium">
+              *מבוסס נתוני ביצוע מאומתים וצפי חגים/עונתיות
+            </span>
+          </div>
 
           <!-- Executive Quarterly Breakdown Table -->
-          <div class="border-t border-slate-100 pt-3">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                <i data-lucide="layers" class="w-3.5 h-3.5 text-indigo-500"></i>
-                טבלת כמויות מנויים ומגמת שינוי (Quarterly Evolution)
-              </span>
-              <span class="text-[10px] text-slate-400 font-medium">*מבוסס נתוני ביצוע מאומתים וצפי חגים/עונתיות</span>
-            </div>
-            <div class="overflow-x-auto custom-scrollbar">
-              <table class="w-full text-[11px] text-right border-collapse">
-                <thead>
-                  <tr class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
-                    <th class="py-1.5 px-2.5 rounded-r-lg">סוג מנוי מוביל</th>
-                    <th class="py-1.5 px-2 text-center">Q1 (לפני 2)</th>
-                    <th class="py-1.5 px-2 text-center">Q2 (קודם)</th>
-                    <th class="py-1.5 px-2 text-center bg-indigo-50/50 text-indigo-900 font-black">Q3 (נוכחי)</th>
-                    <th class="py-1.5 px-2 text-center bg-purple-50/50 text-purple-900 font-black">Q4 (צפי 🔮)</th>
-                    <th class="py-1.5 px-2 text-center">שינוי</th>
-                    <th class="py-1.5 px-2 rounded-l-lg">תובנה ניהולית</th>
-                  </tr>
-                </thead>
-                <tbody id="mem-quarterly-table-body" class="divide-y divide-slate-100 font-medium text-slate-700">
-                  <!-- Dynamically populated -->
-                </tbody>
-                <tfoot>
-                  <tr class="bg-slate-100/70 font-black text-slate-900 border-t-2 border-slate-300">
-                    <td class="py-2 px-2.5 rounded-r-lg">סה״כ מנויים במועדון</td>
-                    <td class="py-2 px-2 text-center">788</td>
-                    <td class="py-2 px-2 text-center">796</td>
-                    <td class="py-2 px-2 text-center bg-indigo-100/50 text-indigo-900 font-black">852</td>
-                    <td class="py-2 px-2 text-center bg-purple-100/50 text-purple-900 font-black">875</td>
-                    <td class="py-2 px-2 text-center text-emerald-600">+11.0%</td>
-                    <td class="py-2 px-2 rounded-l-lg text-[10px] text-slate-500 font-normal">צמיחה שנתית עקבית במועדון ובפילאטיס</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+          <div class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-[11px] text-right border-collapse">
+              <thead id="mem-quarterly-table-header">
+                <tr class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+                  <th class="py-2 px-2.5 rounded-r-lg">סוג מנוי מוביל</th>
+                  <th class="py-2 px-2 text-center">Q1 (ינו-מרץ)</th>
+                  <th class="py-2 px-2 text-center">Q2 (אפר-יוני)</th>
+                  <th class="py-2 px-2 text-center bg-indigo-50/60 text-indigo-900 font-black">Q3 (יול-ספט)</th>
+                  <th class="py-2 px-2 text-center bg-purple-50/60 text-purple-900 font-black">Q4 (אוק-דצמ)</th>
+                  <th class="py-2 px-2 text-center">ממוצע שנתי</th>
+                  <th class="py-2 px-2 text-center">קצב שינוי</th>
+                  <th class="py-2 px-2 rounded-l-lg">תובנה ניהולית ומגמה</th>
+                </tr>
+              </thead>
+              <tbody id="mem-quarterly-table-body" class="divide-y divide-slate-100 font-medium text-slate-700">
+                <!-- Dynamically populated -->
+              </tbody>
+              <tfoot id="mem-quarterly-table-footer">
+                <!-- Dynamically populated -->
+              </tfoot>
+            </table>
           </div>
         </div>
 
@@ -1594,6 +1596,6 @@
     <span id="toast-message">הנתונים סונכרנו בהצלחה!</span>
   </div>
 
-  <script src="app.js?v=5.0"></script>
+  <script src="app.js?v=5.1"></script>
 </body>
 </html>

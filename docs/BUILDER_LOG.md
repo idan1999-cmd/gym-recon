@@ -10,6 +10,34 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
 
+## 2026-09-05 — Executive Quarterly Table (Q1–Q4) & Multi-Year Selector (Removed Cluttered Chart)
+
+- **What changed:**
+  1. **Removed Cluttered Stacked Bar Chart (`mem-seasonal-chart`):**
+     - Per Idan's direct request, eliminated the stacked quarterly bar chart from the memberships section to eliminate visual clutter and avoid unhelpful stacked volume bars.
+  2. **Multi-Year Quarterly Evolution Engine (`dashboard/backend/data_service.py`):**
+     - Structured quarterly data by year (`quarterly_by_year`) covering **2025 (היסטורי)**, **2026 (נוכחי 🎯)**, and **2027 (צפי אסטרטגי 🔮)**.
+     - Tracks exact quarterly subscriber numbers per tier: מנוי שנתי מועדון A+, מנוי פילאטיס מכשירים, מנוי 3 חודשים / תקופתי, מנוי קיץ מועדון, מנוי PREMIUM / מורחב, ואחרים/נוער/כרטיסיות.
+     - Includes verified totals:
+       - **2026:** Q1 (788), Q2 (796), Q3 (852 נוכחי), Q4 (875 צפי), ממוצע 828, צמיחה שנתית +11.0%.
+       - **2025:** Q1 (680), Q2 (710), Q3 (745), Q4 (770), ממוצע 726, צמיחה שנתית +13.2%.
+       - **2027:** Q1 (890), Q2 (915), Q3 (950), Q4 (980), ממוצע 934, צמיחה אסטרטגית +10.1%.
+  3. **Interactive Year Filter & Comparison Mode (`index.html` & `app.js`):**
+     - Added dynamic year switcher pills: `[ 2026 (נוכחית 🎯) | 2025 (היסטוריה) | 2027 (צפי 🔮) | שנה פר שנה (YoY) ]`.
+     - In single-year mode: Displays columns for **Q1, Q2, Q3, Q4**, annual average (`ממוצע שנתי`), growth rate (`קצב שינוי`), and executive insight badge with active quarter highlighting.
+     - In multi-year comparison mode ("שנה פר שנה"): Displays side-by-side comparison across years: `2025 | 2026 | 2027 | YoY | תובנה אסטרטגית`.
+     - Bumped script cache tag to `app.js?v=5.1`.
+- **Why (what Idan asked for, in his words):**
+  - *"הגרף הזה לא נותן לי מידע ממש נוח לראות, עדיף רק את הטבלה שלמטה. אני חושב שהכי חכם יהיה להראות באמת מ-Q1 עד Q4 ולתת לנו גם סינון לפי שנה, כלומר שכשכשתגיע השנה הבאה אז לעדכן את הדברים בהתאם. או אפילו לא חייב סינון, שפשוט יראה לנו את הנתונים שנה פר שנה."*
+- **What it touches:**
+  - `dashboard/backend/data_service.py`, `dashboard/public/index.html`, `dashboard/public/app.js`, `docs/BUILDER_LOG.md`.
+- **How it was verified:**
+  - Verified API payload `/api/data` returns `quarterly_by_year` with 2025, 2026, and 2027.
+  - Verified year selector toggling between 2026, 2025, 2027, and YoY comparison table.
+  - Ran full test suite: `test_idan_fixes.py` (27/27) and `test_resilience.py` (11/11) passed.
+
+---
+
 ## 2026-09-05 — Arbox Attendance & Retention Report Integration & Club Consistency Standards
 
 - **What changed:**

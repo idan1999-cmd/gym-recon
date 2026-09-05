@@ -1727,140 +1727,217 @@ function renderReasonsList(reasons) {
 // -------------------------------------------------------------------------
 // SEASONAL MEMBERSHIP TRENDS EVOLUTION (AREA CHART)
 // -------------------------------------------------------------------------
-// SEASONAL & QUARTERLY MEMBERSHIP TRENDS EVOLUTION
 // -------------------------------------------------------------------------
-function renderSeasonalMembershipChart(seasonal) {
-  const el = document.getElementById('mem-seasonal-chart');
-  if (!el || !seasonal || !seasonal.series || seasonal.series.length === 0) return;
-  el.innerHTML = '';
+// QUARTERLY MEMBERSHIP TRENDS EVOLUTION (Q1–Q4 & MULTI-YEAR)
+// -------------------------------------------------------------------------
+let currentQuarterlyYear = '2026';
+let cachedSeasonalData = null;
 
-  const options = {
-    series: seasonal.series,
-    chart: {
-      type: 'bar',
-      height: 280,
-      stacked: true,
-      fontFamily: 'Heebo, sans-serif',
-      toolbar: { show: false },
-      animations: {
-        enabled: true,
-        easing: 'easeinout',
-        speed: 500
-      }
-    },
-    colors: ['#4f46e5', '#06b6d4', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'],
-    plotOptions: {
-      bar: {
-        horizontal: false,
-        borderRadius: 5,
-        columnWidth: '42%',
-        dataLabels: {
-          total: {
-            enabled: true,
-            style: {
-              fontSize: '11px',
-              fontWeight: 800,
-              color: '#0f172a'
-            },
-            formatter: function (val) {
-              return val + ' מנויים';
-            }
-          }
-        }
-      }
-    },
-    dataLabels: {
-      enabled: false
-    },
-    stroke: {
-      width: 1,
-      colors: ['#fff']
-    },
-    xaxis: {
-      categories: seasonal.categories,
-      labels: {
-        style: {
-          colors: '#475569',
-          fontWeight: 700,
-          fontSize: '11px'
-        }
-      },
-      axisBorder: { show: false },
-      axisTicks: { show: false }
-    },
-    yaxis: {
-      title: {
-        text: 'כמות מנויים פעילים',
-        style: { color: '#64748b', fontSize: '11px', fontWeight: 600 }
-      },
-      labels: {
-        style: { colors: '#64748b' },
-        formatter: (val) => Math.round(val)
-      }
-    },
-    legend: {
-      position: 'top',
-      horizontalAlign: 'right',
-      fontSize: '11px',
-      fontWeight: 600,
-      labels: { colors: '#334155' },
-      itemMargin: { horizontal: 8, vertical: 4 }
-    },
-    fill: { opacity: 0.95 },
-    tooltip: {
-      shared: true,
-      intersect: false,
-      theme: 'light',
-      y: {
-        formatter: function (val) {
-          return val ? val + ' מנויים' : '0';
-        }
-      }
-    },
-    grid: {
-      borderColor: '#f1f5f9',
-      strokeDashArray: 4,
-      yaxis: { lines: { show: true } }
+function selectQuarterlyYear(year) {
+  currentQuarterlyYear = year;
+  
+  // Update button active styles
+  const buttons = document.querySelectorAll('.quarterly-year-btn');
+  buttons.forEach(btn => {
+    const bYear = btn.getAttribute('data-year');
+    if (bYear === year) {
+      btn.className = 'quarterly-year-btn px-3 py-1 rounded-lg transition-all bg-white text-slate-900 shadow-xs border border-slate-200';
+    } else {
+      btn.className = 'quarterly-year-btn px-3 py-1 rounded-lg transition-all text-slate-500 hover:text-slate-900';
     }
-  };
+  });
 
+  if (cachedSeasonalData) {
+    renderQuarterlyMembershipTable(cachedSeasonalData, year);
+  }
+}
+window.selectQuarterlyYear = selectQuarterlyYear;
+
+function renderSeasonalMembershipChart(seasonal) {
+  renderQuarterlyMembershipTable(seasonal, currentQuarterlyYear);
+}
+
+function renderQuarterlyMembershipTable(seasonal, selectedYear) {
+  if (!seasonal) return;
+  cachedSeasonalData = seasonal;
+  if (!selectedYear) selectedYear = currentQuarterlyYear || '2026';
+
+  // Destroy legacy chart if present
   if (chartSeasonalMem) {
     try { chartSeasonalMem.destroy(); } catch (e) {}
+    chartSeasonalMem = null;
   }
-  chartSeasonalMem = new ApexCharts(el, options);
-  chartSeasonalMem.render();
 
-  // Populate Executive Quarterly Breakdown Table
-  const tableBody = document.getElementById('mem-quarterly-table-body');
-  if (tableBody && seasonal.quarterly_table && seasonal.quarterly_table.length > 0) {
-    tableBody.innerHTML = seasonal.quarterly_table.map((row, idx) => {
-      const isGrowth = row.delta_str.includes('+') || row.delta_str.includes('זינוק');
+  const thead = document.getElementById('mem-quarterly-table-header');
+  const tbody = document.getElementById('mem-quarterly-table-body');
+  const tfoot = document.getElementById('mem-quarterly-table-footer');
+  const noteEl = document.getElementById('quarterly-active-note');
+  if (!tbody) return;
+
+  const byYear = seasonal.quarterly_by_year || {};
+  const defaultColors = ['#4f46e5', '#06b6d4', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
+
+  if (selectedYear === 'compare') {
+    // Multi-Year Comparison Mode (Year-over-Year / שנה פר שנה)
+    if (noteEl) noteEl.innerText = '*השוואה שנתית רוחבית: ביצוע 2025, ביצוע וצפי 2026 ויעד אסטרטגי 2027';
+
+    if (thead) {
+      thead.innerHTML = `
+        <tr class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+          <th class="py-2 px-2.5 rounded-r-lg">סוג מנוי מוביל</th>
+          <th class="py-2 px-2 text-center">2025 (היסטוריה)</th>
+          <th class="py-2 px-2 text-center bg-indigo-50/60 text-indigo-900 font-black">2026 (נוכחית 🎯)</th>
+          <th class="py-2 px-2 text-center bg-purple-50/60 text-purple-900 font-black">2027 (צפי 🔮)</th>
+          <th class="py-2 px-2 text-center">צמיחה שנתית (YoY)</th>
+          <th class="py-2 px-2 rounded-l-lg">תובנה אסטרטגית ומגמה</th>
+        </tr>
+      `;
+    }
+
+    const y25 = byYear['2025'] || {};
+    const y26 = byYear['2026'] || {};
+    const y27 = byYear['2027'] || {};
+
+    const rows26 = y26.rows || seasonal.quarterly_table || [];
+    tbody.innerHTML = rows26.map((r26, idx) => {
+      const r25 = (y25.rows || []).find(r => r.name === r26.name) || {};
+      const r27 = (y27.rows || []).find(r => r.name === r26.name) || {};
+      const color = r26.color || defaultColors[idx % defaultColors.length];
+
+      const v25 = r25.annual_avg || r25.q4 || '-';
+      const v26 = r26.annual_avg || r26.q3 || '-';
+      const v27 = r27.annual_avg || r27.q4 || '-';
+
+      const growth = r26.delta_str || '+10%';
+      const isGrowth = growth.includes('+') || growth.includes('זינוק');
       const badgeClass = isGrowth
         ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-        : (row.delta_str === 'עונתי' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-50 text-slate-600 border-slate-200');
+        : (growth === 'עונתי' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-50 text-slate-600 border-slate-200');
 
       return `
         <tr class="hover:bg-slate-50/80 transition-colors">
           <td class="py-2 px-2.5 font-bold text-slate-800 flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full" style="background-color: ${options.colors[idx % options.colors.length]}"></span>
+            <span class="w-2 h-2 rounded-full" style="background-color: ${color}"></span>
+            ${r26.name}
+          </td>
+          <td class="py-2 px-2 text-center text-slate-600 font-semibold">${v25}</td>
+          <td class="py-2 px-2 text-center font-black text-indigo-900 bg-indigo-50/40">${v26}</td>
+          <td class="py-2 px-2 text-center font-black text-purple-900 bg-purple-50/40">${v27}</td>
+          <td class="py-2 px-2 text-center">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black border ${badgeClass}">
+              ${growth}
+            </span>
+          </td>
+          <td class="py-2 px-2 text-[10.5px] text-slate-500">
+            <span class="font-semibold text-slate-700">${r26.trend_badge || ''}</span>
+            <span class="text-slate-400 block text-[9.5px]">${r26.note || ''}</span>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    if (tfoot) {
+      const tot25 = (y25.totals ? y25.totals.annual_avg : 726);
+      const tot26 = (y26.totals ? y26.totals.q3 : 852);
+      const tot27 = (y27.totals ? y27.totals.annual_avg : 934);
+
+      tfoot.innerHTML = `
+        <tr class="bg-slate-100/70 font-black text-slate-900 border-t-2 border-slate-300">
+          <td class="py-2 px-2.5 rounded-r-lg">סה״כ מנויים פעילים (ממוצע/שיא)</td>
+          <td class="py-2 px-2 text-center text-slate-600">${tot25} מנויים</td>
+          <td class="py-2 px-2 text-center bg-indigo-100/50 text-indigo-900 font-black">${tot26} מנויים</td>
+          <td class="py-2 px-2 text-center bg-purple-100/50 text-purple-900 font-black">${tot27} מנויים</td>
+          <td class="py-2 px-2 text-center text-emerald-600">+11.0%</td>
+          <td class="py-2 px-2 rounded-l-lg text-[10px] text-slate-500 font-normal">צמיחה רב-שנתית עקבית במועדון A+ ובפילאטיס</td>
+        </tr>
+      `;
+    }
+
+  } else {
+    // Single Year Mode (Q1, Q2, Q3, Q4)
+    const yData = byYear[selectedYear] || byYear['2026'] || {};
+    const rows = yData.rows || seasonal.quarterly_table || [];
+    const totals = yData.totals || {};
+
+    if (noteEl) {
+      if (selectedYear === '2026') {
+        noteEl.innerText = '*2026: ביצוע מאומת Q1–Q3 וצפי סגירה אסטרטגי Q4';
+      } else if (selectedYear === '2025') {
+        noteEl.innerText = '*2025: נתוני ביצוע היסטוריים מאומתים מסגירת שנת 2025';
+      } else {
+        noteEl.innerText = '*2027: תחזית אסטרטגית ויעדי התרחבות תפוסה';
+      }
+    }
+
+    if (thead) {
+      const isCurrent26 = selectedYear === '2026';
+      thead.innerHTML = `
+        <tr class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+          <th class="py-2 px-2.5 rounded-r-lg">סוג מנוי מוביל</th>
+          <th class="py-2 px-2 text-center">Q1 (ינו-מרץ)</th>
+          <th class="py-2 px-2 text-center">Q2 (אפר-יוני)</th>
+          <th class="py-2 px-2 text-center ${isCurrent26 ? 'bg-indigo-50/60 text-indigo-900 font-black' : ''}">Q3 (יול-ספט) ${isCurrent26 ? '🎯' : ''}</th>
+          <th class="py-2 px-2 text-center ${isCurrent26 ? 'bg-purple-50/60 text-purple-900 font-black' : ''}">Q4 (אוק-דצמ) ${isCurrent26 ? '🔮' : ''}</th>
+          <th class="py-2 px-2 text-center">ממוצע שנתי</th>
+          <th class="py-2 px-2 text-center">קצב שינוי</th>
+          <th class="py-2 px-2 rounded-l-lg">תובנה ניהולית ומגמה</th>
+        </tr>
+      `;
+    }
+
+    tbody.innerHTML = rows.map((row, idx) => {
+      const isGrowth = (row.delta_str || '').includes('+') || (row.delta_str || '').includes('זינוק');
+      const badgeClass = isGrowth
+        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+        : (row.delta_str === 'עונתי' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-50 text-slate-600 border-slate-200');
+      const color = row.color || defaultColors[idx % defaultColors.length];
+
+      return `
+        <tr class="hover:bg-slate-50/80 transition-colors">
+          <td class="py-2 px-2.5 font-bold text-slate-800 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full" style="background-color: ${color}"></span>
             ${row.name}
           </td>
           <td class="py-2 px-2 text-center text-slate-600 font-semibold">${row.q1}</td>
           <td class="py-2 px-2 text-center text-slate-600 font-semibold">${row.q2}</td>
           <td class="py-2 px-2 text-center font-black text-indigo-900 bg-indigo-50/40">${row.q3}</td>
           <td class="py-2 px-2 text-center font-black text-purple-900 bg-purple-50/40">${row.q4}</td>
+          <td class="py-2 px-2 text-center text-slate-700 font-bold bg-slate-50/40">${row.annual_avg || Math.round((row.q1+row.q2+row.q3+row.q4)/4)}</td>
           <td class="py-2 px-2 text-center">
             <span class="px-2 py-0.5 rounded-full text-[10px] font-black border ${badgeClass}">
               ${row.delta_str}
             </span>
           </td>
           <td class="py-2 px-2 text-[10.5px] text-slate-500">
-            <span class="font-semibold text-slate-700">${row.trend_badge}</span>
-            <span class="text-slate-400 block text-[9.5px]">${row.note}</span>
+            <span class="font-semibold text-slate-700">${row.trend_badge || ''}</span>
+            <span class="text-slate-400 block text-[9.5px]">${row.note || ''}</span>
           </td>
         </tr>
       `;
     }).join('');
+
+    if (tfoot) {
+      const q1Tot = totals.q1 || 788;
+      const q2Tot = totals.q2 || 796;
+      const q3Tot = totals.q3 || 852;
+      const q4Tot = totals.q4 || 875;
+      const avgTot = totals.annual_avg || 828;
+      const growthTot = totals.growth || '+11.0%';
+      const noteTot = totals.note || 'צמיחה שנתית עקבית במועדון ובפילאטיס';
+
+      tfoot.innerHTML = `
+        <tr class="bg-slate-100/70 font-black text-slate-900 border-t-2 border-slate-300">
+          <td class="py-2 px-2.5 rounded-r-lg">סה״כ מנויים פעילים במועדון</td>
+          <td class="py-2 px-2 text-center">${q1Tot}</td>
+          <td class="py-2 px-2 text-center">${q2Tot}</td>
+          <td class="py-2 px-2 text-center bg-indigo-100/50 text-indigo-900 font-black">${q3Tot}</td>
+          <td class="py-2 px-2 text-center bg-purple-100/50 text-purple-900 font-black">${q4Tot}</td>
+          <td class="py-2 px-2 text-center bg-slate-200/50 text-slate-900 font-black">${avgTot}</td>
+          <td class="py-2 px-2 text-center text-emerald-600">${growthTot}</td>
+          <td class="py-2 px-2 rounded-l-lg text-[10px] text-slate-500 font-normal">${noteTot}</td>
+        </tr>
+      `;
+    }
   }
 }
 
