@@ -1272,7 +1272,7 @@ function renderMemberships(data) {
   const pendingCancelsEl = document.getElementById('mem-kpi-pending-cancels-count');
   if (pendingCancelsEl) {
     const pCnc = curStats.pending_cancellations !== undefined ? curStats.pending_cancellations : (mem.pending_cancellations || 0);
-    pendingCancelsEl.innerText = `${pCnc} ממתינות לאישור`;
+    pendingCancelsEl.innerText = `${pCnc} ממתינות לאישור מנהל`;
   }
 
   // Urgent Customer Alerts Banner (עצבים / חריגים / תלונות חמורות)
@@ -1288,11 +1288,11 @@ function renderMemberships(data) {
   document.getElementById('mem-kpi-monthly-price-gym').innerText = `${formatNIS(gymStats.avg_monthly_price)}`;
   document.getElementById('mem-kpi-monthly-price-pilates').innerText = `${formatNIS(pilStats.avg_monthly_price)}`;
 
-  // Sales Refunds Summary
+  // Sales Refunds Summary (כל הפניות שכרגע ממתינות לקבל עליהן כסף, שאושרו וממתינות לזיכוי)
   if (sales && sales.summary) {
     const sSum = sales.summary;
     document.getElementById('mem-kpi-refund-pending').innerText = formatNIS(sSum.approved_pending_refund_amount);
-    document.getElementById('mem-kpi-refund-pending-count').innerText = `${sSum.approved_pending_count || 0} פניות ממתינות`;
+    document.getElementById('mem-kpi-refund-pending-count').innerText = `${sSum.approved_pending_count || 0} פניות שאושרו וממתינות לזיכוי`;
     document.getElementById('mem-kpi-refund-approved').innerText = formatNIS(sSum.approved_pending_refund_amount);
     document.getElementById('mem-kpi-refund-completed').innerText = formatNIS(sSum.completed_refund_amount);
   }

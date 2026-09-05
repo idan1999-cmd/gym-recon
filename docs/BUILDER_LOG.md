@@ -9,6 +9,23 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 2. **חיוב יזם & דוח מרכז לאישור מנהל (Trainer & Staff Billing):** Computes monthly charges for the property owner/developer across shifts, reception, personal training, studio classes, management fees, and sales commissions.
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
+## 2026-09-05 — Manager Approval & Refund Count Definitions Clarification
+
+- **What changed:**
+  1. **Cancellation Requests Awaiting Manager Approval (`dashboard/public/index.html` & `app.js`):**
+     - Updated the terminology in Card 3 ("ביטולים עתידיים") from generic "בקשות ביטול שטרם טופלו: X ממתינות לאישור" to explicitly:
+       **`שטרם אושרו (ממתינות למנהל): X ממתינות לאישור מנהל`**
+     - Clarified that this metric represents requests awaiting manager review/decision before approval/credit.
+  2. **Approved Requests Awaiting Financial Refund (`dashboard/public/index.html` & `app.js`):**
+     - Updated Card 6 ("צפי החזר כספי - ביטולים") badge from `"46 פניות ממתינות"` to:
+       **`46 פניות שאושרו וממתינות לזיכוי`**
+     - Updated label to `"מאושר וממתין לזיכוי כספי: ₪ 15,100"` and bottom explanation to `"פניות שאושרו וממתינות לקבלת כסף בפועל"`.
+     - Bumped script cache tag to `app.js?v=4.3`.
+- **Why (what Idan asked for, in his words):**
+  - *"בהגדרות שכאן, 'ממתינות לאישור' זה ממתינות לאישור מנהל, כלומר שטרם אושרו וממתינות לזיכוי. ו-46 'פניות ממתינות' זה אומר כל הפניות שכרגע ממתינות לקבל עליהן כסף, שאושרו וממתין לזיכוי. זה כמות הפניות, זה מה שחשוב. תעדכן בהתאם."*
+- **What it touches:**
+  - `dashboard/public/index.html`, `dashboard/public/app.js`, `docs/BUILDER_LOG.md`.
+
 ## 2026-09-05 — Dynamic Calendar Month Default (Opening on Current Month)
 
 - **What changed:**
