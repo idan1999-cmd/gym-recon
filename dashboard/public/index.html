@@ -420,69 +420,7 @@
         </div>
       </section>
 
-      <!-- Live Revenue Breakdown (Strictly Income Accounts matching official monthly sheet) -->
-      <section id="revenue-breakdown-section" class="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black border border-emerald-100">
-              <i data-lucide="trending-up" class="w-5 h-5"></i>
-            </div>
-            <div>
-              <div class="flex items-center gap-2">
-                <h3 class="text-sm font-black text-slate-900">פילוח הכנסות חודשי מתוך Arbox וקבלות (סעיפי הכנסה בלבד)</h3>
-                <span id="rev-breakdown-badge" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  סעיפי הכנסה בלבד 🎯
-                </span>
-              </div>
-              <p class="text-[11px] text-slate-400">תואם במדויק לדוח הניהול החודשי: מועדון ופילאטיס • כולל מע״מ (צפי/קבלות) מול ללא מע״מ (כרטסת) • כיוונון ידני בלייב</p>
-            </div>
-          </div>
-          <div class="flex items-center gap-3 text-xs">
-            <div class="text-left bg-emerald-50/70 border border-emerald-200/80 px-4 py-2 rounded-2xl shadow-2xs">
-              <div class="flex items-baseline gap-2 justify-end">
-                <span class="text-emerald-900 font-bold text-xs">סה״כ כולל מע״מ:</span>
-                <span id="rev-breakdown-total-display" class="font-black text-base text-emerald-700">₪ 281,499</span>
-              </div>
-              <div class="flex items-baseline gap-2 justify-end">
-                <span class="text-slate-500 text-[11px] font-medium">ללא מע״מ (כרטסת):</span>
-                <span id="rev-breakdown-net-total-display" class="font-bold text-xs text-slate-700">₪ 239,736</span>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        <!-- Breakdown Table -->
-        <div class="overflow-x-auto custom-scrollbar">
-          <table class="w-full text-right text-xs border-collapse">
-            <thead>
-              <tr class="bg-slate-50/90 text-slate-600 font-bold border-b border-slate-200">
-                <th class="py-3 px-3.5 whitespace-nowrap">סעיף תקציבי</th>
-                <th class="py-3 px-3 whitespace-nowrap">שם הפריט וערוץ הכנסה</th>
-                <th class="py-3 px-3 whitespace-nowrap text-center">סניף</th>
-                <th class="py-3 px-3 text-left whitespace-nowrap font-black text-emerald-900">כולל מע״מ (צפי/קבלות)</th>
-                <th class="py-3 px-3 text-left whitespace-nowrap font-bold text-slate-700">ללא מע״מ (כרטסת)</th>
-                <th class="py-3 px-3 text-left whitespace-nowrap text-slate-400">בכרטסת (רשמי)</th>
-                <th class="py-3 px-3 whitespace-nowrap">מקור ומדד Arbox</th>
-                <th class="py-3 px-3 text-center w-36 whitespace-nowrap">כיוונון ידני (₪ כולל מע״מ)</th>
-              </tr>
-            </thead>
-            <tbody id="revenue-breakdown-tbody" class="divide-y divide-slate-100 font-medium text-slate-800">
-              <!-- Dynamically populated via renderRevenueBreakdown -->
-            </tbody>
-            <tfoot id="revenue-breakdown-tfoot" class="bg-slate-50 font-black text-slate-900 border-t-2 border-slate-200">
-              <!-- Dynamically populated totals footer -->
-            </tfoot>
-          </table>
-        </div>
-
-        <!-- Reference Guide & Move / FreeFit notice -->
-        <div class="p-3 bg-slate-50/80 border border-slate-200/80 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-slate-600">
-          <div class="flex items-center gap-2">
-            <span class="text-base">💡</span>
-            <span><strong>מבנה סעיפי הכנסה:</strong> מועדון (`80001`–`80010`) ופילאטיס (`81001`–`81009`). סעיף `80009` כולל כרטיסיות Move ו-FreeFit המועברות ללא ניכוי מע״מ (0% מע״מ עסקאות).</span>
-          </div>
-        </div>
-      </section>
 
       <!-- Incomes Category Cards -->
       <section class="space-y-3">

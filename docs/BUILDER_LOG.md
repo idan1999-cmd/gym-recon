@@ -10,6 +10,25 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
 
+## 2026-09-07 — Removal of Incomplete Revenue Breakdown & 24/7 Cloud Deployment Setup
+
+- **What changed:**
+  1. **Removed Incomplete Revenue Breakdown (`#revenue-breakdown-section`):**
+     - As Arbox does not provide live recurring billing transactions through its public API, Idan requested to remove the estimated revenue breakdown section to maintain 100% integrity across the dashboard.
+     - Cleaned up the main dashboard view in `dashboard/public/index.html`.
+  2. **24/7 Cloud Deployment Readiness:**
+     - Added `render.yaml` and `Procfile` for one-click deployment to free cloud host (Render / Railway).
+     - Updated `dashboard/backend/server.py` to automatically detect the cloud-assigned port (`os.environ.get("PORT")`).
+- **Why (what Idan asked for, in his words):**
+  - *"האם אתה יכול להוציא את הנתונים מארבוקס לצורך פילוח ההכנסות לפי סוגי מנויים? אם לא, תוריד את זה מהדשבורד כי זה נותן מידע חלקי בלבד מהכרטסת ולא ממש בלייב. ותסביר לי איך לפתוח ענן חינמי ולהעלות את זה לשם."*
+- **What it touches:**
+  - `dashboard/public/index.html`, `dashboard/backend/server.py`, `render.yaml`, `Procfile`, `docs/BUILDER_LOG.md`.
+- **How it was verified:**
+  - Verified dashboard HTML renders cleanly without the section.
+  - Verified regression tests pass: 27/27 on `tests/test_idan_fixes.py` and 11/11 on `tests/test_resilience.py`.
+
+---
+
 ## 2026-09-07 — Remote Access Tunnel & Dashboard Sharing Tool (`tools/share_remote.py`)
 
 - **What changed:**
