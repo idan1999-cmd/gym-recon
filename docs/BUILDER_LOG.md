@@ -10,6 +10,29 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
 
+## 2026-09-07 — Monthly Revenue Report Ingestion & Accurate Live Pacing Tracker
+
+- **What changed:**
+  1. **Added Monthly Revenue Report to Routine Checklists:**
+     - Updated `input/dropzone/צ'קליסט_קבצים_לחודש_זה.txt`, `📖_הנחיות_ומסמכי_עזר/צ'קליסט_קבצים_לחודש_זה.txt`, and `config/tasks_board.json` to include item: `דו״ח הכנסות / מכירות ותקבולים חודשי (ייצוא מארבוקס / סליקה)`.
+  2. **Implemented Monthly Revenue Parser (`parse_monthly_revenue_report`):**
+     - Automatically scans input and dropzone folders for monthly sales/revenue/receipts spreadsheets and CSVs (`*הכנסות*`, `*תקבולים*`, `*מכירות*`, `*סליקה*`).
+     - Sums actual collections (`שולם` / `תקבול`) broken down by club filter (`חדר כושר` vs `פילאטיס מכשירים`).
+  3. **Rewired Live Pacing Tracker (`מד קצב עמידה ביעדים`):**
+     - Eliminated false alarm deficits caused by the accounting ledger (`כרטסת`) being 0 during an active month prior to bookkeeper closure.
+     - When a monthly revenue report is available, pacing is calculated directly from verified customer payments.
+     - When no report or ledger is present for an open month, the tracker gracefully shows `ממתין לדוח הכנסות חודשי ⏳` with clear guidance instead of a red panic deficit.
+- **Why (what Idan asked for, in his words):**
+  - *"זו בעיה ואני לא רוצה שהוא ימשוך את הנתונים משם. הנתונים שנגזרים משם לא מספיק מעודכנים, כי הכרטסת מופיעה רק בסוף החודש, אז אין לי באמת את המידע הזה. אני רוצה שהוא ימשוך את המידע הזה מתוך דוח הכנסות שאוציא לו כל חודש. תוסיף את זה לרשימת הדוחות החודשיים שאוציא, ואני אוציא לך בכל פעם תמשוך ממנו את המידע."*
+- **What it touches:**
+  - `dashboard/backend/data_service.py`, `dashboard/public/app.js`, `input/dropzone/צ'קליסט_קבצים_לחודש_זה.txt`, `📖_הנחיות_ומסמכי_עזר/צ'קליסט_קבצים_לחודש_זה.txt`, `config/tasks_board.json`, `docs/BUILDER_LOG.md`.
+- **How it was verified:**
+  - Verified month 8 extraction (`₪200,804` from `מכירות 2026.xlsx (ייבוא ארבוקס אוגוסט 2026)`).
+  - Verified month 9 active state renders `waiting_report` with `ממתין לדוח הכנסות חודשי ⏳` and 0 false alarms.
+  - Regression suite passes: 27/27 on `tests/test_idan_fixes.py` and 11/11 on `tests/test_resilience.py`.
+
+---
+
 ## 2026-09-07 — Removal of Incomplete Revenue Breakdown & 24/7 Cloud Deployment Setup
 
 - **What changed:**

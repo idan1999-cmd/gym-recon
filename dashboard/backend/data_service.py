@@ -2389,6 +2389,149 @@ class DashboardDataService:
                 "sales_closers": []
             }
 
+    def parse_monthly_revenue_report(self, month: int, club_filter: str = "all") -> dict | None:
+        """
+        Parses actual revenue and payments from monthly sales / revenue / receipts reports
+        (e.g., Arbox sales export, credit card receipts) supplied each month by the manager.
+        Returns {'amount': float, 'source': str} or None if no report is present.
+        """
+        patterns = [
+            "*הכנסות*.xlsx", "*הכנסות*.csv",
+            "*תקבולים*.xlsx", "*תקבולים*.csv",
+            "*סליקה*.xlsx", "*סליקה*.csv",
+            "*מכירות*.xlsx", "*מכירות*.csv"
+        ]
+        candidate_files = []
+        for d in [INPUT_DIR / "dropzone", INPUT_DIR]:
+            if not d.exists():
+                continue
+            for p in patterns:
+                candidate_files.extend(d.glob(p))
+                candidate_files.extend(d.glob(f"**/{p}"))
+
+        seen = set()
+        files = []
+        for f in candidate_files:
+            if f.resolve() not in seen and f.is_file():
+                seen.add(f.resolve())
+                files.append(f)
+
+        if not files:
+            return None
+
+        month_names = {
+            1: ["ינואר", "01", "1"], 2: ["פברואר", "02", "2"], 3: ["מרץ", "03", "3"],
+            4: ["אפריל", "04", "4"], 5: ["מאי", "05", "5"], 6: ["יוני", "06", "6"],
+            7: ["יולי", "07", "7"], 8: ["אוגוסט", "08", "8"], 9: ["ספטמבר", "09", "9"],
+            10: ["אוקטובר", "10"], 11: ["נובמבר", "11"], 12: ["דצמבר", "12"]
+        }
+        m_keywords = month_names.get(month, [])
+
+        for fpath in files:
+            if fpath.suffix.lower() == ".xlsx":
+                try:
+                    wb = openpyxl.load_workbook(str(fpath), data_only=True)
+                    matching_sheets = []
+                    for sname in wb.sheetnames:
+                        s_lower = sname.lower()
+                        if any(kw in s_lower for kw in m_keywords):
+                            priority = 10
+                            if "ייבוא" in s_lower or "ארבוקס" in s_lower:
+                                priority = 1
+                            elif "תקבול" in s_lower or "הכנס" in s_lower:
+                                priority = 2
+                            elif "ליד" in s_lower:
+                                priority = 5
+                            matching_sheets.append((priority, sname))
+
+                    matching_sheets.sort(key=lambda x: x[0])
+
+                    for _, sname in matching_sheets:
+                        ws = wb[sname]
+                        paid_col = None
+                        branch_col = None
+                        header_r = 1
+                        for r in range(1, min(6, ws.max_row + 1)):
+                            row_vals = [str(ws.cell(r, c).value or "").strip() for c in range(1, min(ws.max_column + 1, 30))]
+                            for idx, val in enumerate(row_vals, start=1):
+                                if any(k in val for k in ["שולם", "תקבול", "סכום לתשלום", "סכום ששולם"]) and not paid_col:
+                                    paid_col = idx
+                                if any(k in val for k in ["סניף", "מועדון"]) and not branch_col:
+                                    branch_col = idx
+                            if paid_col:
+                                header_r = r
+                                break
+
+                        if paid_col:
+                            sheet_sum = 0.0
+                            for row_i in range(header_r + 1, ws.max_row + 1):
+                                bval = str(ws.cell(row_i, branch_col).value or "") if branch_col else ""
+                                if club_filter == "gym" and "פילאטיס" in bval:
+                                    continue
+                                if club_filter == "pilates" and "פילאטיס" not in bval:
+                                    continue
+                                pval = ws.cell(row_i, paid_col).value
+                                if pval is not None:
+                                    try:
+                                        clean = float(str(pval).replace(",", "").strip())
+                                        sheet_sum += clean
+                                    except Exception:
+                                        pass
+                            if sheet_sum > 0:
+                                return {
+                                    "source": f"{fpath.name} ({sname})",
+                                    "amount": round(sheet_sum, 2)
+                                }
+                except Exception as e:
+                    print(f"Error parsing xlsx revenue report {fpath}:", e)
+            elif fpath.suffix.lower() == ".csv":
+                # Check CSV if month keyword in filename
+                fname_lower = fpath.name.lower()
+                if any(kw in fname_lower for kw in m_keywords):
+                    for enc in ["utf-8-sig", "utf-8", "cp1255", "iso-8859-8"]:
+                        try:
+                            with open(fpath, encoding=enc) as f:
+                                reader = csv.reader(f)
+                                rows = list(reader)
+                            if not rows:
+                                continue
+                            header_idx = None
+                            paid_col = None
+                            branch_col = None
+                            for idx, r in enumerate(rows[:6]):
+                                for c_idx, val in enumerate(r):
+                                    v = str(val or "").strip()
+                                    if any(k in v for k in ["שולם", "תקבול", "סכום לתשלום", "סכום ששולם"]):
+                                        paid_col = c_idx
+                                    if any(k in v for k in ["סניף", "מועדון"]):
+                                        branch_col = c_idx
+                                if paid_col is not None:
+                                    header_idx = idx
+                                    break
+                            if header_idx is not None and paid_col is not None:
+                                tot = 0.0
+                                for r in rows[header_idx + 1:]:
+                                    if paid_col < len(r):
+                                        val_str = r[paid_col].replace(",", "").strip()
+                                        if branch_col is not None and branch_col < len(r):
+                                            bval = r[branch_col]
+                                            if club_filter == "gym" and "פילאטיס" in bval:
+                                                continue
+                                            if club_filter == "pilates" and "פילאטיס" not in bval:
+                                                continue
+                                        try:
+                                            tot += float(val_str)
+                                        except Exception:
+                                            pass
+                                if tot > 0:
+                                    return {
+                                        "source": fpath.name,
+                                        "amount": round(tot, 2)
+                                    }
+                        except Exception:
+                            continue
+        return None
+
     def _load_ledger_transactions_map(self) -> dict:
         ledger_file = self.find_input_file(["*כרטסת*.xlsx", "*כרטסת*.xls", "*ledger*.xlsx"])
         if not ledger_file or not ledger_file.exists():
@@ -2771,39 +2914,70 @@ class DashboardDataService:
         # - Required daily run rate for the remainder of the month (קצב יומי נדרש לשאר החודש)
         # - Pacing gap (פער מול קצב צפוי)
         # - Time progress vs Money progress
-        # - Status: ahead / on_track / behind
+        # - Status: ahead / on_track / behind / waiting_report
         # -----------------------------------------------------------------
         effective_rev_target = total_rev_budget
         days_passed = max(1, current_day)
         days_remaining = max(1, days_in_m - current_day)
         time_elapsed_pct = round((current_day / days_in_m) * 100, 1)
-
         benchmark_to_date = round((effective_rev_target / days_in_m) * current_day, 2)
-        revenue_gap_to_pace = round(total_rev_actual - benchmark_to_date, 2)
-        remaining_target_amount = max(0.0, effective_rev_target - total_rev_actual)
-        daily_rate_required = round(remaining_target_amount / days_remaining, 2) if days_remaining > 0 else 0.0
-        current_daily_pace = round(total_rev_actual / days_passed, 2)
 
-        money_progress_pct = round((total_rev_actual / effective_rev_target * 100), 1) if effective_rev_target > 0 else 0.0
+        # Look for manager's monthly revenue report (Arbox sales, receipts, credit card settlements)
+        monthly_rev_report = self.parse_monthly_revenue_report(month=month, club_filter=club_filter)
+        
+        # Determine active revenue for pacing:
+        # 1. Closed past month with finalized ledger actual: use ledger actual
+        # 2. Monthly revenue report exists: use real receipts from report
+        # 3. Ledger actual exists and > 0: use ledger actual
+        # 4. Otherwise: no report received yet for open month
+        revenue_source_label = "כרטסת הנה״ח"
+        has_real_revenue_data = True
 
         if month < current_live_month and total_rev_actual > 0:
+            active_pacing_actual = total_rev_actual
+            revenue_source_label = "כרטסת סגורה"
+        elif monthly_rev_report and monthly_rev_report.get("amount", 0) > 0:
+            active_pacing_actual = monthly_rev_report["amount"]
+            revenue_source_label = monthly_rev_report.get("source", "דוח הכנסות חודשי")
+        elif total_rev_actual > 0:
+            active_pacing_actual = total_rev_actual
+            revenue_source_label = "כרטסת שוטפת"
+        else:
+            active_pacing_actual = 0.0
+            has_real_revenue_data = False
+            revenue_source_label = "ממתין לדוח הכנסות"
+
+        revenue_gap_to_pace = round(active_pacing_actual - benchmark_to_date, 2)
+        remaining_target_amount = max(0.0, effective_rev_target - active_pacing_actual)
+        daily_rate_required = round(remaining_target_amount / days_remaining, 2) if days_remaining > 0 else 0.0
+        current_daily_pace = round(active_pacing_actual / days_passed, 2)
+
+        money_progress_pct = round((active_pacing_actual / effective_rev_target * 100), 1) if effective_rev_target > 0 else 0.0
+
+        if month < current_live_month and active_pacing_actual > 0:
             pacing_status = "completed"
             pacing_label = "חודש סגור"
             pacing_badge_color = "emerald"
-            pacing_insight = f"החודש הסתיים עם ביצוע כולל של {formatNIS(total_rev_actual) if 'formatNIS' in globals() else f'₪{total_rev_actual:,.0f}'}"
+            pacing_insight = f"החודש הסתיים עם ביצוע כולל של {formatNIS(active_pacing_actual) if 'formatNIS' in globals() else f'₪{active_pacing_actual:,.0f}'} ({revenue_source_label})"
         elif month > current_live_month:
             pacing_status = "future"
             pacing_label = "חודש עתידי"
             pacing_badge_color = "blue"
             pacing_insight = f"יעד מוגדר לחודש: {effective_rev_target:,.0f} ₪ (טרם החל)"
+        elif not has_real_revenue_data:
+            # Open/current month without ledger or revenue report: waiting state without false alarm
+            pacing_status = "waiting_report"
+            pacing_label = "ממתין לדוח הכנסות חודשי ⏳"
+            pacing_badge_color = "amber"
+            pacing_insight = f"הכרטסת מתעדכנת בסוף חודש. כדי לראות קצב בזמן אמת, גרור לתיקיית הדרופזון את דו״ח ההכנסות/תקבולים החודשי של ארבוקס. יעד נדרש: ₪{daily_rate_required:,.0f} ליום."
         else:
-            pace_ratio = (total_rev_actual / benchmark_to_date) if benchmark_to_date > 0 else 1.0
-            if total_rev_actual >= benchmark_to_date * 1.02:
+            pace_ratio = (active_pacing_actual / benchmark_to_date) if benchmark_to_date > 0 else 1.0
+            if active_pacing_actual >= benchmark_to_date * 1.02:
                 pacing_status = "ahead"
                 pacing_label = "מקדים את הקצב 🚀"
                 pacing_badge_color = "emerald"
-                pacing_insight = f"פלוס של ₪{abs(revenue_gap_to_pace):,.0f} מעל הקצב הצפוי להיום! קצב הסיום הצפוי עומד על ₪{total_rev_projected:,.0f}."
-            elif total_rev_actual >= benchmark_to_date * 0.97:
+                pacing_insight = f"פלוס של ₪{abs(revenue_gap_to_pace):,.0f} מעל הקצב הצפוי להיום! (מקור: {revenue_source_label})."
+            elif active_pacing_actual >= benchmark_to_date * 0.97:
                 pacing_status = "on_track"
                 pacing_label = "בקצב היעד 🎯"
                 pacing_badge_color = "indigo"
@@ -2812,11 +2986,14 @@ class DashboardDataService:
                 pacing_status = "behind"
                 pacing_label = "פיגור בקצב – נדרשת האצה ⚠️"
                 pacing_badge_color = "rose"
-                pacing_insight = f"פער של ₪{abs(revenue_gap_to_pace):,.0f} מתחת לקצב הצפוי להיום. נדרש להאיץ לקצב של ₪{daily_rate_required:,.0f} ליום כדי לעמוד ביעד."
+                pacing_insight = f"פער של ₪{abs(revenue_gap_to_pace):,.0f} מתחת לקצב הצפוי להיום (מקור: {revenue_source_label}). נדרש להאיץ לקצב של ₪{daily_rate_required:,.0f} ליום."
 
         pacing_tracker = {
             "target": round(effective_rev_target, 2),
-            "actual": round(total_rev_actual, 2),
+            "actual": round(active_pacing_actual, 2),
+            "ledger_actual": round(total_rev_actual, 2),
+            "has_real_revenue_data": has_real_revenue_data,
+            "revenue_source": revenue_source_label,
             "current_day": current_day,
             "days_in_month": days_in_m,
             "days_remaining": days_remaining,

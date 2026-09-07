@@ -526,6 +526,8 @@ function renderPacingTracker(pacing) {
       badge.classList.add('bg-indigo-50', 'text-indigo-700', 'border-indigo-200');
     } else if (pacing.status === 'behind') {
       badge.classList.add('bg-rose-50', 'text-rose-700', 'border-rose-200');
+    } else if (pacing.status === 'waiting_report') {
+      badge.classList.add('bg-amber-50', 'text-amber-700', 'border-amber-300');
     } else if (pacing.status === 'completed') {
       badge.classList.add('bg-slate-100', 'text-slate-700', 'border-slate-300');
     } else {
@@ -559,20 +561,29 @@ function renderPacingTracker(pacing) {
   const gapDisplay = document.getElementById('pacing-gap-display');
   const gapSub = document.getElementById('pacing-gap-sub');
   if (gapDisplay) {
-    const gap = pacing.revenue_gap_to_pace;
-    if (gap >= 0) {
-      gapDisplay.innerText = `+${formatNIS(gap)}`;
-      gapDisplay.className = 'text-lg font-black text-emerald-600';
+    if (pacing.status === 'waiting_report') {
+      gapDisplay.innerText = 'ממתין לקובץ';
+      gapDisplay.className = 'text-base font-black text-amber-600';
       if (gapSub) {
-        gapSub.innerText = 'עודף מעל קצב התקדמות הזמן 🚀';
-        gapSub.className = 'text-[10px] font-bold text-emerald-600';
+        gapSub.innerText = 'העלה דוח הכנסות/סליקה';
+        gapSub.className = 'text-[10px] font-bold text-amber-600';
       }
     } else {
-      gapDisplay.innerText = `-${formatNIS(Math.abs(gap))}`;
-      gapDisplay.className = 'text-lg font-black text-rose-600';
-      if (gapSub) {
-        gapSub.innerText = 'פער מול הנורמה להיום ⚠️';
-        gapSub.className = 'text-[10px] font-bold text-rose-600';
+      const gap = pacing.revenue_gap_to_pace;
+      if (gap >= 0) {
+        gapDisplay.innerText = `+${formatNIS(gap)}`;
+        gapDisplay.className = 'text-lg font-black text-emerald-600';
+        if (gapSub) {
+          gapSub.innerText = 'עודף מעל קצב התקדמות הזמן 🚀';
+          gapSub.className = 'text-[10px] font-bold text-emerald-600';
+        }
+      } else {
+        gapDisplay.innerText = `-${formatNIS(Math.abs(gap))}`;
+        gapDisplay.className = 'text-lg font-black text-rose-600';
+        if (gapSub) {
+          gapSub.innerText = 'פער מול הנורמה להיום ⚠️';
+          gapSub.className = 'text-[10px] font-bold text-rose-600';
+        }
       }
     }
   }
@@ -622,12 +633,16 @@ function renderPacingTracker(pacing) {
   const moneyPctText = document.getElementById('pacing-money-pct-text');
   const moneyBar = document.getElementById('pacing-money-bar');
   if (moneyPctText) {
-    moneyPctText.innerText = `${pacing.money_progress_pct}% (${formatNIS(pacing.actual)} מתוך ${formatNIS(pacing.target)})`;
+    if (pacing.status === 'waiting_report') {
+      moneyPctText.innerText = `ממתין להעלאת דו״ח הכנסות חודשי (יעד: ${formatNIS(pacing.target)})`;
+    } else {
+      moneyPctText.innerText = `${pacing.money_progress_pct}% (${formatNIS(pacing.actual)} מתוך ${formatNIS(pacing.target)})`;
+    }
   }
   if (moneyBar) {
     moneyBar.style.width = `${Math.min(100, Math.max(0, pacing.money_progress_pct))}%`;
     moneyBar.className = 'h-full rounded-full transition-all duration-500 shadow-2xs ' + 
-      (pacing.status === 'ahead' ? 'bg-emerald-500' : (pacing.status === 'behind' ? 'bg-rose-500' : 'bg-indigo-600'));
+      (pacing.status === 'ahead' ? 'bg-emerald-500' : (pacing.status === 'behind' ? 'bg-rose-500' : (pacing.status === 'waiting_report' ? 'bg-amber-400' : 'bg-indigo-600')));
   }
 
   // 8. Management Action Insight
@@ -642,7 +657,10 @@ function renderPacingTracker(pacing) {
         ? 'bg-emerald-50 text-emerald-900 border border-emerald-200' 
         : (pacing.status === 'behind'
           ? 'bg-rose-50 text-rose-900 border border-rose-200'
-          : 'bg-indigo-50 text-indigo-900 border border-indigo-200'));
+          : (pacing.status === 'waiting_report'
+            ? 'bg-amber-50 text-amber-900 border border-amber-200'
+            : 'bg-indigo-50 text-indigo-900 border border-indigo-200')));
+  }
   }
 
   try {
