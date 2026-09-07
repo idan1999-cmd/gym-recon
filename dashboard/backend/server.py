@@ -40,18 +40,28 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             return
 
         elif path == "/api/data":
-            cur_m = datetime.now().month
-            month = int(query.get("month", [str(cur_m)])[0])
-            club = query.get("club", ["all"])[0]
-            snapshot = query.get("snapshot", [None])[0]
+            try:
+                cur_m = datetime.now().month
+                month = int(query.get("month", [str(cur_m)])[0])
+                club = query.get("club", ["all"])[0]
+                snapshot = query.get("snapshot", [None])[0]
 
-            summary = data_service.get_dashboard_summary(month=month, club_filter=club, snapshot=snapshot)
+                summary = data_service.get_dashboard_summary(month=month, club_filter=club, snapshot=snapshot)
 
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.end_headers()
-            self.wfile.write(json.dumps(summary, ensure_ascii=False).encode("utf-8"))
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps(summary, ensure_ascii=False).encode("utf-8"))
+            except Exception as e:
+                print(f"Error serving /api/data for month {month}:", e)
+                import traceback
+                traceback.print_exc()
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}, ensure_ascii=False).encode("utf-8"))
             return
 
         elif path == "/api/schedule_analytics":
