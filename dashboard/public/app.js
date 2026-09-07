@@ -1924,9 +1924,11 @@ function renderQuarterlyMembershipTable(seasonal, selectedYear) {
     const rows = yData.rows || seasonal.quarterly_table || [];
     const totals = yData.totals || {};
 
+    const hasQ4 = yData.columns ? yData.columns.some(c => c.key === 'q4') : (selectedYear !== '2026');
+
     if (noteEl) {
       if (selectedYear === '2026') {
-        noteEl.innerText = '*2026: ביצוע מאומת Q1–Q3 וצפי סגירה אסטרטגי Q4';
+        noteEl.innerText = '*2026: ביצוע מאומת ומגמות רבעוניות Q1–Q3 (ללא צפי ספקולטיבי)';
       } else if (selectedYear === '2025') {
         noteEl.innerText = '*2025: נתוני ביצוע היסטוריים מאומתים מסגירת שנת 2025';
       } else {
@@ -1942,8 +1944,8 @@ function renderQuarterlyMembershipTable(seasonal, selectedYear) {
           <th class="py-2 px-2 text-center">Q1 (ינו-מרץ)</th>
           <th class="py-2 px-2 text-center">Q2 (אפר-יוני)</th>
           <th class="py-2 px-2 text-center ${isCurrent26 ? 'bg-indigo-50/60 text-indigo-900 font-black' : ''}">Q3 (יול-ספט) ${isCurrent26 ? '🎯' : ''}</th>
-          <th class="py-2 px-2 text-center ${isCurrent26 ? 'bg-purple-50/60 text-purple-900 font-black' : ''}">Q4 (אוק-דצמ) ${isCurrent26 ? '🔮' : ''}</th>
-          <th class="py-2 px-2 text-center">ממוצע שנתי</th>
+          ${hasQ4 ? `<th class="py-2 px-2 text-center ${isCurrent26 ? 'bg-purple-50/60 text-purple-900 font-black' : ''}">Q4 (אוק-דצמ) ${isCurrent26 ? '🔮' : ''}</th>` : ''}
+          <th class="py-2 px-2 text-center">${hasQ4 ? 'ממוצע שנתי' : 'ממוצע תקופתי (Q1-Q3)'}</th>
           <th class="py-2 px-2 text-center">קצב שינוי</th>
           <th class="py-2 px-2 rounded-l-lg">תובנה ניהולית ומגמה</th>
         </tr>
@@ -1956,6 +1958,7 @@ function renderQuarterlyMembershipTable(seasonal, selectedYear) {
         ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
         : (row.delta_str === 'עונתי' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-50 text-slate-600 border-slate-200');
       const color = row.color || defaultColors[idx % defaultColors.length];
+      const avgVal = row.annual_avg || (hasQ4 ? Math.round((row.q1+row.q2+row.q3+(row.q4||0))/4) : Math.round((row.q1+row.q2+row.q3)/3));
 
       return `
         <tr class="hover:bg-slate-50/80 transition-colors">
@@ -1966,8 +1969,8 @@ function renderQuarterlyMembershipTable(seasonal, selectedYear) {
           <td class="py-2 px-2 text-center text-slate-600 font-semibold">${row.q1}</td>
           <td class="py-2 px-2 text-center text-slate-600 font-semibold">${row.q2}</td>
           <td class="py-2 px-2 text-center font-black text-indigo-900 bg-indigo-50/40">${row.q3}</td>
-          <td class="py-2 px-2 text-center font-black text-purple-900 bg-purple-50/40">${row.q4}</td>
-          <td class="py-2 px-2 text-center text-slate-700 font-bold bg-slate-50/40">${row.annual_avg || Math.round((row.q1+row.q2+row.q3+row.q4)/4)}</td>
+          ${hasQ4 ? `<td class="py-2 px-2 text-center font-black text-purple-900 bg-purple-50/40">${row.q4}</td>` : ''}
+          <td class="py-2 px-2 text-center text-slate-700 font-bold bg-slate-50/40">${avgVal}</td>
           <td class="py-2 px-2 text-center">
             <span class="px-2 py-0.5 rounded-full text-[10px] font-black border ${badgeClass}">
               ${row.delta_str}
@@ -1986,9 +1989,9 @@ function renderQuarterlyMembershipTable(seasonal, selectedYear) {
       const q2Tot = totals.q2 || 796;
       const q3Tot = totals.q3 || 852;
       const q4Tot = totals.q4 || 875;
-      const avgTot = totals.annual_avg || 828;
-      const growthTot = totals.growth || '+11.0%';
-      const noteTot = totals.note || 'צמיחה שנתית עקבית במועדון ובפילאטיס';
+      const avgTot = totals.annual_avg || (hasQ4 ? 828 : 812);
+      const growthTot = totals.growth || (hasQ4 ? '+11.0%' : '+8.1%');
+      const noteTot = totals.note || 'ביצוע מאומת ומגמות רבעוניות Q1–Q3';
 
       tfoot.innerHTML = `
         <tr class="bg-slate-100/70 font-black text-slate-900 border-t-2 border-slate-300">
@@ -1996,7 +1999,7 @@ function renderQuarterlyMembershipTable(seasonal, selectedYear) {
           <td class="py-2 px-2 text-center">${q1Tot}</td>
           <td class="py-2 px-2 text-center">${q2Tot}</td>
           <td class="py-2 px-2 text-center bg-indigo-100/50 text-indigo-900 font-black">${q3Tot}</td>
-          <td class="py-2 px-2 text-center bg-purple-100/50 text-purple-900 font-black">${q4Tot}</td>
+          ${hasQ4 ? `<td class="py-2 px-2 text-center bg-purple-100/50 text-purple-900 font-black">${q4Tot}</td>` : ''}
           <td class="py-2 px-2 text-center bg-slate-200/50 text-slate-900 font-black">${avgTot}</td>
           <td class="py-2 px-2 text-center text-emerald-600">${growthTot}</td>
           <td class="py-2 px-2 rounded-l-lg text-[10px] text-slate-500 font-normal">${noteTot}</td>

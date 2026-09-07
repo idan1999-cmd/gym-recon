@@ -692,17 +692,45 @@ class DashboardDataService:
 
         attendance_map = {}
         try:
+            def _extract_num(val_str):
+                if not val_str:
+                    return 0.0
+                m = re.match(r"^\s*([0-9]+(?:\.[0-9]+)?)", str(val_str).strip())
+                return float(m.group(1)) if m else 0.0
+
             if att_file.suffix.lower() == ".csv":
                 for enc in ["utf-8-sig", "utf-8", "cp1255", "iso-8859-8"]:
                     try:
                         with open(att_file, encoding=enc) as f:
                             reader = csv.DictReader(f)
+                            week_cols = [k for k in (reader.fieldnames or []) if "שבוע" in k]
+                            
                             for r in reader:
                                 name = (r.get("שם") or r.get("שם לקוח") or r.get("מתאמן") or r.get("שם מלא") or "").strip()
-                                visits = safe_float(r.get("כניסות") or r.get("כמות כניסות") or r.get("נוכחות") or r.get("אימונים") or r.get("סה״כ שיעורים") or 0)
-                                weekly = safe_float(r.get("ממוצע שבועי") or r.get("אימונים לשבוע") or (visits / 4.0 if visits else 0))
-                                last_v = (r.get("ביקור אחרון") or r.get("תאריך אחרון") or "").strip()
-                                if name:
+                                if not name:
+                                    continue
+
+                                if week_cols:
+                                    week_vals = [_extract_num(r.get(c)) for c in week_cols]
+                                    total_visits = sum(week_vals)
+                                    last_4 = week_vals[-4:] if len(week_vals) >= 4 else week_vals
+                                    weekly_avg = sum(last_4) / len(last_4) if last_4 else 0.0
+                                    
+                                    last_v = ""
+                                    for c in reversed(week_cols):
+                                        if _extract_num(r.get(c)) > 0:
+                                            last_v = c
+                                            break
+                                    attendance_map[name] = {
+                                        "visits": int(total_visits),
+                                        "weekly_avg": round(weekly_avg, 1),
+                                        "last_visit": last_v or "ללא ביקורים לאחרונה",
+                                        "memberships": r.get("חברויות", "").strip()
+                                    }
+                                else:
+                                    visits = safe_float(r.get("כניסות") or r.get("כמות כניסות") or r.get("נוכחות") or r.get("אימונים") or r.get("סה״כ שיעורים") or 0)
+                                    weekly = safe_float(r.get("ממוצע שבועי") or r.get("אימונים לשבוע") or (visits / 4.0 if visits else 0))
+                                    last_v = (r.get("ביקור אחרון") or r.get("תאריך אחרון") or "").strip()
                                     attendance_map[name] = {
                                         "visits": int(visits),
                                         "weekly_avg": round(weekly, 1),
@@ -722,22 +750,44 @@ class DashboardDataService:
                         headers[str(v).strip()] = c
 
                 name_col = headers.get("שם") or headers.get("שם לקוח") or headers.get("מתאמן") or headers.get("שם מלא")
-                visits_col = headers.get("כניסות") or headers.get("כמות כניסות") or headers.get("נוכחות") or headers.get("אימונים") or headers.get("סה״כ שיעורים")
-                weekly_col = headers.get("ממוצע שבועי") or headers.get("אימונים לשבוע")
-                last_col = headers.get("ביקור אחרון") or headers.get("תאריך אחרון")
-
-                if name_col and visits_col:
+                week_cols = [c for h_name, c in headers.items() if "שבוע" in h_name]
+                
+                if name_col and week_cols:
+                    week_cols.sort()
                     for r in range(2, ws.max_row + 1):
                         name = str(ws.cell(r, name_col).value or "").strip()
-                        visits = safe_float(ws.cell(r, visits_col).value or 0)
-                        weekly = safe_float(ws.cell(r, weekly_col).value) if weekly_col else round(visits / 4.0, 1)
-                        last_v = str(ws.cell(r, last_col).value or "").strip() if last_col else ""
-                        if name:
-                            attendance_map[name] = {
-                                "visits": int(visits),
-                                "weekly_avg": round(weekly, 1),
-                                "last_visit": last_v
-                            }
+                        if not name:
+                            continue
+                        week_vals = [_extract_num(ws.cell(r, c).value) for c in week_cols]
+                        total_visits = sum(week_vals)
+                        last_4 = week_vals[-4:] if len(week_vals) >= 4 else week_vals
+                        weekly_avg = sum(last_4) / len(last_4) if last_4 else 0.0
+                        last_v = ""
+                        for c in reversed(week_cols):
+                            if _extract_num(ws.cell(r, c).value) > 0:
+                                last_v = [k for k, v in headers.items() if v == c][0]
+                                break
+                        attendance_map[name] = {
+                            "visits": int(total_visits),
+                            "weekly_avg": round(weekly_avg, 1),
+                            "last_visit": last_v or "ללא ביקורים לאחרונה"
+                        }
+                elif name_col:
+                    visits_col = headers.get("כניסות") or headers.get("כמות כניסות") or headers.get("נוכחות") or headers.get("אימונים") or headers.get("סה״כ שיעורים")
+                    weekly_col = headers.get("ממוצע שבועי") or headers.get("אימונים לשבוע")
+                    last_col = headers.get("ביקור אחרון") or headers.get("תאריך אחרון")
+                    if visits_col:
+                        for r in range(2, ws.max_row + 1):
+                            name = str(ws.cell(r, name_col).value or "").strip()
+                            visits = safe_float(ws.cell(r, visits_col).value or 0)
+                            weekly = safe_float(ws.cell(r, weekly_col).value) if weekly_col else round(visits / 4.0, 1)
+                            last_v = str(ws.cell(r, last_col).value or "").strip() if last_col else ""
+                            if name:
+                                attendance_map[name] = {
+                                    "visits": int(visits),
+                                    "weekly_avg": round(weekly, 1),
+                                    "last_visit": last_v
+                                }
         except Exception as e:
             print("Error parsing Arbox attendance report:", e)
 
@@ -1200,51 +1250,49 @@ class DashboardDataService:
                     "columns": [
                         {"key": "q1", "label": "Q1", "period": "ינואר-מרץ", "badge": "ביצוע מאומת"},
                         {"key": "q2", "label": "Q2", "period": "אפריל-יוני", "badge": "ביצוע מאומת"},
-                        {"key": "q3", "label": "Q3", "period": "יולי-ספטמבר", "badge": "רבעון נוכחי 🎯", "highlight": True},
-                        {"key": "q4", "label": "Q4", "period": "אוקטובר-דצמבר", "badge": "צפי סגירה 🔮"}
+                        {"key": "q3", "label": "Q3", "period": "יולי-ספטמבר", "badge": "רבעון נוכחי 🎯", "highlight": True}
                     ],
                     "totals": {
                         "q1": 788,
                         "q2": 796,
                         "q3": 852,
-                        "q4": 875,
-                        "annual_avg": 828,
-                        "growth": "+11.0%",
-                        "note": "צמיחה שנתית עקבית במועדון ובפילאטיס"
+                        "annual_avg": 812,
+                        "growth": "+8.1%",
+                        "note": "ביצוע מאומת ומגמות רבעוניות Q1–Q3"
                     },
                     "rows": [
                         {
                             "name": "מנוי שנתי מועדון A+",
                             "color": "#4f46e5",
-                            "q1": 435, "q2": 440, "q3": 456, "q4": 470,
-                            "annual_avg": 450,
-                            "delta_str": "+8.0%",
+                            "q1": 435, "q2": 440, "q3": 456,
+                            "annual_avg": 444,
+                            "delta_str": "+4.8%",
                             "trend_badge": "צמיחה מתמדת 📈",
                             "note": "עמוד השדרה של המועדון, שימור גבוה"
                         },
                         {
                             "name": "מנוי פילאטיס מכשירים",
                             "color": "#06b6d4",
-                            "q1": 118, "q2": 135, "q3": 156, "q4": 172,
-                            "annual_avg": 145,
-                            "delta_str": "+45.8%",
+                            "q1": 118, "q2": 135, "q3": 156,
+                            "annual_avg": 136,
+                            "delta_str": "+32.2%",
                             "trend_badge": "זינוק חד 🔥",
                             "note": "מנוע הצמיחה המהיר במועדון עם ARPU גבוה"
                         },
                         {
                             "name": "מנוי 3 חודשים / תקופתי",
                             "color": "#10b981",
-                            "q1": 58, "q2": 64, "q3": 65, "q4": 60,
+                            "q1": 58, "q2": 64, "q3": 65,
                             "annual_avg": 62,
-                            "delta_str": "+3.4%",
+                            "delta_str": "+12.1%",
                             "trend_badge": "יציב ⚖️",
                             "note": "מנוי מעבר, יעד שדרוג למנוי שנתי"
                         },
                         {
                             "name": "מנוי קיץ מועדון",
                             "color": "#f59e0b",
-                            "q1": 0, "q2": 24, "q3": 45, "q4": 5,
-                            "annual_avg": 19,
+                            "q1": 0, "q2": 24, "q3": 45,
+                            "annual_avg": 23,
                             "delta_str": "עונתי",
                             "trend_badge": "עונתיות קיץ ☀️",
                             "note": "מנויי יוני-אוגוסט, צפי פקיעה לקראת החגים"
@@ -1252,20 +1300,20 @@ class DashboardDataService:
                         {
                             "name": "מנוי PREMIUM / מורחב",
                             "color": "#ec4899",
-                            "q1": 32, "q2": 38, "q3": 42, "q4": 45,
-                            "annual_avg": 39,
-                            "delta_str": "+40.6%",
+                            "q1": 32, "q2": 38, "q3": 42,
+                            "annual_avg": 37,
+                            "delta_str": "+31.2%",
                             "trend_badge": "צמיחה מואצת 💎",
                             "note": "חבילות VIP משולבות חדר כושר וסטודיו"
                         },
                         {
                             "name": "אחרים, נוער וכרטיסיות",
                             "color": "#8b5cf6",
-                            "q1": 145, "q2": 95, "q3": 88, "q4": 123,
-                            "annual_avg": 113,
-                            "delta_str": "מתאזן",
-                            "trend_badge": "חידושים 🔄",
-                            "note": "חזרה מוגברת אחרי החגים ברבעון 4"
+                            "q1": 145, "q2": 95, "q3": 88,
+                            "annual_avg": 109,
+                            "delta_str": "-39.3%",
+                            "trend_badge": "המרה לשנתי 🔄",
+                            "note": "מעבר מנויים קצרים למנויים שנתיים קבועים"
                         }
                     ]
                 },
@@ -1430,21 +1478,19 @@ class DashboardDataService:
                 "categories": [
                     "Q1-2026",
                     "Q2-2026",
-                    "Q3-2026",
-                    "Q4-2026"
+                    "Q3-2026"
                 ],
                 "series": [
                     {
                         "name": r["name"],
-                        "data": [r["q1"], r["q2"], r["q3"], r["q4"]]
+                        "data": [r["q1"], r["q2"], r["q3"]]
                     }
                     for r in quarterly_by_year["2026"]["rows"]
                 ],
                 "totals": [
                     quarterly_by_year["2026"]["totals"]["q1"],
                     quarterly_by_year["2026"]["totals"]["q2"],
-                    quarterly_by_year["2026"]["totals"]["q3"],
-                    quarterly_by_year["2026"]["totals"]["q4"]
+                    quarterly_by_year["2026"]["totals"]["q3"]
                 ],
                 "quarterly_table": quarterly_by_year["2026"]["rows"]
             }
@@ -2419,6 +2465,18 @@ class DashboardDataService:
         if not files:
             return None
 
+        # Prioritize files in dropzone, and specific invoice/receipt exports
+        def _file_sort_key(f):
+            is_drop = 0 if "dropzone" in str(f).lower() else 1
+            is_inv = 0 if any(k in f.name.lower() for k in ["חשבוניות", "חשבונית", "תקבול", "סליקה"]) else 1
+            try:
+                mtime = -f.stat().st_mtime
+            except Exception:
+                mtime = 0
+            return (is_drop, is_inv, mtime)
+
+        files.sort(key=_file_sort_key)
+
         month_names = {
             1: ["ינואר", "01", "1"], 2: ["פברואר", "02", "2"], 3: ["מרץ", "03", "3"],
             4: ["אפריל", "04", "4"], 5: ["מאי", "05", "5"], 6: ["יוני", "06", "6"],
@@ -2485,9 +2543,10 @@ class DashboardDataService:
                 except Exception as e:
                     print(f"Error parsing xlsx revenue report {fpath}:", e)
             elif fpath.suffix.lower() == ".csv":
-                # Check CSV if month keyword in filename
                 fname_lower = fpath.name.lower()
-                if any(kw in fname_lower for kw in m_keywords):
+                is_dropzone = "dropzone" in str(fpath).lower()
+                # If file is in dropzone or matches month keywords or contains sales/invoices keywords
+                if is_dropzone or any(kw in fname_lower for kw in m_keywords) or any(k in fname_lower for k in ["חשבוניות", "מכירות"]):
                     for enc in ["utf-8-sig", "utf-8", "cp1255", "iso-8859-8"]:
                         try:
                             with open(fpath, encoding=enc) as f:
@@ -2497,37 +2556,62 @@ class DashboardDataService:
                                 continue
                             header_idx = None
                             paid_col = None
+                            net_col = None
                             branch_col = None
+                            item_name_col = None
+
                             for idx, r in enumerate(rows[:6]):
                                 for c_idx, val in enumerate(r):
                                     v = str(val or "").strip()
-                                    if any(k in v for k in ["שולם", "תקבול", "סכום לתשלום", "סכום ששולם"]):
+                                    if any(k in v for k in ["כולל מע''מ", "כולל מע\"מ", "סכום כולל"]):
+                                        paid_col = c_idx
+                                    elif any(k in v for k in ["לפני מע״מ", "לפני מע\"מ", "סכום לפני"]):
+                                        net_col = c_idx
+                                    elif any(k in v for k in ["שולם", "תקבול", "סכום לתשלום", "סכום ששולם"]) and paid_col is None:
                                         paid_col = c_idx
                                     if any(k in v for k in ["סניף", "מועדון"]):
                                         branch_col = c_idx
-                                if paid_col is not None:
+                                    if any(k in v for k in ["שם הפריט", "שם מוצר", "פריט"]):
+                                        item_name_col = c_idx
+                                if paid_col is not None or net_col is not None:
                                     header_idx = idx
                                     break
-                            if header_idx is not None and paid_col is not None:
+
+                            target_col = paid_col if paid_col is not None else net_col
+                            if header_idx is not None and target_col is not None:
                                 tot = 0.0
+                                tot_net = 0.0
                                 for r in rows[header_idx + 1:]:
-                                    if paid_col < len(r):
-                                        val_str = r[paid_col].replace(",", "").strip()
+                                    if target_col < len(r):
+                                        val_str = r[target_col].replace(",", "").strip()
+                                        # Filter by club if gym / pilates
+                                        check_text = ""
                                         if branch_col is not None and branch_col < len(r):
-                                            bval = r[branch_col]
-                                            if club_filter == "gym" and "פילאטיס" in bval:
+                                            check_text += " " + str(r[branch_col])
+                                        if item_name_col is not None and item_name_col < len(r):
+                                            check_text += " " + str(r[item_name_col])
+
+                                        if check_text:
+                                            if club_filter == "gym" and "פילאטיס" in check_text:
                                                 continue
-                                            if club_filter == "pilates" and "פילאטיס" not in bval:
+                                            if club_filter == "pilates" and "פילאטיס" not in check_text:
                                                 continue
+
                                         try:
-                                            tot += float(val_str)
+                                            parsed_val = float(val_str)
+                                            tot += parsed_val
+                                            if net_col is not None and net_col < len(r):
+                                                tot_net += float(r[net_col].replace(",", "").strip())
                                         except Exception:
                                             pass
                                 if tot > 0:
-                                    return {
+                                    res = {
                                         "source": fpath.name,
                                         "amount": round(tot, 2)
                                     }
+                                    if tot_net > 0:
+                                        res["amount_net"] = round(tot_net, 2)
+                                    return res
                         except Exception:
                             continue
         return None
@@ -3486,6 +3570,10 @@ class DashboardDataService:
                         if c2_str.startswith("סה") or c3_str.startswith("סה"):
                             continue
 
+                        # Skip subtotal rows where both c2 and c3 are numbers
+                        if isinstance(c2, (int, float)) and isinstance(c3, (int, float)):
+                            continue
+
                         # Check if row defines a new supplier name
                         if c2 is not None and not isinstance(c2, (int, float)):
                             s_clean = str(c2).strip()
@@ -3502,15 +3590,46 @@ class DashboardDataService:
                             desc = str(c3 or "").strip()
 
                         if amt > 0 and curr_supplier:
-                            # Parse service month vs submission month
                             # Submission month is the dashboard month
                             submission_month_str = f"{month_idx}/26"
-                            service_month_str = submission_month_str
+
+                            # Parse service month from description if present (e.g. 5/26, 6/26, 1-6/26)
+                            m_match = re.search(r"(\d{1,2}(?:-\d{1,2})?/\d{2})", desc)
+                            if m_match:
+                                service_month_str = m_match.group(1)
+                            else:
+                                service_month_str = submission_month_str
+
+                            # Detect contracts and installments
+                            is_contract = False
+                            installment_str = None
+                            if desc and ("הסכם" in desc or "תשלומים" in desc or "הו\"ק" in desc):
+                                is_contract = True
+                                installment_str = desc
+                            elif curr_supplier and ("הסכם" in curr_supplier or "הו\"ק" in curr_supplier):
+                                is_contract = True
+                                installment_str = desc or "הסכם שוטף"
+
+                            # Detect fill color: yellow (FFFFFF00) indicates approved/paid in cashflow workbook
+                            c3_cell = ws.cell(r, 3)
+                            c3_fill = c3_cell.fill.start_color.rgb if (c3_cell.fill and c3_cell.fill.start_color) else None
+                            c2_cell = ws.cell(r, 2)
+                            c2_fill = c2_cell.fill.start_color.rgb if (c2_cell.fill and c2_cell.fill.start_color) else None
+                            is_yellow = (c3_fill == "FFFFFF00") or (c2_fill == "FFFFFF00")
 
                             # Match terms from whitelist or keyword defaults
                             matched_entry = whitelist_suppliers.get(curr_supplier)
                             terms = matched_entry.get("payment_terms", "+60") if matched_entry else "+60"
-                            category = matched_entry.get("category", "תפעול שוטף") if matched_entry else "תפעול ואחזקה"
+
+                            # Category classification: סטריטמול, אריאל ספא, or operational overhead
+                            if curr_supplier == "סטריטמול":
+                                category = "סטריטמול"
+                            elif curr_supplier == "אריאל ספא":
+                                category = "אריאל ספא"
+                            elif matched_entry:
+                                category = matched_entry.get("category", "תפעול שוטף")
+                            else:
+                                category = "תפעול ואחזקה"
 
                             if not matched_entry:
                                 if any(k in curr_supplier for k in ["חשמל", "ארבוקס", "אינטרנט", "בזק", "אחזקה", "ניקיון", "יוסף"]):
@@ -3521,14 +3640,11 @@ class DashboardDataService:
                                     terms = "+60"
 
                             # Calculate Ageing (approximate days passed based on service month vs close date)
-                            # Close date is end of month (e.g., 31/08/2026)
                             days_overdue = 0
                             is_overdue = False
-                            # Extract first month number in service_month_str
                             m_num_match = re.search(r"(\d{1,2})", service_month_str)
                             if m_num_match:
                                 s_m = int(m_num_match.group(1))
-                                # Month delta
                                 delta_m = (month_idx - s_m)
                                 if delta_m < 0:
                                     delta_m = 0
@@ -3546,7 +3662,12 @@ class DashboardDataService:
                             if item_id in archived_ids_set:
                                 continue
 
-                            is_approved = (item_id in approved_ids_set) or (r <= 36 and month_idx == 8 and "approved_ids" not in m_state)
+                            if item_id in approved_ids_set:
+                                is_approved = True
+                            elif "approved_ids" in m_state:
+                                is_approved = False
+                            else:
+                                is_approved = is_yellow
 
                             suppliers_list.append({
                                 "id": item_id,

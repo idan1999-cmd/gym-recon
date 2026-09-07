@@ -10,6 +10,40 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
 
+## 2026-09-07 — Attendance Parser, Invoice Sales Integration, Q4 Removal & Masav Color Sync
+
+- **What changed:**
+  1. **Weekly Attendance Report Ingestion (`attendance-report.csv`):**
+     - Implemented parsing for weekly columns (`שבוע 30` to `שבוע 37`) in `parse_arbox_attendance`.
+     - Extracted numeric visits from complex formats like `"2 (71.4%)"` via regex.
+     - Calculated total visits, 4-week moving average, and identified last active week (`last_visit`) across 828 members.
+  2. **Invoice-Based Sales Ingestion (`דוח מכירות עפ״י חשבוניות.csv`):**
+     - Added prioritization for dropzone exports and invoice sales CSVs in `parse_monthly_revenue_report`.
+     - Extracted gross (₪104,182.64) and net before VAT (₪88,290.14) with club filtering (Gym: ₪83,310.80 / Pilates: ₪20,871.84).
+     - Directly connected verified invoice billing into active revenue and pacing tracker.
+  3. **Removed Speculative Q4 Projections & 2024 References:**
+     - Removed Q4 projection column and totals from 2026 in `quarterly_by_year` and `seasonal_chart_data`.
+     - Limited 2026 trends strictly to verified actuals Q1–Q3 (Totals: Q1 788, Q2 796, Q3 852; periodic average 812; growth +8.1%).
+     - Updated UI table in `dashboard/public/app.js` to dynamically hide Q4 for 2026.
+  4. **Historical Masav Suppliers Sync from Cashflow Workbook (`מסב ספקים 8.26`):**
+     - Parsed 49 supplier items from `תקציב תזרים 2026.xlsx` (and latest snapshot `תקציב תזרים 17.8.xlsx`).
+     - Derived approvals directly from Excel cell fill color: Yellow (`FFFFFF00`) indicates approved/paid (`שולם/אושר`), White indicates pending (`לתשלום`).
+     - Classified suppliers into dedicated groups: Street Mall (`סטריטמול` - ₪110,161.0), Ariel Fit & Spa (`אריאל ספא` - ₪297,097.0), and operational overhead.
+     - Detected recurring contracts (e.g. אגנטק 7 payments, אלקטרה) and maintained payment terms (+30/+60) and UI approval action buttons.
+  5. **Cleaned Tasks Board (`config/tasks_board.json`):**
+     - Cleared placeholder mock tasks so Idan can start fresh with clean operational task tracking.
+  6. **Operational Clarification on Arbox Class Schedules:**
+     - Clarified that schedule CSVs are read on-the-fly whenever placed in the dropzone or synced locally.
+- **Why (what Idan asked for, in his words):**
+  - *"העליתי לך דוח התמדה, אני אשמח רגע שתריץ את זה ותראה איך זה עובד. ואיך הגעת לחישוב של Q4 בצפי? אני חושב שהוא פשוט לא ריאלי ולא כל כך הגיוני. תוריד אותו מהטבלה. אין צורך לציין צפי של 2024 ולתת צפי של Q4 בפילוח מגמות וכמויות מנויים לפי רבעונים. העליתי לך גם את דוח המכירות על פי חשבונית, תסתכל עליו גם, הוא אמור לתת לנו את ההכנסות הנוכחיות שלנו כרגע. כשאתה מוציא דוח שיעורים, אתה מוציא אותו כל הזמן ב-live? בסופו של דבר אני רוצה לוודא שזה באמת."*
+- **What it touches:**
+  - `dashboard/backend/data_service.py`, `dashboard/public/app.js`, `config/tasks_board.json`, `docs/BUILDER_LOG.md`.
+- **How it was verified:**
+  - Automated test script verified all 5 modules with 100% assertions passing.
+  - Full test suites `tests/test_idan_fixes.py` (27/27) and `tests/test_resilience.py` (11/11) passing.
+
+---
+
 ## 2026-09-07 — Monthly Revenue Report Ingestion & Accurate Live Pacing Tracker
 
 - **What changed:**
