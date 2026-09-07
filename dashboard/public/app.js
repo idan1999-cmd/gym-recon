@@ -76,9 +76,15 @@ function switchView(viewName) {
   if (supCont) {
     supCont.classList.toggle('hidden', viewName !== 'suppliers');
   }
+  const tasksCont = document.getElementById('view-container-tasks');
+  if (tasksCont) {
+    tasksCont.classList.toggle('hidden', viewName !== 'tasks');
+  }
 
   if (viewName === 'suppliers') {
     loadSuppliersDashboard();
+  } else if (viewName === 'tasks') {
+    loadTasksBoard();
   } else if (viewName === 'schedule') {
     loadScheduleAnalytics();
   } else if (viewName === 'charts' && dashboardData) {
@@ -484,6 +490,7 @@ function renderDashboard(data) {
   renderSmartInsights(data.smart_insights);
 
   // 2. Render Cards View (View 1)
+  renderRevenueBreakdown(data.revenue_breakdown);
   renderCategoryCards(data.incomes, 'incomes-cards-container', 'income');
   renderCategoryCards(data.variable_expenses, 'expenses-cards-container', 'expense');
   renderFixedCards(data.fixed_expenses);
@@ -776,7 +783,14 @@ function renderCategoryCards(items, containerId, type) {
           </div>
           <div class="text-left">
             <span class="text-[11px] text-zinc-400 block font-medium">${isIncome ? 'נכנס בפועל' : 'יצא בפועל'}</span>
-            <span class="text-lg font-black ${textAmountColor}">${formatNIS(a)}</span>
+            ${(isIncome && a === 0 && item.actual_estimated) ? `
+              <div class="flex items-baseline gap-1.5 justify-end">
+                <span class="text-lg font-black text-slate-400" title="צפי נוכחי מחושב מתוך דוח קבלות/ארבוקס (${item.actual_estimated_source || ''})">${formatNIS(item.actual_estimated)}</span>
+                <span class="text-[10px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-md">צפי (קבלות)</span>
+              </div>
+            ` : `
+              <span class="text-lg font-black ${textAmountColor}">${formatNIS(a)}</span>
+            `}
           </div>
         </div>
 
@@ -3152,6 +3166,436 @@ function initDashboard() {
   });
   fetchDashboardData();
 }
+
+// =============================================================================
+// REVENUE BREAKDOWN — Live Arbox, PT, Studio & Platform Breakdown
+// =============================================================================
+
+let cachedRevenueBreakdown = null;
+
+function renderRevenueBreakdown(data) {
+  if (!data) return;
+  cachedRevenueBreakdown = data;
+
+  const totalDisplay = document.getElementById('rev-breakdown-total-display');
+  if (totalDisplay && data.totals) {
+    totalDisplay.innerText = formatNIS(data.totals.estimated);
+  }
+
+  const tbody = document.getElementById('revenue-breakdown-tbody');
+  if (!tbody || !data.rows) return;
+
+  tbody.innerHTML = data.rows.map((row, idx) => {
+    const isOverride = row.override !== null && row.override !== undefined;
+    const displayAmt = isOverride ? row.override : (row.estimated !== null ? row.estimated : 0);
+    const hasEstimate = row.estimated !== null && row.estimated !== undefined;
+
+    return `
+      <tr class="hover:bg-slate-50/80 transition-colors">
+        <td class="py-2.5 px-3 font-mono text-slate-500 font-bold">${row.code}</td>
+        <td class="py-2.5 px-3">
+          <div class="font-bold text-slate-900">${row.label}</div>
+          ${row.api_status === 'no_api' ? `<span class="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded font-black">ללא API</span>` : ''}
+        </td>
+        <td class="py-2.5 px-3 text-slate-600">${row.branch}</td>
+        <td class="py-2.5 px-3 text-left font-semibold text-slate-400">
+          ${row.actual_ledger > 0 ? formatNIS(row.actual_ledger) : '<span class="text-slate-300">₪ 0 (טרם נסגר)</span>'}
+        </td>
+        <td class="py-2.5 px-3 text-left">
+          ${hasEstimate ? `
+            <div class="flex items-baseline gap-1.5 justify-end">
+              <span class="font-black text-slate-600 text-sm">${formatNIS(row.estimated)}</span>
+              <span class="text-[9px] font-bold text-slate-400 bg-slate-100 border border-slate-200 px-1 py-0.2 rounded">צפי</span>
+            </div>
+          ` : '<span class="text-slate-300 text-left block">—</span>'}
+        </td>
+        <td class="py-2.5 px-3 text-slate-500 text-[11px]">
+          ${row.arbox_metric || '—'}
+        </td>
+        <td class="py-2.5 px-3 text-center">
+          <input 
+            type="number" 
+            value="${isOverride ? row.override : ''}" 
+            placeholder="${hasEstimate ? Math.round(row.estimated) : 'הזן...'}" 
+            onchange="handleRevenueOverride('${row.code}', this.value)"
+            class="w-24 text-center px-2 py-1 rounded-lg border ${isOverride ? 'border-emerald-500 bg-emerald-50 font-black text-emerald-900' : 'border-slate-200 bg-white font-medium text-slate-700'} text-xs focus:outline-none focus:ring-2 focus:ring-rose-500 shadow-2xs"
+          />
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function handleRevenueOverride(code, val) {
+  const num = val === '' ? null : parseFloat(val);
+  const monthKey = `2026-${String(currentMonth).padStart(2, '0')}`;
+  
+  // Field mapping
+  const fieldMap = {
+    '80001': 'mrr_gym',
+    '181-80001': 'mrr_pilates',
+    '80002': 'pt_actual',
+    '22660': 'group_actual',
+    '181-22660': 'pilates_actual',
+    '80010': 'move_actual',
+    '80011': 'freefit_actual'
+  };
+  const field = fieldMap[code] || code;
+
+  try {
+    const res = await fetch('/api/revenue_breakdown/override', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ month_key: monthKey, field: field, value: num })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('הכיוונון נשמר בהצלחה');
+      // Refresh dashboard data
+      fetchDashboardData();
+    }
+  } catch (err) {
+    showToast('שגיאה בשמירת הכיוונון');
+  }
+}
+
+// =============================================================================
+// TASKS BOARD — Club Operations Management
+// =============================================================================
+
+let tasksData = null;
+let currentTaskFilter = 'all';
+
+async function loadTasksBoard() {
+  try {
+    const res = await fetch('/api/tasks');
+    tasksData = await res.json();
+    renderTasksBoard(tasksData);
+  } catch (err) {
+    console.error('Error loading tasks:', err);
+    showToast('שגיאה בטעינת לוח המשימות');
+  }
+}
+
+function renderTasksBoard(data) {
+  if (!data) return;
+  const summ = data.summary || {};
+
+  const kpiTotal = document.getElementById('task-kpi-total');
+  const kpiOverdue = document.getElementById('task-kpi-overdue');
+  const kpiDueToday = document.getElementById('task-kpi-due-today');
+  const kpiCompleted = document.getElementById('task-kpi-completed-week');
+  const navBadge = document.getElementById('tasks-nav-badge');
+  const lastUpdated = document.getElementById('tasks-last-updated');
+
+  if (kpiTotal) kpiTotal.innerText = summ.total || 0;
+  if (kpiOverdue) kpiOverdue.innerText = summ.overdue || 0;
+  if (kpiDueToday) kpiDueToday.innerText = summ.due_today || 0;
+  if (kpiCompleted) kpiCompleted.innerText = summ.completed_this_week || 0;
+
+  if (navBadge) {
+    const urgentCount = (summ.overdue || 0) + (summ.due_today || 0);
+    if (urgentCount > 0) {
+      navBadge.innerText = urgentCount;
+      navBadge.classList.remove('hidden');
+    } else {
+      navBadge.classList.add('hidden');
+    }
+  }
+
+  if (lastUpdated) {
+    lastUpdated.innerText = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  renderTasksList();
+}
+
+function filterTasks(filterType) {
+  currentTaskFilter = filterType;
+  document.querySelectorAll('.task-filter-btn').forEach(btn => {
+    btn.className = 'task-filter-btn px-3 py-1 rounded-xl text-xs font-bold text-zinc-600 hover:bg-zinc-100';
+  });
+  const activeBtn = document.getElementById(`task-filter-${filterType}`);
+  if (activeBtn) {
+    if (filterType === 'urgent') {
+      activeBtn.className = 'task-filter-btn px-3 py-1 rounded-xl text-xs font-black bg-rose-600 text-white shadow-2xs';
+    } else {
+      activeBtn.className = 'task-filter-btn px-3 py-1 rounded-xl text-xs font-black bg-zinc-900 text-white shadow-2xs';
+    }
+  }
+  renderTasksList();
+}
+
+function renderTasksList() {
+  if (!tasksData || !tasksData.tasks) return;
+  const container = document.getElementById('tasks-list-container');
+  if (!container) return;
+
+  let list = tasksData.tasks;
+  if (currentTaskFilter === 'daily') list = list.filter(t => t.recurrence === 'daily');
+  else if (currentTaskFilter === 'weekly') list = list.filter(t => t.recurrence === 'weekly');
+  else if (currentTaskFilter === 'monthly') list = list.filter(t => t.recurrence === 'monthly');
+  else if (currentTaskFilter === 'urgent') list = list.filter(t => t.urgency === 'overdue' || t.urgency === 'due_today' || t.priority === 'high');
+
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div class="bg-white rounded-3xl p-8 border border-zinc-200 text-center text-zinc-400 space-y-2">
+        <i data-lucide="check-circle" class="w-8 h-8 text-emerald-500 mx-auto"></i>
+        <div class="font-bold text-zinc-700">אין משימות להצגה בסינון זה</div>
+        <div class="text-xs">כל המשימות בוצעו או שאין שגרות פעילות</div>
+      </div>
+    `;
+    if (window.lucide) lucide.createIcons();
+    return;
+  }
+
+  container.innerHTML = list.map(t => {
+    // Urgency styling
+    let urgencyBadge = '';
+    let cardBorder = 'border-zinc-200/80';
+    let cardBg = 'bg-white';
+
+    if (t.urgency === 'overdue') {
+      urgencyBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-200">⚠️ באיחור של ${Math.abs(t.days_until_due || 1)} ימים</span>`;
+      cardBorder = 'border-rose-300';
+      cardBg = 'bg-rose-50/30';
+    } else if (t.urgency === 'due_today') {
+      urgencyBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-200">🔥 לביצוע היום</span>`;
+      cardBorder = 'border-amber-300';
+      cardBg = 'bg-amber-50/20';
+    } else if (t.urgency === 'soon') {
+      urgencyBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">מועד קרוב (בעוד ${t.days_until_due} ימים)</span>`;
+    }
+
+    // Recurrence label
+    const recLabel = t.recurrence === 'daily' ? '🔄 שגרה יומית' :
+                     t.recurrence === 'weekly' ? '📅 שגרה שבועית' :
+                     t.recurrence === 'monthly' ? '🗓️ שגרה חודשית' : '📌 משימה חד-פעמית';
+
+    return `
+      <div class="rounded-2xl border ${cardBorder} ${cardBg} p-4 shadow-2xs hover:shadow-xs transition space-y-2.5">
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex items-start gap-3">
+            <button onclick="markTaskDone('${t.id}')" class="mt-0.5 w-6 h-6 rounded-lg border-2 border-zinc-300 hover:border-emerald-500 hover:bg-emerald-50 text-emerald-600 flex items-center justify-center transition shrink-0" title="סמן כבוצע (יאופס אוטומטית למחזור הבא)">
+              <i data-lucide="check" class="w-3.5 h-3.5"></i>
+            </button>
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <h4 class="font-black text-sm text-zinc-900">${t.title}</h4>
+                <span class="text-[10px] font-bold px-2 py-0.5 bg-zinc-100 text-zinc-700 rounded-md">${recLabel}</span>
+                ${urgencyBadge}
+              </div>
+              <p class="text-xs text-zinc-600 mt-1 leading-relaxed">${t.description}</p>
+            </div>
+          </div>
+          <div class="text-left shrink-0 text-xs">
+            ${t.computed_next_due ? `<span class="font-mono text-zinc-500 block text-[11px]">יעד: <strong>${t.computed_next_due}</strong></span>` : ''}
+            ${t.last_completed ? `<span class="text-[10px] text-emerald-600 font-semibold block">בוצע לאחרונה: ${t.last_completed.split('T')[0]}</span>` : ''}
+          </div>
+        </div>
+
+        ${(t.checklist && t.checklist.length > 0) ? `
+          <div class="pt-2 border-t border-zinc-100 text-xs">
+            <div class="font-bold text-zinc-500 text-[10px] mb-1">פירוט שלבי ביצוע (Checklist):</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-1">
+              ${t.checklist.map((item, idx) => `
+                <label class="flex items-center gap-1.5 text-zinc-700 cursor-pointer text-[11px]">
+                  <input type="checkbox" class="w-3.5 h-3.5 rounded text-rose-600 border-zinc-300 accent-rose-600" />
+                  <span>${item}</span>
+                </label>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+
+  if (window.lucide) lucide.createIcons();
+}
+
+async function markTaskDone(taskId) {
+  try {
+    const res = await fetch('/api/tasks/complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ task_id: taskId })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('המשימה הושלמה בהצלחה! השגרה אופסה למחזור הבא ✅');
+      loadTasksBoard();
+    }
+  } catch (err) {
+    showToast('שגיאה בעדכון המשימה');
+  }
+}
+
+function openNewTaskModal() {
+  const modal = document.getElementById('task-modal');
+  const card = document.getElementById('task-modal-card');
+  if (!modal || !card) return;
+  modal.classList.remove('hidden');
+  setTimeout(() => {
+    modal.classList.remove('opacity-0');
+    card.classList.remove('scale-95');
+    card.classList.add('scale-100');
+  }, 10);
+  if (window.lucide) lucide.createIcons();
+}
+
+function closeTaskModal() {
+  const modal = document.getElementById('task-modal');
+  const card = document.getElementById('task-modal-card');
+  if (!modal || !card) return;
+  modal.classList.add('opacity-0');
+  card.classList.remove('scale-100');
+  card.classList.add('scale-95');
+  setTimeout(() => { modal.classList.add('hidden'); }, 200);
+}
+
+async function saveTaskFromModal() {
+  const title = document.getElementById('task-input-title')?.value.trim();
+  const desc = document.getElementById('task-input-desc')?.value.trim();
+  const recurrence = document.getElementById('task-input-recurrence')?.value;
+  const priority = document.getElementById('task-input-priority')?.value;
+  const dueDate = document.getElementById('task-input-due')?.value || null;
+  const followupDate = document.getElementById('task-input-followup')?.value || null;
+
+  if (!title) {
+    showToast('נא להזין שם למשימה');
+    return;
+  }
+
+  const payload = {
+    title,
+    description: desc,
+    recurrence,
+    priority,
+    due_date: dueDate,
+    followup_date: followupDate,
+    checklist: [],
+    is_custom: true
+  };
+
+  try {
+    const res = await fetch('/api/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('המשימה נשמרה בהצלחה!');
+      closeTaskModal();
+      loadTasksBoard();
+    }
+  } catch (err) {
+    showToast('שגיאה בשמירת המשימה');
+  }
+}
+
+// =============================================================================
+// MASAV TRANSMISSION & BOOKKEEPER WORKFLOW
+// =============================================================================
+
+async function transmitMasav() {
+  if (!suppliersData || !suppliersData.suppliers) return;
+  const approvedCount = suppliersData.suppliers.filter(s => s.approved).length;
+  if (approvedCount === 0) {
+    showToast('אין ספקים מסומנים לאישור תשלום');
+    return;
+  }
+
+  const confirmed = confirm(`האם לאשר שידור מס״ב עבור ${approvedCount} ספקים מאושרים ולהעבירם לארכיון?`);
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch('/api/suppliers/transmit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ month: currentMonth })
+    });
+    const result = await res.json();
+    if (result.success) {
+      showToast(`המסמך יצא! ${result.result.archived_count} ספקים הועברו לארכיון מס״ב ✅`);
+      loadSuppliersDashboard();
+    }
+  } catch (err) {
+    showToast('שגיאה בביצוע שידור מס״ב');
+  }
+}
+
+function openBookkeeperModal() {
+  const modal = document.getElementById('bookkeeper-modal');
+  const card = document.getElementById('bookkeeper-modal-card');
+  if (!modal || !card) return;
+  modal.classList.remove('hidden');
+  setTimeout(() => {
+    modal.classList.remove('opacity-0');
+    card.classList.remove('scale-95');
+    card.classList.add('scale-100');
+  }, 10);
+  if (window.lucide) lucide.createIcons();
+}
+
+function closeBookkeeperModal() {
+  const modal = document.getElementById('bookkeeper-modal');
+  const card = document.getElementById('bookkeeper-modal-card');
+  if (!modal || !card) return;
+  modal.classList.add('opacity-0');
+  card.classList.remove('scale-100');
+  card.classList.add('scale-95');
+  setTimeout(() => { modal.classList.add('hidden'); }, 200);
+}
+
+function handleInvoiceFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const statusEl = document.getElementById('upload-status-display');
+  if (statusEl) {
+    statusEl.classList.remove('hidden');
+    statusEl.innerText = `מעלה את ${file.name}...`;
+  }
+
+  const reader = new FileReader();
+  reader.onload = async function() {
+    const base64Data = reader.result.split(',')[1];
+    try {
+      const res = await fetch('/api/upload_invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: file.name,
+          content_base64: base64Data
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (statusEl) {
+          statusEl.innerText = `✅ הקובץ ${file.name} נשמר בהצלחה בתיקיית הספקים!`;
+        }
+        showToast(`החשבונית ${file.name} נשמרה בהצלחה!`);
+      }
+    } catch (err) {
+      if (statusEl) statusEl.innerText = '❌ שגיאה בהעלאת הקובץ';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+// Global exposure
+window.handleRevenueOverride = handleRevenueOverride;
+window.filterTasks = filterTasks;
+window.markTaskDone = markTaskDone;
+window.openNewTaskModal = openNewTaskModal;
+window.closeTaskModal = closeTaskModal;
+window.saveTaskFromModal = saveTaskFromModal;
+window.transmitMasav = transmitMasav;
+window.openBookkeeperModal = openBookkeeperModal;
+window.closeBookkeeperModal = closeBookkeeperModal;
+window.handleInvoiceFileUpload = handleInvoiceFileUpload;
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initDashboard);

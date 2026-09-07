@@ -44,10 +44,10 @@ MONTHLY INPUTS DROP (input/)
    └── output/runs/<run_id>/ (stores manifest, SHA256 hashes, and execution logs)
          │
          ▼
-[4. INTERACTIVE EXECUTIVE DASHBOARD, MEMBERSHIP MONITOR & PACING COCKPIT]
-   ├── dashboard/backend/data_service.py (aggregates BvA, billing, trainer stats, Arbox memberships, Arbox attendance & consistency standards, sales cancellations, weekly schedule attendance, monthly supplier payments/cashflow & live revenue pacing tracker)
-   ├── dashboard/backend/server.py (local HTTP REST API server on port 3000, serving /api/months, /api/data, /api/target, /api/schedule_analytics, /api/suppliers, /api/suppliers/state)
-   └── dashboard/public/ (modern Hebrew RTL executive web UI with cards, charts, 12-month matrix, memberships module, attendance/retention consistency, weekly timetable grid, masav suppliers approval & live revenue pacing cockpit)
+[4. INTERACTIVE EXECUTIVE DASHBOARD, TASKS BOARD & PACING COCKPIT]
+   ├── dashboard/backend/data_service.py (aggregates BvA, billing, trainer stats, Arbox memberships, Arbox attendance & consistency standards, sales cancellations, weekly schedule attendance, monthly supplier payments/cashflow, live revenue pacing tracker, Arbox MTD revenue breakdown, and club operations tasks board)
+   ├── dashboard/backend/server.py (local HTTP REST API server on port 3000, serving /api/months, /api/data, /api/target, /api/schedule_analytics, /api/suppliers, /api/suppliers/state, /api/suppliers/transmit, /api/upload_invoice, /api/tasks, /api/tasks/complete, /api/revenue_breakdown, /api/revenue_breakdown/override)
+   └── dashboard/public/ (modern Hebrew RTL executive web UI with cards, charts, 12-month matrix, memberships module, attendance/retention consistency, weekly timetable grid, masav suppliers approval, club tasks board, bookkeeper upload modal & live revenue pacing cockpit)
 ```
 
 ---

@@ -94,6 +94,26 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             self.wfile.write(b'{"status":"ok"}')
             return
 
+        elif path == "/api/tasks":
+            tasks_data = data_service.get_tasks_board()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps(tasks_data, ensure_ascii=False).encode("utf-8"))
+            return
+
+        elif path == "/api/revenue_breakdown":
+            month_param = query.get("month", [str(datetime.now().month)])[0]
+            month = int(month_param) if str(month_param).isdigit() else datetime.now().month
+            rb = data_service.get_revenue_breakdown(month=month)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps(rb, ensure_ascii=False).encode("utf-8"))
+            return
+
         # Serve static assets
         super().do_GET()
 
@@ -167,6 +187,115 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps({"success": True, "message": "סנכרון הנתונים הושלם בהצלחה"}, ensure_ascii=False).encode("utf-8"))
             return
+
+        elif parsed.path == "/api/tasks":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8"))
+                result = data_service.save_task(data)
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps(result, ensure_ascii=False).encode("utf-8"))
+                return
+            except Exception as e:
+                self.send_response(400)
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+                return
+
+        elif parsed.path == "/api/tasks/complete":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8"))
+                result = data_service.complete_task(data.get("task_id"))
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps(result, ensure_ascii=False).encode("utf-8"))
+                return
+            except Exception as e:
+                self.send_response(400)
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+                return
+
+        elif parsed.path == "/api/revenue_breakdown/override":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8"))
+                result = data_service.save_revenue_override(data)
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps(result, ensure_ascii=False).encode("utf-8"))
+                return
+            except Exception as e:
+                self.send_response(400)
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+                return
+
+        elif parsed.path == "/api/suppliers/transmit":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode("utf-8")) if body else {}
+                month = int(data.get("month", 8))
+                result = data_service.archive_approved_suppliers(month=month)
+                # Re-fetch updated suppliers state
+                payload = data_service.get_suppliers_dashboard(month=month)
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": True, "result": result, "data": payload}, ensure_ascii=False).encode("utf-8"))
+                return
+            except Exception as e:
+                self.send_response(400)
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+                return
+
+        elif parsed.path == "/api/upload_invoice":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            try:
+                # Accept base64 encoded invoice upload
+                data = json.loads(body.decode("utf-8"))
+                filename = data.get("filename", "invoice.pdf")
+                file_b64 = data.get("content_base64", "")
+                
+                # Target folder: dropzone/invoices or dropzone/invoices_suppliers
+                import base64
+                target_dir = BASE_DIR / "📥_לגרור_לכאן_את_קבצי_החודש" / "invoices_suppliers"
+                target_dir.mkdir(parents=True, exist_ok=True)
+                
+                file_path = target_dir / filename
+                with open(file_path, "wb") as f:
+                    f.write(base64.b64decode(file_b64))
+                
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "success": True,
+                    "filename": filename,
+                    "message": f"החשבונית {filename} נשמרה בהצלחה בתיקיית הספקים"
+                }, ensure_ascii=False).encode("utf-8"))
+                return
+            except Exception as e:
+                self.send_response(400)
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": str(e)}).encode("utf-8"))
+                return
 
         self.send_response(404)
         self.end_headers()

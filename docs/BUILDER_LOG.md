@@ -10,6 +10,47 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
 
+## 2026-09-07 — Club Tasks Board, Arbox Revenue Breakdown, Masav Transmission & Bookkeeper Upload
+
+- **What changed:**
+  1. **Club Operations Task Board (`לוח משימות לניהול מועדון`):**
+     - Full operational routines engine managing daily, weekly, and monthly recurring tasks with automatic recurrence reset upon completion.
+     - Tracks due dates, follow-up dates, urgency levels (`overdue`, `due_today`, `soon`, `normal`), checklists, and priority badges.
+     - Built frontend container `view-container-tasks` with KPI strip (total active, overdue, due today, completed this week), filter pills (`הכל`, `יומי`, `שבועי`, `חודשי`, `דחוף בלבד`), task card checklist display, and interactive "סמן כבוצע" action that resets recurring routines to their next due date.
+     - Added "משימה חדשה" modal (`task-modal`) allowing Idan to add custom one-off or recurring operations.
+     - Backend engine in `data_service.py` (`get_tasks_board`, `save_task`, `complete_task`, `_compute_next_due`) backed by `config/tasks_board.json`.
+     - Added nav button in header with live urgent badge counter.
+  2. **Arbox-Sourced Revenue Breakdown Module (`פילוח הכנסות חי Arbox`):**
+     - Built MTD live income breakdown table inside the main dashboard view, mapping revenue directly to ledger codes:
+       - `80001` מנויים (MRR) — calculated from active members count * average monthly membership price.
+       - `181-80001` מנויים פילאטיס — calculated from active pilates members count * average price.
+       - `80002` אימונים אישיים (PT) — aggregated from freelancer OCR invoices.
+       - `22660` אימוני קבוצה (חד״כ) — calculated from group class attendance check-ins.
+       - `181-22660` שיעורי פילאטיס — aggregated from pilates sessions check-ins and trainer invoices.
+       - `80010` Move & `80011` FreeFit — third-party corporate wellness platforms marked with "ללא API" badges and inline manual adjustment inputs.
+     - Displays official ledger actuals, grey "צפי נוכחי (ארבוקס/חשבוניות)" amounts, and interactive editable inputs that persist to `config/revenue_overrides.json` via `/api/revenue_breakdown/override`.
+     - In the main category cards, if ledger actual is 0 (month not yet closed by bookkeeper), a discreet grey badge displays the estimated receipts amount (`צפי (קבלות)`).
+  3. **Masav Transmission Archive Button (`🚀 המסמך יצא / שידור מס״ב`):**
+     - Added one-click transmission button in the supplier payment approval view.
+     - When clicked, all approved suppliers for the month are committed and moved to the archive list (`archived_ids`), clearing the active approval queue for the next batch and logging the transmission timestamp.
+     - Backend endpoint `/api/suppliers/transmit` implemented in `server.py` and `data_service.py` (`archive_approved_suppliers`).
+  4. **Isolated Bookkeeper Upload Modal (`📥 העלאת חשבוניות הנה״ח`):**
+     - Added dedicated upload modal for the bookkeeper allowing direct drag-and-drop of invoice PDFs/images without needing Google Drive access.
+     - Files are saved directly to `📥_לגרור_לכאן_את_קבצי_החודש/invoices_suppliers` via `/api/upload_invoice` endpoint.
+     - Added clear email fallback instructions for bookkeeper communication.
+- **Why (what Idan asked for, in his words):**
+  - *"דבר נוסף שאני רוצה להכניס זה לוח משימות לניהול מועדון מידע... שגרות קבועות... תאריך פולאפ, תאריך יעד... שיתריע במידה ואנחנו לא עומדים במשימה..."*
+  - *"תכתוב בפועל את ההכנסות של חודש אוגוסט... פילוח הכנסות שלנו לאורך החודש... ממש לפי סעיפי הכרטסת... תשאיר לי שם אופציה לעריכה... לגבי ההכנסות של אוגוסט, אתה תוכל לכתוב באפור בצד צפי נוכחי בהתאם לדוח חשבוניות קבלות..."*
+  - *"ברשימת מסמכים, במידה ובוצע אישור... להכניס פה איזשהו כפתור שאומר המסמך יצא, ואז כל מה שנרשם עליו אישור, אנחנו גם נמחק אותו מההתייחסות... ובגלל שכרגע אין את החשבוניות אצלי, אני צריך לבקש ממנה שתשלח לי אותן... ביטחון מידע על המחשב שלה ואני לא חושב שהיא תוכל לפתוח גוגל דרייב..."*
+- **What it touches:**
+  - `dashboard/backend/data_service.py`, `dashboard/backend/server.py`, `dashboard/public/index.html`, `dashboard/public/app.js`, `config/tasks_board.json`, `docs/BUILDER_LOG.md`, `docs/SYSTEM_MAP.md`.
+- **How it was verified:**
+  - Verified live server on port 3000 serves all endpoints (`/api/tasks`, `/api/revenue_breakdown`, `/api/suppliers/transmit`, `/api/upload_invoice`, `/api/data`).
+  - Verified grey estimated amounts appear in revenue breakdown and category cards.
+  - Verified regression tests: `tests/test_idan_fixes.py` (27/27) and `tests/test_resilience.py` (11/11).
+
+---
+
 ## 2026-09-05 — Executive Quarterly Table (Q1–Q4) & Multi-Year Selector (Removed Cluttered Chart)
 
 - **What changed:**

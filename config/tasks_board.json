@@ -1,0 +1,207 @@
+{
+  "tasks": [
+    {
+      "id": "T001",
+      "title": "סקירה שבועית - ניהול מועדון",
+      "description": "בדיקת דוחות שבועיים: הכנסות, ביקורים, ביטולים, תפוסת שיעורים. בדוק חריגות מהיעד ורשום תובנות.",
+      "category": "weekly",
+      "priority": "high",
+      "due_date": null,
+      "followup_date": null,
+      "recurrence": "weekly",
+      "recurrence_day": "sunday",
+      "status": "pending",
+      "checklist": [
+        "פתח דשבורד ובדוק KPIs שבועיים",
+        "בדוק תפוסת שיעורים מול שבוע קודם",
+        "עבור על דגלים ותובנות AI",
+        "עדכן יעדי הכנסות במידת הצורך",
+        "תעד נקודות עיקריות בסיכום שבועי"
+      ],
+      "last_completed": null,
+      "created_at": "2026-09-01T00:00:00Z"
+    },
+    {
+      "id": "T002",
+      "title": "עדכון אפליקציה שבועי",
+      "description": "בדיקת עדכונים לאפליקציית Arbox ולדשבורד. עדכן גרסאות ובדוק שהכל תקין.",
+      "category": "weekly",
+      "priority": "medium",
+      "due_date": null,
+      "followup_date": null,
+      "recurrence": "weekly",
+      "recurrence_day": "monday",
+      "status": "pending",
+      "checklist": [
+        "בדוק עדכוני אפליקציה Arbox",
+        "רענן נתוני דשבורד (sync)",
+        "וודא שחיבור API תקין",
+        "עדכן קאש משתמשים אם צריך"
+      ],
+      "last_completed": null,
+      "created_at": "2026-09-01T00:00:00Z"
+    },
+    {
+      "id": "T003",
+      "title": "מעקב אחר חברי בוטיק",
+      "description": "בדוק ביקורים של חברי בוטיק וחברים בסיכון נשירה. בצע פולאפ אישי עם חברים שלא ביקרו 2+ שבועות.",
+      "category": "weekly",
+      "priority": "high",
+      "due_date": null,
+      "followup_date": null,
+      "recurrence": "weekly",
+      "recurrence_day": "tuesday",
+      "status": "pending",
+      "checklist": [
+        "הרץ דוח התמדה Arbox",
+        "זהה חברים עם פחות מ-4 ביקורים בחודש",
+        "שלח הודעה אישית ל-3 חברים בסיכון",
+        "תעד תגובות ועדכן סטטוס"
+      ],
+      "last_completed": null,
+      "created_at": "2026-09-01T00:00:00Z"
+    },
+    {
+      "id": "T004",
+      "title": "החלפות שיעורים - עדכון שוטף",
+      "description": "עדכון רשימת החלפות מאמנים לשיעורים. וודא שכל שיעור מכוסה לשבוע הבא.",
+      "category": "weekly",
+      "priority": "high",
+      "due_date": null,
+      "followup_date": null,
+      "recurrence": "weekly",
+      "recurrence_day": "thursday",
+      "status": "pending",
+      "checklist": [
+        "קבל עדכונים מכל המאמנים על זמינות",
+        "ארגן החלפות לפי הצורך",
+        "עדכן מערכת שעות Arbox",
+        "שלח עדכון לחברים אם יש שינויים"
+      ],
+      "last_completed": null,
+      "created_at": "2026-09-01T00:00:00Z"
+    },
+    {
+      "id": "T005",
+      "title": "בדיקת נוכחות שיעורים יומית",
+      "description": "בדיקה יומית של צ'ק אין בשיעורים. זיהוי שיעורים עם תפוסה נמוכה וטיפול בהתאם.",
+      "category": "daily",
+      "priority": "medium",
+      "due_date": null,
+      "followup_date": null,
+      "recurrence": "daily",
+      "recurrence_day": null,
+      "status": "pending",
+      "checklist": [
+        "בדוק דוח נוכחות יום קודם",
+        "זהה שיעורים עם פחות מ-5 נרשמים",
+        "עדכן מאמן אם שיעור מתבטל"
+      ],
+      "last_completed": null,
+      "created_at": "2026-09-01T00:00:00Z"
+    },
+    {
+      "id": "T006",
+      "title": "בדיקת סטטוס בוטים ניהוליים",
+      "description": "בדיקה שכל הבוטים (WhatsApp, Arbox automations) פועלים תקין. אם יש תקלה - תיקון מיידי.",
+      "category": "daily",
+      "priority": "high",
+      "due_date": null,
+      "followup_date": null,
+      "recurrence": "daily",
+      "recurrence_day": null,
+      "status": "pending",
+      "checklist": [
+        "בדוק לוג הודעות WhatsApp Bot",
+        "וודא שאוטומציות Arbox פועלות",
+        "בדוק שאין שגיאות ב-pipeline נתונים"
+      ],
+      "last_completed": null,
+      "created_at": "2026-09-01T00:00:00Z"
+    },
+    {
+      "id": "T007",
+      "title": "ריכוז עמלות מכירה - חודשי",
+      "description": "איסוף נתוני עמלות מכירת מנויים מכל המאמנים. עדכון טבלת עמלות לחישוב שכר.",
+      "category": "monthly",
+      "priority": "high",
+      "due_date": null,
+      "followup_date": null,
+      "recurrence": "monthly",
+      "recurrence_day": "1",
+      "status": "pending",
+      "checklist": [
+        "הוצא דוח מכירות Arbox לחודש",
+        "בדוק מכירות לפי מאמן",
+        "עדכן קובץ ריכוז עמלות מכירה",
+        "העבר לחישוב שכר"
+      ],
+      "last_completed": null,
+      "created_at": "2026-09-01T00:00:00Z"
+    },
+    {
+      "id": "T008",
+      "title": "הכנת תשלום מאמני חוץ",
+      "description": "ריכוז חשבוניות מאמני החוץ, OCR + בדיקה מול שיעורים בפועל, הכנת אישור לתשלום.",
+      "category": "monthly",
+      "priority": "high",
+      "due_date": null,
+      "followup_date": null,
+      "recurrence": "monthly",
+      "recurrence_day": "5",
+      "status": "pending",
+      "checklist": [
+        "קבל חשבוניות מכל מאמני החוץ",
+        "הרץ OCR על החשבוניות",
+        "בדוק מול דוח שיעורים",
+        "אשר תשלום בדשבורד ספקים",
+        "שלח למס״ב"
+      ],
+      "last_completed": null,
+      "created_at": "2026-09-01T00:00:00Z"
+    },
+    {
+      "id": "T009",
+      "title": "עדכון לוח שנה פילאטיס",
+      "description": "עדכון מערכת שעות פילאטיס לחודש הבא. תיאום עם נעמה חיון וניקול אדלמן.",
+      "category": "monthly",
+      "priority": "medium",
+      "due_date": null,
+      "followup_date": null,
+      "recurrence": "monthly",
+      "recurrence_day": "25",
+      "status": "pending",
+      "checklist": [
+        "קבל זמינות ממאמנות פילאטיס",
+        "בנה לוח חודש הבא",
+        "עדכן Arbox",
+        "פרסם ללקוחות"
+      ],
+      "last_completed": null,
+      "created_at": "2026-09-01T00:00:00Z"
+    },
+    {
+      "id": "T010",
+      "title": "סיכום חודשי ודו\"ח ניהולי",
+      "description": "הפקת דוח ניהולי חודשי: הכנסות מול תקציב, מנויים, ביטולים, הוצאות. שליחה לבעלים.",
+      "category": "monthly",
+      "priority": "high",
+      "due_date": null,
+      "followup_date": null,
+      "recurrence": "monthly",
+      "recurrence_day": "3",
+      "status": "pending",
+      "checklist": [
+        "הרץ pipeline מלא (run_all.py)",
+        "בדוק דגלים ותקינות",
+        "הפק קובצי output",
+        "שלח לבעלים לאישור"
+      ],
+      "last_completed": null,
+      "created_at": "2026-09-01T00:00:00Z"
+    }
+  ],
+  "custom_tasks": [],
+  "archived_tasks": [],
+  "last_updated": "2026-09-05T00:00:00Z"
+}

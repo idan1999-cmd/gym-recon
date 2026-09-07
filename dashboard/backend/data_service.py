@@ -79,6 +79,35 @@ class DashboardDataService:
             print("Error saving suppliers state:", e)
         return self.suppliers_state[m_key]
 
+    def archive_approved_suppliers(self, month: int) -> dict:
+        m_key = str(month)
+        m_state = self.suppliers_state.get(m_key, {})
+        approved_ids = m_state.get("approved_ids", [])
+        if "archived_ids" not in m_state:
+            m_state["archived_ids"] = []
+        
+        # Move all currently approved IDs to archived_ids
+        for sup_id in approved_ids:
+            if sup_id not in m_state["archived_ids"]:
+                m_state["archived_ids"].append(sup_id)
+        
+        # Clear active approved list
+        m_state["approved_ids"] = []
+        m_state["last_masav_transmission"] = datetime.now().isoformat()
+        
+        self.suppliers_state[m_key] = m_state
+        try:
+            with open(SUPPLIERS_STATE_FILE, "w", encoding="utf-8") as f:
+                json.dump(self.suppliers_state, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print("Error archiving approved suppliers:", e)
+        
+        return {
+            "success": True,
+            "archived_count": len(approved_ids),
+            "transmitted_at": m_state["last_masav_transmission"]
+        }
+
     def _load_custom_targets(self) -> dict:
         if CUSTOM_TARGETS_FILE.exists():
             try:
@@ -2457,6 +2486,20 @@ class DashboardDataService:
 
         ledger_txns = self._load_ledger_transactions_map()
 
+        # Load estimated breakdown from Arbox / OCR invoices for live month display
+        rev_breakdown_map = {}
+        try:
+            rb_data = self.get_revenue_breakdown(month=month)
+            for r in rb_data.get("rows", []):
+                val = r.get("override") if r.get("override") is not None else r.get("estimated")
+                if val:
+                    rev_breakdown_map[r.get("code")] = {
+                        "amount": float(val),
+                        "source": r.get("arbox_metric", "ארבוקס / חשבוניות")
+                    }
+        except Exception as e:
+            print("Error loading rev_breakdown_map in get_dashboard_summary:", e)
+
         processed_incomes = []
         total_rev_budget = 0.0
         total_rev_actual = 0.0
@@ -2491,6 +2534,15 @@ class DashboardDataService:
             if not matched_txns and a > 0:
                 matched_txns = [{"date": f"01/{month:02d}/2026", "desc": item["name"], "amount": round(a, 2)}]
 
+            # Grey estimated actual from Arbox/invoices when ledger actual is 0
+            code_str = str(item.get("code", "")).strip()
+            est_info = rev_breakdown_map.get(code_str) or rev_breakdown_map.get(f"181-{code_str}")
+            actual_estimated = None
+            actual_estimated_source = None
+            if est_info and a == 0:
+                actual_estimated = est_info["amount"]
+                actual_estimated_source = est_info["source"]
+
             processed_incomes.append({
                 "code": item["code"],
                 "name": item["name"],
@@ -2500,6 +2552,8 @@ class DashboardDataService:
                 "explanation": item.get("explanation", ""),
                 "budget": b,
                 "actual": a,
+                "actual_estimated": actual_estimated,
+                "actual_estimated_source": actual_estimated_source,
                 "projected": proj,
                 "variance": diff,
                 "pct": round(pct, 1),
@@ -2836,7 +2890,8 @@ class DashboardDataService:
             "smart_insights": smart_insights,
             "memberships": memberships_data,
             "sales_cancellations": sales_cancellations,
-            "pacing_tracker": pacing_tracker
+            "pacing_tracker": pacing_tracker,
+            "revenue_breakdown": rb_data if 'rb_data' in locals() else None
         }
 
     def get_schedule_analytics(self, club_filter: str = "all", time_range: str = "1m", min_occurrences: int = 3, target_month: int | None = None) -> dict:
@@ -3178,6 +3233,7 @@ class DashboardDataService:
         m_state = self.suppliers_state.get(str(month_idx), {})
         saved_bank_balance = m_state.get("bank_balance")
         approved_ids_set = set(m_state.get("approved_ids", []))
+        archived_ids_set = set(m_state.get("archived_ids", []))
 
         # 3. Parse Suppliers from Budget & Cash Flow file (תקציב תזרים 2026.xlsx)
         cashflow_file = self.find_input_file(["*תקציב*תזרים*2026*.xlsx", "*תקציב*תזרים*.xlsx", "*תזרים*.xlsx"])
@@ -3248,10 +3304,6 @@ class DashboardDataService:
 
                         amt = 0.0
                         desc = ""
-                        # If both c2 and c3 are numbers without description, it's a subtotal row like Row 27, 36, 68
-                        if isinstance(c2, (int, float)) and isinstance(c3, (int, float)) and not c4:
-                            continue
-
                         if isinstance(c3, (int, float)) and c3 > 0:
                             amt = float(c3)
                             desc = str(c4 or "").strip()
@@ -3264,23 +3316,6 @@ class DashboardDataService:
                             # Submission month is the dashboard month
                             submission_month_str = f"{month_idx}/26"
                             service_month_str = submission_month_str
-                            
-                            m_match = re.search(r"(\d{1,2})[-/](\d{1,2})/26|(\d{1,2})/26", desc)
-                            if m_match:
-                                service_month_str = m_match.group(0)
-                            elif "שירות" in desc:
-                                service_month_str = desc
-
-                            # Check for installment / annual contract
-                            is_contract = False
-                            installment_str = None
-                            m_inst = re.search(r"(תש[׳']?\s*\d+/\d+|\d+/\d+\s*תשלומים|הסכם\s*שנתי|\d+-\d+/26\s*הסכם)", desc)
-                            if m_inst:
-                                is_contract = True
-                                installment_str = m_inst.group(0)
-                            elif any(k in desc for k in ["הסכם", "שנתי", "ריטיינר"]):
-                                is_contract = True
-                                installment_str = "הסכם שירות שוטף / ריטיינר"
 
                             # Match terms from whitelist or keyword defaults
                             matched_entry = whitelist_suppliers.get(curr_supplier)
@@ -3318,7 +3353,10 @@ class DashboardDataService:
                                 approx_days = 30
 
                             item_id = f"sup_{month_idx}_{r}_{int(amt)}"
-                            is_approved = (item_id in approved_ids_set) or (r <= 36 and month_idx == 8) # by default approved in sample if in main block
+                            if item_id in archived_ids_set:
+                                continue
+
+                            is_approved = (item_id in approved_ids_set) or (r <= 36 and month_idx == 8 and "approved_ids" not in m_state)
 
                             suppliers_list.append({
                                 "id": item_id,
@@ -3445,7 +3483,9 @@ class DashboardDataService:
                 "balance_after_payment": round(balance_after_payment, 2),
                 "overdue_amount": by_terms["overdue"],
                 "suppliers_count": len(suppliers_list),
-                "approved_count": sum(1 for s in suppliers_list if s["approved"])
+                "approved_count": sum(1 for s in suppliers_list if s["approved"]),
+                "archived_count": len(archived_ids_set),
+                "last_masav_transmission": m_state.get("last_masav_transmission")
             },
             "by_terms": by_terms,
             "categories_breakdown": categories_breakdown,
@@ -3453,3 +3493,393 @@ class DashboardDataService:
         }
 
 
+    # =========================================================================
+    # TASKS BOARD — Club Operations Task Management
+    # =========================================================================
+
+    TASKS_FILE = CONFIG_DIR / "tasks_board.json"
+    TASKS_REVENUE_OVERRIDES_FILE = CONFIG_DIR / "revenue_overrides.json"
+
+    def _load_tasks(self) -> dict:
+        if self.TASKS_FILE.exists():
+            try:
+                with open(self.TASKS_FILE, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                pass
+        return {"tasks": [], "custom_tasks": [], "archived_tasks": []}
+
+    def _save_tasks(self, data: dict):
+        data["last_updated"] = datetime.now().isoformat()
+        with open(self.TASKS_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+
+    def get_tasks_board(self) -> dict:
+        """Return all tasks with computed urgency and next-due dates."""
+        data = self._load_tasks()
+        now = datetime.now()
+        all_tasks = data.get("tasks", []) + data.get("custom_tasks", [])
+        result = []
+        overdue_count = 0
+        due_today_count = 0
+        pending_count = 0
+
+        for t in all_tasks:
+            t_copy = dict(t)
+            status = t.get("status", "pending")
+            next_due = self._compute_next_due(t, now)
+            t_copy["computed_next_due"] = next_due
+            urgency = "normal"
+            check_date = next_due or t.get("due_date")
+            if check_date:
+                try:
+                    nd = datetime.strptime(check_date, "%Y-%m-%d")
+                    days_until = (nd - now.replace(hour=0, minute=0, second=0, microsecond=0)).days
+                    t_copy["days_until_due"] = days_until
+                    if days_until < 0:
+                        urgency = "overdue"
+                        overdue_count += 1
+                    elif days_until == 0:
+                        urgency = "due_today"
+                        due_today_count += 1
+                    elif days_until <= 2:
+                        urgency = "soon"
+                except Exception:
+                    pass
+            t_copy["urgency"] = urgency
+            if status == "pending":
+                pending_count += 1
+            result.append(t_copy)
+
+        priority_order = {"high": 0, "medium": 1, "low": 2}
+        urgency_order = {"overdue": 0, "due_today": 1, "soon": 2, "normal": 3}
+        result.sort(key=lambda x: (
+            urgency_order.get(x.get("urgency", "normal"), 3),
+            priority_order.get(x.get("priority", "low"), 2)
+        ))
+
+        return {
+            "tasks": result,
+            "summary": {
+                "total": len(result),
+                "overdue": overdue_count,
+                "due_today": due_today_count,
+                "pending": pending_count,
+                "completed_this_week": len([
+                    t for t in all_tasks
+                    if t.get("last_completed") and
+                    (now - datetime.fromisoformat(t["last_completed"])).days <= 7
+                ])
+            },
+            "last_updated": data.get("last_updated", now.strftime("%Y-%m-%d"))
+        }
+
+    def _compute_next_due(self, task: dict, now: datetime):
+        """Compute next due date for recurring tasks."""
+        recurrence = task.get("recurrence")
+        last_completed = task.get("last_completed")
+        if not recurrence or recurrence == "none":
+            return task.get("due_date")
+        base = now
+        if last_completed:
+            try:
+                base = datetime.fromisoformat(last_completed)
+            except Exception:
+                pass
+        if recurrence == "daily":
+            return (base + timedelta(days=1)).strftime("%Y-%m-%d")
+        if recurrence == "weekly":
+            day_map = {"sunday": 6, "monday": 0, "tuesday": 1, "wednesday": 2,
+                       "thursday": 3, "friday": 4, "saturday": 5}
+            target_weekday = day_map.get(task.get("recurrence_day", "sunday"), 6)
+            days_ahead = (target_weekday - now.weekday()) % 7
+            if days_ahead == 0 and last_completed:
+                days_ahead = 7
+            return (now + timedelta(days=days_ahead)).strftime("%Y-%m-%d")
+        if recurrence == "monthly":
+            try:
+                dom = int(task.get("recurrence_day", 1))
+            except Exception:
+                dom = 1
+            if now.day <= dom:
+                try:
+                    return now.replace(day=dom).strftime("%Y-%m-%d")
+                except ValueError:
+                    return now.replace(day=28).strftime("%Y-%m-%d")
+            else:
+                nm = now.month + 1 if now.month < 12 else 1
+                ny = now.year if now.month < 12 else now.year + 1
+                try:
+                    return now.replace(year=ny, month=nm, day=dom).strftime("%Y-%m-%d")
+                except ValueError:
+                    return now.replace(year=ny, month=nm, day=28).strftime("%Y-%m-%d")
+        return task.get("due_date")
+
+    def save_task(self, task_data: dict) -> dict:
+        """Create or update a task."""
+        import uuid
+        data = self._load_tasks()
+        task_id = task_data.get("id")
+        is_custom = task_data.get("is_custom", True)
+        tasks_list = data["custom_tasks"] if is_custom else data["tasks"]
+        other_list = data["tasks"] if is_custom else data["custom_tasks"]
+        if task_id:
+            for lst in [tasks_list, other_list]:
+                for i, t in enumerate(lst):
+                    if t["id"] == task_id:
+                        lst[i] = {**t, **task_data}
+                        self._save_tasks(data)
+                        return {"success": True, "task": lst[i]}
+        else:
+            task_data["id"] = "CT" + str(uuid.uuid4())[:6].upper()
+            task_data["created_at"] = datetime.now().isoformat()
+            task_data.setdefault("status", "pending")
+            task_data["is_custom"] = True
+            data["custom_tasks"].append(task_data)
+            self._save_tasks(data)
+        return {"success": True, "task": task_data}
+
+    def complete_task(self, task_id: str) -> dict:
+        """Mark task as completed; reset recurring tasks automatically."""
+        data = self._load_tasks()
+        now_str = datetime.now().isoformat()
+        for lst_key in ["tasks", "custom_tasks"]:
+            lst = data[lst_key]
+            for i, t in enumerate(lst):
+                if t["id"] == task_id:
+                    recurrence = t.get("recurrence", "none")
+                    if recurrence and recurrence != "none":
+                        lst[i]["last_completed"] = now_str
+                        lst[i]["status"] = "pending"
+                        self._save_tasks(data)
+                        return {"success": True, "task_id": task_id,
+                                "next_due": self._compute_next_due(lst[i], datetime.now())}
+                    else:
+                        t["status"] = "completed"
+                        t["last_completed"] = now_str
+                        data["archived_tasks"].append(t)
+                        lst.pop(i)
+                        self._save_tasks(data)
+                        return {"success": True, "task_id": task_id, "archived": True}
+        return {"success": False, "error": "Task not found"}
+
+    # =========================================================================
+    # REVENUE BREAKDOWN — Arbox-sourced MTD income by category + overrides
+    # =========================================================================
+
+    def _load_revenue_overrides(self) -> dict:
+        if self.TASKS_REVENUE_OVERRIDES_FILE.exists():
+            try:
+                with open(self.TASKS_REVENUE_OVERRIDES_FILE, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                pass
+        return {}
+
+    def _save_revenue_overrides(self, data: dict):
+        with open(self.TASKS_REVENUE_OVERRIDES_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+
+    def get_revenue_breakdown(self, month: int = None) -> dict:
+        """Build MTD revenue breakdown by ledger category from Arbox sessions + invoices."""
+        now = datetime.now()
+        target_month = month or now.month
+        year = self.year
+        month_name = MONTH_NAMES_HE[target_month - 1]
+        days_in_month = calendar.monthrange(year, target_month)[1]
+        today = now.day if (now.month == target_month and now.year == year) else days_in_month
+        pct_month_elapsed = round(today / days_in_month * 100, 1)
+
+        sessions = self._load_sessions_for_month(target_month)
+        gym_sessions = [s for s in sessions if s.get("branch") == "מועדון A+"]
+        pilates_sessions = [s for s in sessions if s.get("branch") == "פילאטיס מכשירים"]
+        gym_group_checkins = sum(int(s.get("checkins", 0)) for s in gym_sessions)
+        pilates_checkins = sum(int(s.get("checkins", 0)) for s in pilates_sessions)
+
+        estimated_pt = 0.0
+        estimated_studio = 0.0
+        estimated_pilates = 0.0
+        inv_count = 0
+        try:
+            with open(CONFIG_DIR / "invoices_ocr.json", "r", encoding="utf-8") as f:
+                inv_data = json.load(f)
+            invoices = inv_data.get("invoices", [])
+            month_str = f"{year}-{target_month:02d}"
+            for inv in invoices:
+                if not str(inv.get("doc_date", "")).startswith(month_str):
+                    continue
+                inv_count += 1
+                cat = inv.get("category", "studio")
+                total = float(inv.get("stated_total", 0) or 0)
+                if cat == "pilates":
+                    estimated_pilates += total
+                elif cat in ("studio", "personal"):
+                    estimated_studio += total
+                elif cat == "mixed":
+                    for item in inv.get("line_items", []):
+                        desc = str(item.get("desc", "")).lower()
+                        item_total = float(item.get("total", 0) or 0)
+                        if "אישי" in desc or "personal" in desc:
+                            estimated_pt += item_total
+                        else:
+                            estimated_studio += item_total
+        except Exception:
+            pass
+
+        # Active member counts for MRR estimate
+        gym_members, pilates_members = 0, 0
+        try:
+            mem_data = self.parse_membership_data()
+            stats = mem_data.get("stats", {})
+            gym_members = stats.get("gym", {}).get("active", 0)
+            pilates_members = stats.get("pilates", {}).get("active", 0)
+        except Exception:
+            pass
+
+        avg_gym_rate = 291.7
+        avg_pilates_rate = 369.6
+        estimated_gym_mrr = round(gym_members * avg_gym_rate, 0)
+        estimated_pilates_mrr = round(pilates_members * avg_pilates_rate, 0)
+
+        overrides = self._load_revenue_overrides()
+        month_key = f"{year}-{target_month:02d}"
+        mo = overrides.get(month_key, {})
+
+        def ov(key):
+            return float(mo[key]) if key in mo and mo[key] is not None else None
+
+        rows = [
+            {"code": "80001", "label": "מנויים (MRR)", "branch": "חדר כושר",
+             "actual_ledger": 0.0, "estimated": round(estimated_gym_mrr, 0),
+             "override": ov("mrr_gym"), "arbox_metric": f"{gym_members} מנויים פעילים",
+             "editable": True, "category": "membership"},
+            {"code": "181-80001", "label": "מנויים פילאטיס", "branch": "פילאטיס",
+             "actual_ledger": 0.0, "estimated": round(estimated_pilates_mrr, 0),
+             "override": ov("mrr_pilates"), "arbox_metric": f"{pilates_members} מנויים פעילים",
+             "editable": True, "category": "membership"},
+            {"code": "80002", "label": "אימונים אישיים (PT)", "branch": "חדר כושר",
+             "actual_ledger": 0.0, "estimated": round(estimated_pt + estimated_studio, 0),
+             "override": ov("pt_actual"),
+             "arbox_metric": f"חשבוניות: ₪{(estimated_pt+estimated_studio):,.0f} ({inv_count} חשב׳)",
+             "editable": True, "category": "pt"},
+            {"code": "22660", "label": "אימוני קבוצה (חד\"כ)", "branch": "חדר כושר",
+             "actual_ledger": 0.0, "estimated": round(gym_group_checkins * 25, 0),
+             "override": ov("group_actual"), "arbox_metric": f"{gym_group_checkins} כניסות לשיעורים",
+             "editable": True, "category": "group"},
+            {"code": "181-22660", "label": "שיעורי פילאטיס", "branch": "פילאטיס",
+             "actual_ledger": 0.0, "estimated": round(estimated_pilates, 0),
+             "override": ov("pilates_actual"),
+             "arbox_metric": f"{pilates_checkins} כניסות + ₪{estimated_pilates:,.0f} חשב׳",
+             "editable": True, "category": "pilates"},
+            {"code": "80010", "label": "Move (פלטפורמת חוץ)", "branch": "כל המועדון",
+             "actual_ledger": 0.0, "estimated": None, "override": ov("move_actual"),
+             "arbox_metric": "ללא API — הכנסה ידנית", "editable": True,
+             "category": "third_party", "api_status": "no_api"},
+            {"code": "80011", "label": "FreeFit (פלטפורמת חוץ)", "branch": "כל המועדון",
+             "actual_ledger": 0.0, "estimated": None, "override": ov("freefit_actual"),
+             "arbox_metric": "ללא API — הכנסה ידנית", "editable": True,
+             "category": "third_party", "api_status": "no_api"},
+        ]
+
+        total_estimated = sum(float(r.get("override") or r.get("estimated") or 0) for r in rows)
+        prev_month = target_month - 1 if target_month > 1 else 12
+        prev_mo = overrides.get(f"{year}-{prev_month:02d}", {})
+        prev_total = float(prev_mo.get("_total_override", 0) or 0)
+
+        return {
+            "month": target_month,
+            "month_name": month_name,
+            "year": year,
+            "days_elapsed": today,
+            "days_in_month": days_in_month,
+            "pct_elapsed": pct_month_elapsed,
+            "rows": rows,
+            "totals": {"actual_ledger": 0.0, "estimated": round(total_estimated, 0),
+                        "prev_month": round(prev_total, 0)},
+            "move_freefit_status": {
+                "move": {"api": False, "note": "Move Israel אינה מספקת API פומבי. הכנס ידנית."},
+                "freefit": {"api": False, "note": "FreeFit Israel מערכת סגורה. הכנס ידנית."},
+            },
+            "session_stats": {
+                "gym_group_checkins": gym_group_checkins,
+                "pilates_checkins": pilates_checkins,
+                "total_sessions": len(sessions),
+            }
+        }
+
+    def _load_sessions_for_month(self, target_month: int) -> list:
+        """Load Arbox sessions CSV rows filtered to the target month."""
+        import glob as _glob
+        year = self.year
+        candidates = []
+        search_dirs = [
+            BASE_DIR / "input" / "dropzone",
+            BASE_DIR / "input" / f"{year}-{target_month:02d}_AUGUST",
+            BASE_DIR / "input" / f"{year}-{target_month:02d}_JULY",
+        ]
+        # Add the Hebrew dropzone folder
+        for d in BASE_DIR.iterdir():
+            if d.is_dir() and "לגרור" in d.name:
+                search_dirs.append(d)
+        for folder_path in search_dirs:
+            if Path(folder_path).exists():
+                for f in Path(folder_path).iterdir():
+                    if f.suffix == ".csv" and "שיעור" in f.name:
+                        candidates.append(f)
+
+        sessions = []
+        for fpath in candidates:
+            try:
+                with open(fpath, "r", encoding="utf-8-sig") as fh:
+                    reader = csv.DictReader(fh)
+                    for row in reader:
+                        date_str = row.get("תאריך", "")
+                        try:
+                            d = datetime.strptime(date_str, "%d/%m/%Y")
+                            if d.month == target_month and d.year == year:
+                                # Find checkins col with either regular or typographic apostrophe
+                                checkins_val = 0
+                                for col_name in row.keys():
+                                    if col_name and "ק" in col_name and "אין" in col_name and "אחוז" not in col_name:
+                                        raw_c = row.get(col_name, "0") or "0"
+                                        checkins_val = int(raw_c) if str(raw_c).isdigit() else 0
+                                        break
+                                
+                                reg_val = 0
+                                raw_reg = row.get("הרשמות", "0") or "0"
+                                if str(raw_reg).isdigit():
+                                    reg_val = int(raw_reg)
+
+                                sessions.append({
+                                    "date": date_str,
+                                    "trainer": row.get("מאמנים", ""),
+                                    "class_name": row.get("שיעור", ""),
+                                    "category": row.get("קטגוריה", ""),
+                                    "branch": row.get("סניף", ""),
+                                    "registrations": reg_val,
+                                    "checkins": checkins_val,
+                                    "status": row.get("סטטוס", ""),
+                                })
+                        except ValueError:
+                            continue
+                if sessions:
+                    break  # Use first successful file
+            except Exception:
+                continue
+        return sessions
+
+    def save_revenue_override(self, data: dict) -> dict:
+        """Save a manual override for a revenue line item."""
+        month_key = data.get("month_key")
+        field = data.get("field")
+        value = data.get("value")
+        overrides = self._load_revenue_overrides()
+        if month_key not in overrides:
+            overrides[month_key] = {}
+        overrides[month_key][field] = float(value) if value is not None else None
+        mo = overrides[month_key]
+        total = sum(float(v or 0) for k, v in mo.items()
+                    if not k.startswith("_") and v is not None)
+        overrides[month_key]["_total_override"] = round(total, 2)
+        self._save_revenue_overrides(overrides)
+        return {"success": True, "month_key": month_key, "field": field, "value": value}

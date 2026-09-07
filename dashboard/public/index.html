@@ -166,6 +166,11 @@
           <i data-lucide="credit-card" class="w-3.5 h-3.5 text-rose-600"></i>
           <span>מס״ב ספקים</span>
         </button>
+        <button id="view-tasks" onclick="switchView('tasks')" class="view-btn px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-zinc-700 hover:bg-white">
+          <i data-lucide="check-square" class="w-3.5 h-3.5 text-rose-600"></i>
+          <span>לוח משימות</span>
+          <span id="tasks-nav-badge" class="hidden px-1.5 py-0.2 text-[9px] font-black rounded-full bg-rose-600 text-white">0</span>
+        </button>
       </div>
 
     </div>
@@ -411,6 +416,58 @@
             <div class="text-[11px] text-zinc-400 font-medium">צפי החזר כספי</div>
             <div class="text-2xl font-black text-purple-400 mt-0.5" id="home-mem-refund">₪ 0</div>
             <div class="text-[10px] text-zinc-400 mt-0.5">מאושר וממתין לזיכוי</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Live Revenue Breakdown (Arbox, PT, Studio, Move & FreeFit) -->
+      <section id="revenue-breakdown-section" class="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black border border-emerald-100">
+              <i data-lucide="trending-up" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-sm font-black text-slate-900">פילוח הכנסות חי מתוך Arbox וחשבוניות (צפי ביצוע)</h3>
+                <span id="rev-breakdown-badge" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  סנכרון חי
+                </span>
+              </div>
+              <p class="text-[11px] text-slate-400">צפי הכנסות לפי סעיפי כרטסת טרם סגירת החודש • לחץ על תא עריכה לכיוונון ידני בלייב</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 text-xs">
+            <span class="text-slate-500 font-medium">סה״כ צפי חודשי:</span>
+            <span id="rev-breakdown-total-display" class="font-black text-base text-emerald-700">₪ 0</span>
+          </div>
+        </div>
+
+        <!-- Breakdown Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-right text-xs border-collapse">
+            <thead>
+              <tr class="bg-slate-50/80 text-slate-600 font-bold border-b border-slate-200">
+                <th class="py-2.5 px-3">סעיף</th>
+                <th class="py-2.5 px-3">ערוץ הכנסה</th>
+                <th class="py-2.5 px-3">סניף</th>
+                <th class="py-2.5 px-3 text-left">בכרטסת (רשמי)</th>
+                <th class="py-2.5 px-3 text-left">צפי נוכחי (ארבוקס/חשבוניות)</th>
+                <th class="py-2.5 px-3">מקור ומדד Arbox</th>
+                <th class="py-2.5 px-3 text-center w-28">כיוונון ידני (₪)</th>
+              </tr>
+            </thead>
+            <tbody id="revenue-breakdown-tbody" class="divide-y divide-slate-100 font-medium text-slate-800">
+              <!-- Dynamically populated via renderRevenueBreakdown -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Third-party platforms info notice (Move & FreeFit) -->
+        <div class="p-3 bg-amber-50/70 border border-amber-200/80 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-amber-900">
+          <div class="flex items-center gap-2">
+            <span class="text-base">ℹ️</span>
+            <span><strong>Move & FreeFit:</strong> אין לפלטפורמות אלו API פומבי בישראל (מערכות סגורות). ניתן להזין את סכום הזיכוי החודשי בעמודת הכיוונון הידני.</span>
           </div>
         </div>
       </section>
@@ -1348,15 +1405,118 @@
           </table>
         </div>
 
-        <div class="p-4 bg-zinc-50 border-t border-zinc-200/80 flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-500 gap-2">
-          <div>
-            מוצגות <strong class="text-zinc-800 font-bold" id="sup-showing-count">0</strong> שורות ספקים
+        <div class="p-4 bg-zinc-50 border-t border-zinc-200/80 flex flex-col sm:flex-row items-center justify-between text-xs text-zinc-500 gap-3">
+          <div class="flex items-center gap-3">
+            <span>מוצגות <strong class="text-zinc-800 font-bold" id="sup-showing-count">0</strong> שורות ספקים</span>
+            <span class="text-zinc-300">•</span>
+            <span>הועברו למס״ב בארכיון: <strong class="text-indigo-700 font-bold" id="sup-archived-count">0</strong> ספקים</span>
           </div>
           <div class="flex items-center gap-3">
             <span>סה״כ מאושר לתשלום: <strong class="text-amber-700 font-black text-sm" id="sup-table-approved-total">₪ 0</strong></span>
+            <!-- Transmit Masav Button (המסמך יצא / שידור מס״ב) -->
+            <button onclick="transmitMasav()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-2xs transition flex items-center gap-1.5" title="נעילת התשלומים המאושרים והעברתם לארכיון כקובץ מס״ב שיצא">
+              <i data-lucide="send" class="w-3.5 h-3.5"></i>
+              <span>🚀 המסמך יצא / שידור מס״ב</span>
+            </button>
+            <!-- Bookkeeper Upload Trigger -->
+            <button onclick="openBookkeeperModal()" class="px-3.5 py-2 bg-white hover:bg-zinc-100 text-zinc-800 font-bold text-xs rounded-xl border border-zinc-300 shadow-2xs transition flex items-center gap-1.5" title="העלאת חשבוניות ישירות או קבלתן במייל">
+              <i data-lucide="upload" class="w-3.5 h-3.5 text-rose-600"></i>
+              <span>📥 העלאת חשבוניות הנה״ח</span>
+            </button>
           </div>
         </div>
 
+      </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 7: CLUB OPERATIONS TASK BOARD (לוח משימות לניהול מועדון)               -->
+    <!-- ========================================================================= -->
+    <div id="view-container-tasks" class="space-y-6 hidden">
+
+      <!-- Header & KPIs -->
+      <div class="bg-white rounded-3xl p-5 border border-zinc-200/80 shadow-2xs space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-100 pb-3.5">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-black border border-rose-100">
+              <i data-lucide="check-square" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h2 class="text-base font-black text-zinc-900">לוח משימות ושגרות ניהול מועדון (Daily & Weekly Ops)</h2>
+                <span id="tasks-status-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  פעיל
+                </span>
+              </div>
+              <p class="text-xs text-zinc-400">שגרות קבועות, מעקב פולאפ, תאריכי יעד והתרעות דחיפות לניהול השוטף של המועדון</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="openNewTaskModal()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-2xs transition flex items-center gap-1.5">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span>משימה חדשה</span>
+            </button>
+            <button onclick="loadTasksBoard()" class="p-2 text-zinc-500 hover:text-zinc-800 rounded-xl hover:bg-zinc-100 transition border border-zinc-200" title="רענן משימות">
+              <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Task KPI Strip -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="bg-slate-50/80 p-3.5 rounded-2xl border border-slate-200/80 text-center">
+            <div class="text-[11px] font-bold text-slate-500">סה״כ משימות פעילות</div>
+            <div class="text-2xl font-black text-slate-900 mt-0.5" id="task-kpi-total">0</div>
+            <div class="text-[10px] text-slate-400">שגרות שוטפות ופרויקטים</div>
+          </div>
+          <div class="bg-rose-50/70 p-3.5 rounded-2xl border border-rose-200/80 text-center">
+            <div class="text-[11px] font-bold text-rose-800">באיחור / פג תוקף ⚠️</div>
+            <div class="text-2xl font-black text-rose-600 mt-0.5" id="task-kpi-overdue">0</div>
+            <div class="text-[10px] text-rose-600/80 font-medium">דורש טיפול מיידי</div>
+          </div>
+          <div class="bg-amber-50/70 p-3.5 rounded-2xl border border-amber-200/80 text-center">
+            <div class="text-[11px] font-bold text-amber-800">לביצוע היום 🔥</div>
+            <div class="text-2xl font-black text-amber-600 mt-0.5" id="task-kpi-due-today">0</div>
+            <div class="text-[10px] text-amber-600/80 font-medium">יעד ליום הנוכחי</div>
+          </div>
+          <div class="bg-emerald-50/70 p-3.5 rounded-2xl border border-emerald-200/80 text-center">
+            <div class="text-[11px] font-bold text-emerald-800">הושלמו השבוע ✅</div>
+            <div class="text-2xl font-black text-emerald-600 mt-0.5" id="task-kpi-completed-week">0</div>
+            <div class="text-[10px] text-emerald-600/80 font-medium">איפוס מחזורי אוטומטי</div>
+          </div>
+        </div>
+
+        <!-- Filter Pills for Tasks -->
+        <div class="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-zinc-100">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <button id="task-filter-all" onclick="filterTasks('all')" class="task-filter-btn px-3 py-1 rounded-xl text-xs font-black bg-zinc-900 text-white shadow-2xs">
+              הכל
+            </button>
+            <button id="task-filter-daily" onclick="filterTasks('daily')" class="task-filter-btn px-3 py-1 rounded-xl text-xs font-bold text-zinc-600 hover:bg-zinc-100">
+              שגרות יומיות
+            </button>
+            <button id="task-filter-weekly" onclick="filterTasks('weekly')" class="task-filter-btn px-3 py-1 rounded-xl text-xs font-bold text-zinc-600 hover:bg-zinc-100">
+              שגרות שבועיות
+            </button>
+            <button id="task-filter-monthly" onclick="filterTasks('monthly')" class="task-filter-btn px-3 py-1 rounded-xl text-xs font-bold text-zinc-600 hover:bg-zinc-100">
+              שגרות חודשיות
+            </button>
+            <button id="task-filter-urgent" onclick="filterTasks('urgent')" class="task-filter-btn px-3 py-1 rounded-xl text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100">
+              🚨 דחוף / באיחור בלבד
+            </button>
+          </div>
+          <div class="text-xs text-zinc-400">
+            <span>סנכרון אחרון: <span id="tasks-last-updated">—</span></span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Task Cards Container -->
+      <div id="tasks-list-container" class="space-y-3">
+        <!-- Dynamically injected via renderTasksList -->
       </div>
 
     </div>
@@ -1590,12 +1750,134 @@
     </div>
   </div>
 
+  <!-- New / Edit Task Modal -->
+  <div id="task-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/70 backdrop-blur-xs transition-opacity duration-200 hidden opacity-0">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-zinc-200 transform scale-95 transition-transform duration-200" id="task-modal-card">
+      <div class="flex items-center justify-between border-b border-zinc-100 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-black border border-rose-100">
+            <i data-lucide="plus-circle" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-black text-zinc-900" id="task-modal-title">הוספת משימה או שגרה חדשה</h3>
+            <p class="text-[11px] text-zinc-400 font-medium">הגדרת שגרה קבועה או משימה מיוחדת</p>
+          </div>
+        </div>
+        <button onclick="closeTaskModal()" class="text-zinc-400 hover:text-zinc-700 p-1.5 rounded-lg hover:bg-zinc-100 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="font-bold text-zinc-700 block mb-1">שם המשימה / שגרה:</label>
+          <input type="text" id="task-input-title" placeholder="לדוגמה: בדיקת נוכחות בשיעורים..." class="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-rose-500 font-bold text-zinc-900" />
+        </div>
+
+        <div>
+          <label class="font-bold text-zinc-700 block mb-1">תיאור ופירוט תהליך העבודה:</label>
+          <textarea id="task-input-desc" rows="3" placeholder="פרט את השלבים לביצוע, דגשים חשובים או לינקים..." class="w-full px-3.5 py-2 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-rose-500 font-medium text-zinc-800"></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="font-bold text-zinc-700 block mb-1">מחזוריות ושגרה:</label>
+            <select id="task-input-recurrence" class="w-full px-3.5 py-2 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-rose-500 font-bold text-zinc-800 bg-white">
+              <option value="daily">יומי (כל יום מחדש)</option>
+              <option value="weekly" selected>שבועי (כל שבוע)</option>
+              <option value="monthly">חודשי (כל חודש)</option>
+              <option value="none">חד-פעמי (ללא חזרה)</option>
+            </select>
+          </div>
+          <div>
+            <label class="font-bold text-zinc-700 block mb-1">רמת דחיפות:</label>
+            <select id="task-input-priority" class="w-full px-3.5 py-2 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-rose-500 font-bold text-zinc-800 bg-white">
+              <option value="high" selected>גבוהה (🚨 התרעה)</option>
+              <option value="medium">בינונית</option>
+              <option value="low">רגילה</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="font-bold text-zinc-700 block mb-1">תאריך יעד (Due Date):</label>
+            <input type="date" id="task-input-due" class="w-full px-3.5 py-2 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-rose-500 font-bold text-zinc-800 bg-white" />
+          </div>
+          <div>
+            <label class="font-bold text-zinc-700 block mb-1">תאריך פולאפ (Follow-up):</label>
+            <input type="date" id="task-input-followup" class="w-full px-3.5 py-2 rounded-xl border border-zinc-200 focus:ring-2 focus:ring-rose-500 font-bold text-zinc-800 bg-white" />
+          </div>
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-2 border-t border-zinc-100">
+          <button onclick="closeTaskModal()" class="px-4 py-2 text-zinc-600 font-bold hover:bg-zinc-100 rounded-xl transition">
+            ביטול
+          </button>
+          <button onclick="saveTaskFromModal()" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl shadow-2xs transition">
+            שמור משימה
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bookkeeper Invoice Share & Upload Modal -->
+  <div id="bookkeeper-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/70 backdrop-blur-xs transition-opacity duration-200 hidden opacity-0">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-zinc-200 transform scale-95 transition-transform duration-200" id="bookkeeper-modal-card">
+      <div class="flex items-center justify-between border-b border-zinc-100 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black border border-indigo-100">
+            <i data-lucide="shield-check" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-black text-zinc-900">שיתוף נקודתי והעלאת חשבוניות (להנה״ח)</h3>
+            <p class="text-[11px] text-zinc-400 font-medium">עבור מנהלת החשבונות — בטוח, מבודד, ללא צורך בגוגל דרייב</p>
+          </div>
+        </div>
+        <button onclick="closeBookkeeperModal()" class="text-zinc-400 hover:text-zinc-700 p-1.5 rounded-lg hover:bg-zinc-100 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3.5 text-xs">
+        <!-- Option A: Direct Drag & Drop Upload Zone -->
+        <div class="border-2 border-dashed border-indigo-200 hover:border-indigo-400 rounded-2xl p-5 text-center bg-indigo-50/40 transition cursor-pointer" onclick="document.getElementById('invoice-file-input').click()">
+          <input type="file" id="invoice-file-input" accept=".pdf,.png,.jpg,.jpeg" class="hidden" onchange="handleInvoiceFileUpload(event)" />
+          <div class="w-10 h-10 rounded-2xl bg-indigo-100 text-indigo-700 mx-auto flex items-center justify-center mb-2">
+            <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+          </div>
+          <div class="font-bold text-indigo-950 text-sm">גרור לכאן חשבוניות ספקים (PDF / תמונה)</div>
+          <div class="text-[11px] text-indigo-700/80 mt-1">או לחץ לבחירת קובץ מהמחשב • נשמר ישירות בתיקיית הספקים המאובטחת</div>
+          <div id="upload-status-display" class="mt-2 text-xs font-bold text-emerald-700 hidden"></div>
+        </div>
+
+        <!-- Option B: Direct Email Fallback -->
+        <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-1.5">
+          <div class="font-bold text-slate-800 flex items-center gap-1.5">
+            <i data-lucide="mail" class="w-3.5 h-3.5 text-slate-600"></i>
+            <span>אפשרות מייל חלופית (מנהלת החשבונות שולחת לעידן):</span>
+          </div>
+          <p class="text-slate-600 text-[11px] leading-relaxed">
+            מנהלת החשבונות יכולה פשוט לשלוח את כל החשבוניות ישירות למייל שלך. ברגע שתגרור אותן לתיקיית <code class="bg-slate-200 px-1.5 py-0.5 rounded text-[10px]">📥_לגרור_לכאן_את_קבצי_החודש/invoices_suppliers</code> המערכת תבצע OCR אוטומטי ותציג אותן כאן במס״ב.
+          </p>
+        </div>
+
+        <div class="pt-2 flex justify-end">
+          <button onclick="closeBookkeeperModal()" class="px-5 py-2 bg-zinc-900 text-white font-bold rounded-xl text-xs">
+            סגור
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Notification Toast -->
   <div id="toast" class="fixed bottom-5 left-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-semibold">
     <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
     <span id="toast-message">הנתונים סונכרנו בהצלחה!</span>
   </div>
 
-  <script src="app.js?v=5.2"></script>
+  <script src="app.js?v=5.3"></script>
 </body>
 </html>
