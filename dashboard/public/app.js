@@ -661,7 +661,6 @@ function renderPacingTracker(pacing) {
             ? 'bg-amber-50 text-amber-900 border border-amber-200'
             : 'bg-indigo-50 text-indigo-900 border border-indigo-200')));
   }
-  }
 
   try {
     lucide.createIcons();
