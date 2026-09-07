@@ -433,4 +433,5 @@ Append only. One line per entry.
 | 2026-07-31 | Amit + agent | Created from full email transcript, workflow answers, and 6-point feedback |
 | 2026-08-21 | Idan + agent | Clarified active month planning structure (תכנון ראשוני vs תכנון עדכני) and dynamic monthly roll-forward |
 | 2026-09-03 | Idan + agent | Finalized August close: dynamic reception formulas (Leon 44.44h/Noam 51h), single travel allocation (no duplicate on dual roles), salaried classes strictly under 22660 (22653 salaried zeroed), mixed freelance line item splits (Ido Gliko, Noy Asraf, Idan Wekser), inactive employee complete sweep (Orly Baumel), and hours comparison table column J alignment. |
+| 2026-09-07 | Idan + agent | Operational cadence alignment: weekly drop for kaspit & Arbox revenue; monthly drop for classes, Hilan, trainer/supplier receipts; auto-fetch sales commissions from local Google Drive CRM. |
 
