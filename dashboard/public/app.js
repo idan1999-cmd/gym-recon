@@ -2044,18 +2044,18 @@ function renderExpiringCohorts(members) {
 
     let standardBadge = '';
     if (isHighRisk) {
-      standardBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-200 flex items-center gap-1 w-fit shadow-2xs"><i data-lucide="alert-triangle" class="w-3 h-3 text-rose-600"></i> ${item.persistence_label}</span>`;
+      standardBadge = `<span class="px-2.5 py-1 rounded-lg text-[11px] font-black bg-rose-100 text-rose-800 border border-rose-200 inline-flex items-center gap-1.5 whitespace-nowrap shadow-2xs"><i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-rose-600 shrink-0"></i> ${item.persistence_label}</span>`;
     } else if (isMedRisk) {
-      standardBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1 w-fit"><i data-lucide="clock" class="w-3 h-3 text-amber-600"></i> ${item.persistence_label}</span>`;
+      standardBadge = `<span class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 inline-flex items-center gap-1.5 whitespace-nowrap"><i data-lucide="clock" class="w-3.5 h-3.5 text-amber-600 shrink-0"></i> ${item.persistence_label}</span>`;
     } else {
-      standardBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1 w-fit"><i data-lucide="check" class="w-3 h-3 text-emerald-600"></i> ${item.persistence_label}</span>`;
+      standardBadge = `<span class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1.5 whitespace-nowrap"><i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600 shrink-0"></i> ${item.persistence_label}</span>`;
     }
 
     let attDisplay = '';
     if (item.has_real_attendance) {
-      attDisplay = `<span class="font-bold text-slate-800">${item.visits_str}</span>`;
+      attDisplay = `<span class="font-bold text-slate-800 whitespace-nowrap">${item.visits_str}</span>`;
     } else {
-      attDisplay = `<span class="text-slate-400 text-[10px] flex items-center justify-center gap-1" title="ניתן לגרור דוח התמדה מ-Arbox לנתוני אמת"><i data-lucide="activity" class="w-3 h-3 text-amber-500"></i> ${item.visits_str}</span>`;
+      attDisplay = `<span class="text-slate-400 text-[11px] inline-flex items-center justify-center gap-1 whitespace-nowrap" title="ניתן לגרור דוח התמדה מ-Arbox לנתוני אמת"><i data-lucide="activity" class="w-3.5 h-3.5 text-amber-500 shrink-0"></i> ${item.visits_str}</span>`;
     }
 
     const rowClass = isHighRisk
@@ -2064,16 +2064,16 @@ function renderExpiringCohorts(members) {
 
     return `
       <tr class="${rowClass}">
-        <td class="p-2.5 font-bold ${isHighRisk ? 'text-rose-950 font-black' : 'text-slate-900'}">${item.name}</td>
-        <td class="p-2.5 text-slate-700">${item.membership}</td>
-        <td class="p-2.5">
-          <span class="px-2 py-0.5 rounded text-[10px] font-bold ${item.branch_key === 'pilates' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'}">
+        <td class="py-2.5 px-3.5 font-bold whitespace-nowrap ${isHighRisk ? 'text-rose-950 font-black' : 'text-slate-900'}">${item.name}</td>
+        <td class="py-2.5 px-3 text-slate-700 whitespace-nowrap">${item.membership}</td>
+        <td class="py-2.5 px-3 text-center whitespace-nowrap">
+          <span class="px-2.5 py-0.5 rounded-md text-[11px] font-bold ${item.branch_key === 'pilates' ? 'bg-purple-50 text-purple-700 border border-purple-200/60' : 'bg-blue-50 text-blue-700 border border-blue-200/60'}">
             ${item.branch}
           </span>
         </td>
-        <td class="p-2.5 text-center text-xs">${attDisplay}</td>
-        <td class="p-2.5">${standardBadge}</td>
-        <td class="p-2.5 text-left font-mono font-black ${isHighRisk ? 'text-rose-700' : 'text-amber-700'}">${item.end_date}</td>
+        <td class="py-2.5 px-3 text-center text-xs whitespace-nowrap">${attDisplay}</td>
+        <td class="py-2.5 px-3 whitespace-nowrap">${standardBadge}</td>
+        <td class="py-2.5 px-4 text-left font-mono font-black text-xs whitespace-nowrap ${isHighRisk ? 'text-rose-700' : 'text-amber-700'}">${item.end_date}</td>
       </tr>
     `;
   }).join('');

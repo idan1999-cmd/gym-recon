@@ -10,6 +10,27 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
 
+## 2026-09-07 — Expiring Memberships Cohort Table Layout & No-Truncation Fix
+
+- **What changed:**
+  1. **Full-Width Card Layout:**
+     - Separated the side-by-side 2-column grid (`grid grid-cols-1 lg:grid-cols-2`) in the Memberships Intelligence View into stacked full-width cards (`space-y-6`).
+     - Both the Quarterly Seasonal Evolution table (Q1–Q4) and the Upcoming Expiring Memberships Cohort table now occupy 100% width, eliminating cramped columns and horizontal squeezing.
+  2. **Table Scroll & Dimensions:**
+     - Enhanced table wrapper with `overflow-x-auto overflow-y-auto max-h-80 rounded-2xl shadow-2xs custom-scrollbar` so all rows scroll comfortably without being squeezed into a 2-row box.
+  3. **No-Truncation Styling:**
+     - Added `whitespace-nowrap` to all `th` and `td` cells, preventing multi-line badge wrapping (`סיכון נשירה`, `עמידה בסטנדרט מועדון`).
+     - Aligned and added generous padding (`py-2.5 px-3.5`) with dedicated left-aligned spacing (`pl-4`) for the expiration date column (`תאריך סיום`), ensuring dates are never clipped.
+- **Why (what Idan asked for, in his words):**
+  - *"הטבלה הזו נחתכת, לא מספיק ברור."*
+- **What it touches:**
+  - `dashboard/public/index.html`, `dashboard/public/app.js`, `docs/BUILDER_LOG.md`.
+- **How it was verified:**
+  - Verified on live dashboard at `http://localhost:3000`.
+  - Regression tests passed: 27/27 on `tests/test_idan_fixes.py` and 11/11 on `tests/test_resilience.py`.
+
+---
+
 ## 2026-09-07 — Club Tasks Board, Arbox Revenue Breakdown, Masav Transmission & Bookkeeper Upload
 
 - **What changed:**

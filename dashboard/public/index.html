@@ -862,9 +862,9 @@
       </div>
 
       <!-- Advanced Intelligence Section: Seasonal Membership Evolution & Expiring Cohorts -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="space-y-6">
         
-        <!-- Left: Seasonal Membership Evolution & Quarterly Breakdown (Q1–Q4) -->
+        <!-- Seasonal Membership Evolution & Quarterly Breakdown (Q1–Q4) -->
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3.5">
           <div class="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
@@ -928,9 +928,9 @@
           </div>
         </div>
 
-        <!-- Right: Upcoming Expiring Memberships Cohort (מנויים שעומדים להסתיים) -->
-        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
-          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <!-- Upcoming Expiring Memberships Cohort (מנויים שעומדים להסתיים) -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3.5">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
               <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
                 <i data-lucide="hourglass" class="w-4 h-4 text-amber-600"></i>
@@ -938,7 +938,7 @@
               </h3>
               <p class="text-[11px] text-slate-400 mt-0.5">סנכרון דוח מנויים - לקוחות יעד לשימור וחידוש חודש-בחודשו</p>
             </div>
-            <span class="text-xs font-black bg-amber-50 text-amber-800 px-2.5 py-1 rounded-xl border border-amber-200" id="mem-expiring-total-badge">
+            <span class="text-xs font-black bg-amber-50 text-amber-800 px-3 py-1 rounded-xl border border-amber-200" id="mem-expiring-total-badge">
               0 מנויים
             </span>
           </div>
@@ -949,19 +949,19 @@
           </div>
 
           <!-- Table of Members Expiring in Selected Month -->
-          <div class="overflow-hidden rounded-xl border border-slate-200 max-h-56 overflow-y-auto custom-scrollbar">
-            <table class="w-full text-right text-xs">
-              <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 sticky top-0">
+          <div class="overflow-x-auto overflow-y-auto rounded-2xl border border-slate-200 max-h-80 shadow-2xs custom-scrollbar">
+            <table class="w-full text-right text-xs border-collapse">
+              <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 sticky top-0 z-10">
                 <tr>
-                  <th class="p-2.5">שם הלקוח</th>
-                  <th class="p-2.5">סוג מנוי נוכחי</th>
-                  <th class="p-2.5">סניף</th>
-                  <th class="p-2.5 text-center">אימונים והתמדה (ארבוקס)</th>
-                  <th class="p-2.5">עמידה בסטנדרט מועדון</th>
-                  <th class="p-2.5 text-left">תאריך סיום</th>
+                  <th class="py-3 px-3.5 whitespace-nowrap">שם הלקוח</th>
+                  <th class="py-3 px-3 whitespace-nowrap">סוג מנוי נוכחי</th>
+                  <th class="py-3 px-3 text-center whitespace-nowrap">סניף</th>
+                  <th class="py-3 px-3 text-center whitespace-nowrap">אימונים והתמדה (ארבוקס)</th>
+                  <th class="py-3 px-3 whitespace-nowrap">עמידה בסטנדרט מועדון</th>
+                  <th class="py-3 px-4 text-left whitespace-nowrap">תאריך סיום</th>
                 </tr>
               </thead>
-              <tbody id="mem-expiring-table-body" class="divide-y divide-slate-100">
+              <tbody id="mem-expiring-table-body" class="divide-y divide-slate-100 font-medium">
                 <!-- Injected dynamically -->
               </tbody>
             </table>
