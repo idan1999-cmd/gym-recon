@@ -2607,6 +2607,19 @@ class DashboardDataService:
         gym_data = self.parse_budget_workbook(OUTPUT_DIR / "תקציב_מול_ביצוע_חדר_כושר.xlsx", "חדר כושר")
         pilates_data = self.parse_budget_workbook(OUTPUT_DIR / "תקציב_מול_ביצוע_פילאטיס.xlsx", "פילאטיס מכשירים")
 
+        # In cloud environments where outputs are not yet generated, load from bundled seed snapshot
+        if not gym_data and not pilates_data:
+            seed_file = CONFIG_DIR / "dashboard_seed.json"
+            if seed_file.exists():
+                try:
+                    with open(seed_file, encoding="utf-8") as f:
+                        seed_data = json.load(f)
+                    cache_key = f"{club_filter}_{month}"
+                    if cache_key in seed_data:
+                        return seed_data[cache_key]
+                except Exception as e:
+                    print("Error loading dashboard_seed.json:", e)
+
         incomes_list = []
         var_exp_list = []
         fix_exp_list = []
