@@ -10,6 +10,22 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
 
+## 2026-09-07 — Remote Access Tunnel & Dashboard Sharing Tool (`tools/share_remote.py`)
+
+- **What changed:**
+  1. **Zero-Config Encrypted Remote Tunnel:**
+     - Created `tools/share_remote.py` leveraging Cloudflare Tunnel (`cloudflared`) to securely expose the local dashboard via an encrypted global HTTPS URL.
+     - Requires no router port forwarding, no accounts, no software installation on the recipient's device, and works across any external network / mobile data.
+     - Displays live shareable link with single-command invocation (`python3 tools/share_remote.py`).
+- **Why (what Idan asked for, in his words):**
+  - *"ואני והוא לא נמצאים תחת אותו רשת אינטרנט כל הזמן, אז איך נתמודד עם זה?"*
+- **What it touches:**
+  - `tools/share_remote.py`, `docs/BUILDER_LOG.md`.
+- **How it was verified:**
+  - Verified live HTTPS tunnel creation and tested external curl HTTP/2 200 response from Cloudflare edge network.
+
+---
+
 ## 2026-09-07 — Revenue Breakdown Alignment to Official Monthly Income Sheet (Gross/Net VAT)
 
 - **What changed:**
