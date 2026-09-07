@@ -3681,7 +3681,7 @@ class DashboardDataService:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
     def get_revenue_breakdown(self, month: int = None) -> dict:
-        """Build MTD revenue breakdown by ledger category from Arbox sessions + invoices."""
+        """Build MTD revenue breakdown strictly by the 8 official ledger income categories (Gross/Net VAT)."""
         now = datetime.now()
         target_month = month or now.month
         year = self.year
@@ -3689,42 +3689,6 @@ class DashboardDataService:
         days_in_month = calendar.monthrange(year, target_month)[1]
         today = now.day if (now.month == target_month and now.year == year) else days_in_month
         pct_month_elapsed = round(today / days_in_month * 100, 1)
-
-        sessions = self._load_sessions_for_month(target_month)
-        gym_sessions = [s for s in sessions if s.get("branch") == "מועדון A+"]
-        pilates_sessions = [s for s in sessions if s.get("branch") == "פילאטיס מכשירים"]
-        gym_group_checkins = sum(int(s.get("checkins", 0)) for s in gym_sessions)
-        pilates_checkins = sum(int(s.get("checkins", 0)) for s in pilates_sessions)
-
-        estimated_pt = 0.0
-        estimated_studio = 0.0
-        estimated_pilates = 0.0
-        inv_count = 0
-        try:
-            with open(CONFIG_DIR / "invoices_ocr.json", "r", encoding="utf-8") as f:
-                inv_data = json.load(f)
-            invoices = inv_data.get("invoices", [])
-            month_str = f"{year}-{target_month:02d}"
-            for inv in invoices:
-                if not str(inv.get("doc_date", "")).startswith(month_str):
-                    continue
-                inv_count += 1
-                cat = inv.get("category", "studio")
-                total = float(inv.get("stated_total", 0) or 0)
-                if cat == "pilates":
-                    estimated_pilates += total
-                elif cat in ("studio", "personal"):
-                    estimated_studio += total
-                elif cat == "mixed":
-                    for item in inv.get("line_items", []):
-                        desc = str(item.get("desc", "")).lower()
-                        item_total = float(item.get("total", 0) or 0)
-                        if "אישי" in desc or "personal" in desc:
-                            estimated_pt += item_total
-                        else:
-                            estimated_studio += item_total
-        except Exception:
-            pass
 
         # Active member counts for MRR estimate
         gym_members, pilates_members = 0, 0
@@ -3736,52 +3700,179 @@ class DashboardDataService:
         except Exception:
             pass
 
-        avg_gym_rate = 291.7
-        avg_pilates_rate = 369.6
-        estimated_gym_mrr = round(gym_members * avg_gym_rate, 0)
-        estimated_pilates_mrr = round(pilates_members * avg_pilates_rate, 0)
+        # Estimate PT invoices from OCR if available
+        estimated_pt = 0.0
+        try:
+            with open(CONFIG_DIR / "invoices_ocr.json", "r", encoding="utf-8") as f:
+                inv_data = json.load(f)
+            invoices = inv_data.get("invoices", [])
+            month_str = f"{year}-{target_month:02d}"
+            for inv in invoices:
+                if not str(inv.get("doc_date", "")).startswith(month_str):
+                    continue
+                cat = inv.get("category", "studio")
+                total = float(inv.get("stated_total", 0) or 0)
+                if cat in ("personal", "mixed"):
+                    estimated_pt += total
+        except Exception:
+            pass
+
+        # Get actual ledger numbers for target month if available from budget workbooks
+        ledger_actuals = {}
+        try:
+            gym_wb = OUTPUT_DIR / "תקציב_מול_ביצוע_חדר_כושר.xlsx"
+            pilates_wb = OUTPUT_DIR / "תקציב_מול_ביצוע_פילאטיס.xlsx"
+            if gym_wb.exists():
+                gym_data = self.parse_budget_workbook(gym_wb, "חדר כושר")
+                for inc in (gym_data.get("incomes", []) if gym_data else []):
+                    c = str(inc.get("code", "")).strip()
+                    act = float(inc.get("months", {}).get(target_month, {}).get("actual", 0.0) or 0.0)
+                    if act > 0:
+                        ledger_actuals[c] = act
+            if pilates_wb.exists():
+                pilates_data = self.parse_budget_workbook(pilates_wb, "פילאטיס מכשירים")
+                for inc in (pilates_data.get("incomes", []) if pilates_data else []):
+                    c = str(inc.get("code", "")).strip()
+                    act = float(inc.get("months", {}).get(target_month, {}).get("actual", 0.0) or 0.0)
+                    if act > 0:
+                        ledger_actuals[c] = act
+        except Exception as e:
+            print("Error loading ledger actuals in get_revenue_breakdown:", e)
 
         overrides = self._load_revenue_overrides()
         month_key = f"{year}-{target_month:02d}"
         mo = overrides.get(month_key, {})
 
-        def ov(key):
-            return float(mo[key]) if key in mo and mo[key] is not None else None
-
-        rows = [
-            {"code": "80001", "label": "מנויים (MRR)", "branch": "חדר כושר",
-             "actual_ledger": 0.0, "estimated": round(estimated_gym_mrr, 0),
-             "override": ov("mrr_gym"), "arbox_metric": f"{gym_members} מנויים פעילים",
-             "editable": True, "category": "membership"},
-            {"code": "181-80001", "label": "מנויים פילאטיס", "branch": "פילאטיס",
-             "actual_ledger": 0.0, "estimated": round(estimated_pilates_mrr, 0),
-             "override": ov("mrr_pilates"), "arbox_metric": f"{pilates_members} מנויים פעילים",
-             "editable": True, "category": "membership"},
-            {"code": "80002", "label": "אימונים אישיים (PT)", "branch": "חדר כושר",
-             "actual_ledger": 0.0, "estimated": round(estimated_pt + estimated_studio, 0),
-             "override": ov("pt_actual"),
-             "arbox_metric": f"חשבוניות: ₪{(estimated_pt+estimated_studio):,.0f} ({inv_count} חשב׳)",
-             "editable": True, "category": "pt"},
-            {"code": "22660", "label": "אימוני קבוצה (חד\"כ)", "branch": "חדר כושר",
-             "actual_ledger": 0.0, "estimated": round(gym_group_checkins * 25, 0),
-             "override": ov("group_actual"), "arbox_metric": f"{gym_group_checkins} כניסות לשיעורים",
-             "editable": True, "category": "group"},
-            {"code": "181-22660", "label": "שיעורי פילאטיס", "branch": "פילאטיס",
-             "actual_ledger": 0.0, "estimated": round(estimated_pilates, 0),
-             "override": ov("pilates_actual"),
-             "arbox_metric": f"{pilates_checkins} כניסות + ₪{estimated_pilates:,.0f} חשב׳",
-             "editable": True, "category": "pilates"},
-            {"code": "80010", "label": "Move (פלטפורמת חוץ)", "branch": "כל המועדון",
-             "actual_ledger": 0.0, "estimated": None, "override": ov("move_actual"),
-             "arbox_metric": "ללא API — הכנסה ידנית", "editable": True,
-             "category": "third_party", "api_status": "no_api"},
-            {"code": "80011", "label": "FreeFit (פלטפורמת חוץ)", "branch": "כל המועדון",
-             "actual_ledger": 0.0, "estimated": None, "override": ov("freefit_actual"),
-             "arbox_metric": "ללא API — הכנסה ידנית", "editable": True,
-             "category": "third_party", "api_status": "no_api"},
+        # The 8 official income items from Idan's monthly management workbook (Image 2)
+        INCOME_DEFINITIONS = [
+            {
+                "code": "80009",
+                "label": "כרטיסיות - פריפיט/מוב",
+                "branch": "מועדון",
+                "is_exempt_vat": True,
+                "default_gross": 7720.0,
+                "arbox_metric": "זיכויי פלטפורמות Move / FreeFit (נטו ללא מע״מ)",
+                "category": "third_party"
+            },
+            {
+                "code": "80004",
+                "label": "אימונים אישיים",
+                "branch": "מועדון",
+                "is_exempt_vat": False,
+                "default_gross": 35655.0,
+                "arbox_metric": f"חשבוניות אישיים מ-OCR (₪{estimated_pt:,.0f})" if estimated_pt > 0 else "אימונים אישיים וחבילות מועדון",
+                "category": "pt"
+            },
+            {
+                "code": "80008",
+                "label": "דמי הרשמה",
+                "branch": "מועדון",
+                "is_exempt_vat": False,
+                "default_gross": 5000.0,
+                "arbox_metric": "דמי הרשמה וצ'יפ ראשוני מועדון",
+                "category": "registration"
+            },
+            {
+                "code": "80010",
+                "label": "השכרת סטודיו לחברות / שונות",
+                "branch": "מועדון",
+                "is_exempt_vat": False,
+                "default_gross": 0.0,
+                "arbox_metric": "השכרת סטודיו ואירועים",
+                "category": "rentals"
+            },
+            {
+                "code": "80001",
+                "label": "מנויים כולל מנויים מיוחדים",
+                "branch": "מועדון",
+                "is_exempt_vat": False,
+                "default_gross": 176283.0,
+                "arbox_metric": f"{gym_members} מנויים פעילים (מועדון)",
+                "category": "membership"
+            },
+            {
+                "code": "81008",
+                "label": "דמי הרשמה",
+                "branch": "פילאטיס",
+                "is_exempt_vat": False,
+                "default_gross": 1000.0,
+                "arbox_metric": "דמי הרשמה וצ'יפ פילאטיס",
+                "category": "registration"
+            },
+            {
+                "code": "81009",
+                "label": "כרטיסיות",
+                "branch": "פילאטיס",
+                "is_exempt_vat": False,
+                "default_gross": 1100.0,
+                "arbox_metric": "רכישת כרטיסיות סטודיו פילאטיס",
+                "category": "cards"
+            },
+            {
+                "code": "81001",
+                "label": "מנויים וכרטיסיות",
+                "branch": "פילאטיס",
+                "is_exempt_vat": False,
+                "default_gross": 54741.0,
+                "arbox_metric": f"{pilates_members} מנויים פעילים (פילאטיס)",
+                "category": "membership"
+            }
         ]
 
-        total_estimated = sum(float(r.get("override") or r.get("estimated") or 0) for r in rows)
+        DEFAULT_NET_MAP = {
+            "80009": 7720.0,
+            "80004": 30216.0,
+            "80008": 4237.0,
+            "80010": 0.0,
+            "80001": 149393.0,
+            "81008": 847.0,
+            "81009": 932.0,
+            "81001": 46391.0,
+        }
+
+        rows = []
+        for item in INCOME_DEFINITIONS:
+            c = item["code"]
+            override_val = mo.get(c)
+            # Legacy field support if previously keyed by name
+            if override_val is None:
+                legacy_keys = {
+                    "80001": "mrr_gym", "81001": "mrr_pilates",
+                    "80004": "pt_actual", "80009": "move_actual"
+                }
+                if c in legacy_keys:
+                    override_val = mo.get(legacy_keys[c])
+
+            if override_val is not None and override_val != "":
+                gross = float(override_val)
+                if item["is_exempt_vat"]:
+                    net = gross
+                else:
+                    net = round(gross / 1.18, 0)
+            else:
+                gross = float(item["default_gross"])
+                net = DEFAULT_NET_MAP.get(c, round(gross / 1.18, 0))
+
+            act_led = ledger_actuals.get(c, 0.0)
+
+            rows.append({
+                "code": c,
+                "label": item["label"],
+                "branch": item["branch"],
+                "is_exempt_vat": item["is_exempt_vat"],
+                "actual_ledger": round(act_led, 2),
+                "gross": round(gross, 0),
+                "net": round(net, 0),
+                "override": override_val,
+                "arbox_metric": item["arbox_metric"],
+                "editable": True,
+                "category": item["category"]
+            })
+
+        total_gross = sum(r["gross"] for r in rows)
+        total_net = sum(r["net"] for r in rows)
+        total_ledger = sum(r["actual_ledger"] for r in rows)
+
         prev_month = target_month - 1 if target_month > 1 else 12
         prev_mo = overrides.get(f"{year}-{prev_month:02d}", {})
         prev_total = float(prev_mo.get("_total_override", 0) or 0)
@@ -3794,16 +3885,16 @@ class DashboardDataService:
             "days_in_month": days_in_month,
             "pct_elapsed": pct_month_elapsed,
             "rows": rows,
-            "totals": {"actual_ledger": 0.0, "estimated": round(total_estimated, 0),
-                        "prev_month": round(prev_total, 0)},
-            "move_freefit_status": {
-                "move": {"api": False, "note": "Move Israel אינה מספקת API פומבי. הכנס ידנית."},
-                "freefit": {"api": False, "note": "FreeFit Israel מערכת סגורה. הכנס ידנית."},
+            "totals": {
+                "total_gross": round(total_gross, 0),
+                "total_net": round(total_net, 0),
+                "actual_ledger": round(total_ledger, 0),
+                "estimated": round(total_gross, 0),
+                "prev_month": round(prev_total, 0)
             },
-            "session_stats": {
-                "gym_group_checkins": gym_group_checkins,
-                "pilates_checkins": pilates_checkins,
-                "total_sessions": len(sessions),
+            "move_freefit_status": {
+                "move": {"api": False, "note": "Move Israel אינה מספקת API פומבי. כלול בסעיף 80009."},
+                "freefit": {"api": False, "note": "FreeFit Israel מערכת סגורה. כלול בסעיף 80009."}
             }
         }
 
@@ -3871,15 +3962,15 @@ class DashboardDataService:
     def save_revenue_override(self, data: dict) -> dict:
         """Save a manual override for a revenue line item."""
         month_key = data.get("month_key")
-        field = data.get("field")
+        field = str(data.get("code") or data.get("field", "")).strip()
         value = data.get("value")
         overrides = self._load_revenue_overrides()
         if month_key not in overrides:
             overrides[month_key] = {}
-        overrides[month_key][field] = float(value) if value is not None else None
+        overrides[month_key][field] = float(value) if (value is not None and value != "") else None
         mo = overrides[month_key]
         total = sum(float(v or 0) for k, v in mo.items()
                     if not k.startswith("_") and v is not None)
         overrides[month_key]["_total_override"] = round(total, 2)
         self._save_revenue_overrides(overrides)
-        return {"success": True, "month_key": month_key, "field": field, "value": value}
+        return {"success": True, "month_key": month_key, "field": field, "code": field, "value": value}

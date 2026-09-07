@@ -3178,80 +3178,86 @@ function renderRevenueBreakdown(data) {
   cachedRevenueBreakdown = data;
 
   const totalDisplay = document.getElementById('rev-breakdown-total-display');
+  const netTotalDisplay = document.getElementById('rev-breakdown-net-total-display');
   if (totalDisplay && data.totals) {
-    totalDisplay.innerText = formatNIS(data.totals.estimated);
+    totalDisplay.innerText = formatNIS(data.totals.total_gross || data.totals.estimated);
+  }
+  if (netTotalDisplay && data.totals) {
+    netTotalDisplay.innerText = formatNIS(data.totals.total_net);
   }
 
   const tbody = document.getElementById('revenue-breakdown-tbody');
+  const tfoot = document.getElementById('revenue-breakdown-tfoot');
   if (!tbody || !data.rows) return;
 
-  tbody.innerHTML = data.rows.map((row, idx) => {
+  tbody.innerHTML = data.rows.map((row) => {
     const isOverride = row.override !== null && row.override !== undefined;
-    const displayAmt = isOverride ? row.override : (row.estimated !== null ? row.estimated : 0);
-    const hasEstimate = row.estimated !== null && row.estimated !== undefined;
+    const grossVal = (row.gross !== null && row.gross !== undefined) ? row.gross : 0;
+    const netVal = (row.net !== null && row.net !== undefined) ? row.net : 0;
 
     return `
       <tr class="hover:bg-slate-50/80 transition-colors">
-        <td class="py-2.5 px-3 font-mono text-slate-500 font-bold">${row.code}</td>
-        <td class="py-2.5 px-3">
+        <td class="py-2.5 px-3.5 font-mono text-slate-600 font-bold whitespace-nowrap">${row.code}</td>
+        <td class="py-2.5 px-3 whitespace-nowrap">
           <div class="font-bold text-slate-900">${row.label}</div>
-          ${row.api_status === 'no_api' ? `<span class="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded font-black">ללא API</span>` : ''}
         </td>
-        <td class="py-2.5 px-3 text-slate-600">${row.branch}</td>
-        <td class="py-2.5 px-3 text-left font-semibold text-slate-400">
+        <td class="py-2.5 px-3 text-center whitespace-nowrap">
+          <span class="px-2.5 py-0.5 rounded-md text-[10px] font-bold ${row.branch === 'פילאטיס' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-blue-50 text-blue-700 border border-blue-200'}">
+            ${row.branch}
+          </span>
+        </td>
+        <td class="py-2.5 px-3 text-left whitespace-nowrap">
+          <span class="font-black text-emerald-800 text-sm">${formatNIS(grossVal)}</span>
+        </td>
+        <td class="py-2.5 px-3 text-left whitespace-nowrap">
+          <span class="font-bold text-slate-700 text-xs">${formatNIS(netVal)}</span>
+        </td>
+        <td class="py-2.5 px-3 text-left whitespace-nowrap font-medium text-slate-400">
           ${row.actual_ledger > 0 ? formatNIS(row.actual_ledger) : '<span class="text-slate-300">₪ 0 (טרם נסגר)</span>'}
         </td>
-        <td class="py-2.5 px-3 text-left">
-          ${hasEstimate ? `
-            <div class="flex items-baseline gap-1.5 justify-end">
-              <span class="font-black text-slate-600 text-sm">${formatNIS(row.estimated)}</span>
-              <span class="text-[9px] font-bold text-slate-400 bg-slate-100 border border-slate-200 px-1 py-0.2 rounded">צפי</span>
-            </div>
-          ` : '<span class="text-slate-300 text-left block">—</span>'}
-        </td>
-        <td class="py-2.5 px-3 text-slate-500 text-[11px]">
+        <td class="py-2.5 px-3 text-slate-500 text-[11px] whitespace-nowrap">
           ${row.arbox_metric || '—'}
         </td>
         <td class="py-2.5 px-3 text-center">
           <input 
             type="number" 
             value="${isOverride ? row.override : ''}" 
-            placeholder="${hasEstimate ? Math.round(row.estimated) : 'הזן...'}" 
+            placeholder="${Math.round(grossVal)}" 
             onchange="handleRevenueOverride('${row.code}', this.value)"
-            class="w-24 text-center px-2 py-1 rounded-lg border ${isOverride ? 'border-emerald-500 bg-emerald-50 font-black text-emerald-900' : 'border-slate-200 bg-white font-medium text-slate-700'} text-xs focus:outline-none focus:ring-2 focus:ring-rose-500 shadow-2xs"
+            class="w-32 text-center px-2.5 py-1 rounded-lg border ${isOverride ? 'border-emerald-500 bg-emerald-50 font-black text-emerald-900' : 'border-slate-200 bg-white font-medium text-slate-700'} text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+            title="הזן סכום ברוטו (כולל מע״מ) לכיוונון ידני בלייב"
           />
         </td>
       </tr>
     `;
   }).join('');
+
+  if (tfoot && data.totals) {
+    tfoot.innerHTML = `
+      <tr class="bg-slate-50/90 font-black text-slate-900 border-t-2 border-slate-200">
+        <td class="py-3 px-3.5 whitespace-nowrap" colspan="3">סה״כ הכנסות (חודשי)</td>
+        <td class="py-3 px-3 text-left text-emerald-900 font-black text-sm whitespace-nowrap">${formatNIS(data.totals.total_gross)}</td>
+        <td class="py-3 px-3 text-left text-slate-800 font-black text-xs whitespace-nowrap">${formatNIS(data.totals.total_net)}</td>
+        <td class="py-3 px-3 text-left text-slate-500 font-bold text-xs whitespace-nowrap">${data.totals.actual_ledger > 0 ? formatNIS(data.totals.actual_ledger) : '₪ 0'}</td>
+        <td class="py-3 px-3" colspan="2"></td>
+      </tr>
+    `;
+  }
 }
 
 async function handleRevenueOverride(code, val) {
   const num = val === '' ? null : parseFloat(val);
   const monthKey = `2026-${String(currentMonth).padStart(2, '0')}`;
   
-  // Field mapping
-  const fieldMap = {
-    '80001': 'mrr_gym',
-    '181-80001': 'mrr_pilates',
-    '80002': 'pt_actual',
-    '22660': 'group_actual',
-    '181-22660': 'pilates_actual',
-    '80010': 'move_actual',
-    '80011': 'freefit_actual'
-  };
-  const field = fieldMap[code] || code;
-
   try {
     const res = await fetch('/api/revenue_breakdown/override', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ month_key: monthKey, field: field, value: num })
+      body: JSON.stringify({ month_key: monthKey, code: code, value: num })
     });
     const data = await res.json();
     if (data.success) {
       showToast('הכיוונון נשמר בהצלחה');
-      // Refresh dashboard data
       fetchDashboardData();
     }
   } catch (err) {

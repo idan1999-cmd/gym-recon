@@ -10,6 +10,36 @@ The system takes these raw inputs, performs automated OCR and three-way reconcil
 3. **ספקים לאישור מנהל (Supplier Payment Pack):** Matches supplier invoices against vendor terms (+30 / +60 days) and generates the manager approval workbook.
 4. **דגלים (Audit & Flags):** Automatically flags rate mismatches, missing trainer receipts, unknown vendors, or hours variance so management can review exceptions without doing math by hand.
 
+## 2026-09-07 — Revenue Breakdown Alignment to Official Monthly Income Sheet (Gross/Net VAT)
+
+- **What changed:**
+  1. **Replaced Expense Accounts with Strictly Income Accounts:**
+     - Removed expense codes `22660` (Group Classes instructor wages) and `181-22660` (Pilates instructor wages) that were mistakenly placed in the revenue section.
+     - Structured the revenue breakdown strictly by the 8 official chart-of-account income lines matching Idan's monthly management workbook (`מועדון` and `פילאטיס`):
+       1. `80009` | `כרטיסיות - פריפיט/מוב` (מועדון) — כולל מע״מ: ₪7,720 | ללא מע״מ: ₪7,720 (פטור/נטו עסקאות)
+       2. `80004` | `אימונים אישיים` (מועדון) — כולל מע״מ: ₪35,655 | ללא מע״מ: ₪30,216
+       3. `80008` | `דמי הרשמה` (מועדון) — כולל מע״מ: ₪5,000 | ללא מע״מ: ₪4,237
+       4. `80010` | `השכרת סטודיו לחברות / שונות` (מועדון) — כולל מע״מ: ₪0 | ללא מע״מ: ₪0
+       5. `80001` | `מנויים כולל מנויים מיוחדים` (מועדון) — כולל מע״מ: ₪176,283 | ללא מע״מ: ₪149,393
+       6. `81008` | `דמי הרשמה` (פילאטיס) — כולל מע״מ: ₪1,000 | ללא מע״מ: ₪847
+       7. `81009` | `כרטיסיות` (פילאטיס) — כולל מע״מ: ₪1,100 | ללא מע״מ: ₪932
+       8. `81001` | `מנויים וכרטיסיות` (פילאטיס) — כולל מע״מ: ₪54,741 | ללא מע״מ: ₪46,391
+  2. **Gross vs. Net VAT Columns & Live Recalculation:**
+     - Added dedicated columns in table and totals header: **כולל מע״מ (צפי/קבלות)** (Total: ₪281,499) and **ללא מע״מ (כרטסת)** (Total: ₪239,736).
+     - Connected official closed ledger column (`בכרטסת (רשמי)`) for closed months (e.g. Month 6 = ₪245,350 net).
+     - Updated manual override input: user inputs gross NIS (`כולל מע״מ`), and system automatically derives net NIS (`ללא מע״מ`) dividing by 1.18 (except `80009` where Gross = Net).
+- **Why (what Idan asked for, in his words):**
+  - *"את זה אנחנו צריכים לתקן - שהפילוח הכנסות יהיה רק לפי סעיפי ההכנסה, לא ההוצאה! מצרף תמונה נוספת לדוג׳ של איך זה נראה כל חודש אצלנו."*
+- **What it touches:**
+  - `dashboard/backend/data_service.py`, `dashboard/public/index.html`, `dashboard/public/app.js`, `docs/BUILDER_LOG.md`.
+- **How it was verified:**
+  - Verified API `/api/data?month=8` returns exact totals: Gross ₪281,499 and Net ₪239,736 matching Idan's uploaded reference image.
+  - Verified API `/api/data?month=6` displays real ledger net actuals.
+  - Verified override endpoint `/api/revenue_breakdown/override` recalculates net and totals live.
+  - Regression tests passed: 27/27 on `tests/test_idan_fixes.py` and 11/11 on `tests/test_resilience.py`.
+
+---
+
 ## 2026-09-07 — Expiring Memberships Cohort Table Layout & No-Truncation Fix
 
 - **What changed:**
